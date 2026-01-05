@@ -1,14 +1,14 @@
-package com.tsoft.jai.reqwest;
+package com.tsoft.jai.serdejson;
 
-import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.reqwest.Response;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ResponseTest {
+class SerDeTest {
 
     @Test
-    void get_json() {
+    void parse() {
         Response res = new Response().setValue("""
             {
               "int": 1,

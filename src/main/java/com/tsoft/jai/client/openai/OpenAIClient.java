@@ -8,11 +8,14 @@ import com.tsoft.jai.client.message.MessageContent;
 import com.tsoft.jai.client.message.MessageContentToolCalls;
 import com.tsoft.jai.client.message.MessageRole;
 import com.tsoft.jai.client.model.Model;
+import com.tsoft.jai.client.stream.SseHandler;
+import com.tsoft.jai.client.stream.SseMessage;
 import com.tsoft.jai.function.ToolCall;
 import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.reqwest.RequestBuilder;
 import com.tsoft.jai.reqwest.Response;
 import com.tsoft.jai.reqwest.StatusCode;
+import com.tsoft.jai.serdejson.SerDe;
 import com.tsoft.jai.serdejson.Value;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,7 +23,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
+import static com.tsoft.jai.client.stream.Stream.sseStream;
 import static com.tsoft.jai.utils.Mod.stripThinkTag;
 
 @Slf4j
@@ -51,6 +56,206 @@ public class OpenAIClient {
 
         log.debug("non-stream-data: {}", data);
         return openaiExtractChatCompletions(data);
+    }
+
+    // pub async fn openai_chat_completions_streaming(
+    //    builder: RequestBuilder,
+    //    handler: &mut SseHandler,
+    //    _model: &Model,
+    //) -> Result<()> {
+    //    let mut call_id = String::new();
+    //    let mut function_name = String::new();
+    //    let mut function_arguments = String::new();
+    //    let mut function_id = String::new();
+    //    let mut reasoning_state = 0;
+    //    let handle = |message: SseMmessage| -> Result<bool> {
+    //        if message.data == "[DONE]" {
+    //            if !function_name.is_empty() {
+    //                if function_arguments.is_empty() {
+    //                    function_arguments = String::from("{}");
+    //                }
+    //                let arguments: Value = function_arguments.parse().with_context(|| {
+    //                    format!("Tool call '{function_name}' have non-JSON arguments '{function_arguments}'")
+    //                })?;
+    //                handler.tool_call(ToolCall::new(
+    //                    function_name.clone(),
+    //                    arguments,
+    //                    normalize_function_id(&function_id),
+    //                ))?;
+    //            }
+    //            return Ok(true);
+    //        }
+    //        let data: Value = serde_json::from_str(&message.data)?;
+    //        debug!("stream-data: {data}");
+    //        if let Some(text) = data["choices"][0]["delta"]["content"]
+    //            .as_str()
+    //            .filter(|v| !v.is_empty())
+    //        {
+    //            if reasoning_state == 1 {
+    //                handler.text("\n</think>\n\n")?;
+    //                reasoning_state = 0;
+    //            }
+    //            handler.text(text)?;
+    //        } else if let Some(text) = data["choices"][0]["delta"]["reasoning_content"]
+    //            .as_str()
+    //            .or_else(|| data["choices"][0]["delta"]["reasoning"].as_str())
+    //            .filter(|v| !v.is_empty())
+    //        {
+    //            if reasoning_state == 0 {
+    //                handler.text("<think>\n")?;
+    //                reasoning_state = 1;
+    //            }
+    //            handler.text(text)?;
+    //        }
+    //        if let (Some(function), index, id) = (
+    //            data["choices"][0]["delta"]["tool_calls"][0]["function"].as_object(),
+    //            data["choices"][0]["delta"]["tool_calls"][0]["index"].as_u64(),
+    //            data["choices"][0]["delta"]["tool_calls"][0]["id"]
+    //                .as_str()
+    //                .filter(|v| !v.is_empty()),
+    //        ) {
+    //            if reasoning_state == 1 {
+    //                handler.text("\n</think>\n\n")?;
+    //                reasoning_state = 0;
+    //            }
+    //            let maybe_call_id = format!("{}/{}", id.unwrap_or_default(), index.unwrap_or_default());
+    //            if maybe_call_id != call_id && maybe_call_id.len() >= call_id.len() {
+    //                if !function_name.is_empty() {
+    //                    if function_arguments.is_empty() {
+    //                        function_arguments = String::from("{}");
+    //                    }
+    //                    let arguments: Value = function_arguments.parse().with_context(|| {
+    //                        format!("Tool call '{function_name}' have non-JSON arguments '{function_arguments}'")
+    //                    })?;
+    //                    handler.tool_call(ToolCall::new(
+    //                        function_name.clone(),
+    //                        arguments,
+    //                        normalize_function_id(&function_id),
+    //                    ))?;
+    //                }
+    //                function_name.clear();
+    //                function_arguments.clear();
+    //                function_id.clear();
+    //                call_id = maybe_call_id;
+    //            }
+    //            if let Some(name) = function.get("name").and_then(|v| v.as_str()) {
+    //                if name.starts_with(&function_name) {
+    //                    function_name = name.to_string();
+    //                } else {
+    //                    function_name.push_str(name);
+    //                }
+    //            }
+    //            if let Some(arguments) = function.get("arguments").and_then(|v| v.as_str()) {
+    //                function_arguments.push_str(arguments);
+    //            }
+    //            if let Some(id) = id {
+    //                function_id = id.to_string();
+    //            }
+    //        }
+    //        Ok(false)
+    //    };
+    //
+    //    sse_stream(builder, handle).await
+    // }
+    public void openaiChatCompletionsStreaming(RequestBuilder builder, SseHandler handler, Model model) {
+        class Handler {
+            private volatile String callId;
+            private volatile String functionName;
+            private volatile String functionArguments;
+            private volatile String functionId;
+            private volatile Integer reasoningState = 0;
+
+            public final Function<SseMessage, Boolean> handle = message -> {
+                if ("[DONE]".equals(message.getData())) {
+                    if (functionArguments != null) {
+                        if (functionArguments == null) {
+                            functionArguments = "{}";
+                        }
+                        Value arguments = SerDe.parse(functionArguments, (__, ex) -> log.warn("Tool call '{}' have non-JSON arguments '{}'", functionName, functionArguments));
+                        handler.toolCall(new ToolCall()
+                            .setName(functionName)
+                            .setArguments(arguments)
+                            .setId(normalizeFunctionId(functionId)));
+                    }
+                    return true;
+                }
+
+                Value data = SerDe.parse(message.getData());
+                log.debug("stream-data: {}", data);
+                if (data != null) {
+                    String text = data.get("choices", 0, "delta", "content").asStr();
+                    if (text != null && !text.isEmpty()) {
+                        if (reasoningState == 1) {
+                            handler.text("\n</think>\n\n");
+                            reasoningState = 0;
+                        }
+                        handler.text(text);
+                    } else {
+                        text = data.get("choices", 0, "delta", "reasoning_content").asStr();
+                        if (text == null) {
+                            text = data.get("choices", 0, "delta", "reasoning").asStr();
+                        }
+                        if (text != null && !text.isEmpty()) {
+                            if (reasoningState == 0) {
+                                handler.text("<think>\n");
+                                reasoningState = 1;
+                            }
+                            handler.text(text);
+                        }
+                    }
+                }
+
+                Value function = data.get("choices", 0, "delta", "tool_calls", 0, "function");
+                Integer index = data.get("choices", 0, "delta", "tool_calls", 0, "index").asInt();
+                String id = data.get("choices", 0, "delta", "tool_calls", 0, "id").asStr();
+                if (function != null && id != null && !id.isBlank()) {
+                    if (reasoningState == 1) {
+                        handler.text("\n</think>\n\n");
+                        reasoningState = 0;
+                    }
+                    String maybeCallId = "%s/%s".formatted(id, index);
+                    if (!maybeCallId.equals(callId) && maybeCallId.length() >= callId.length()) {
+                        if (functionName != null) {
+                            if (functionArguments == null) {
+                                functionArguments = "{}";
+                            }
+                            Value arguments = SerDe.parse(functionArguments, (__, ex) -> log.warn("Tool call '{}' have non-JSON arguments '{}'", functionName, functionArguments));
+                            handler.toolCall(new ToolCall()
+                                .setName(functionName)
+                                .setArguments(arguments)
+                                .setId(normalizeFunctionId(functionId)));
+                        }
+                        functionName = null;
+                        functionArguments = null;
+                        functionId = null;
+                        callId = maybeCallId;
+                    }
+
+                    String name = function.get("name").asStr();
+                    if (name != null) {
+                        if (name.startsWith(functionName)) {
+                            functionName = name;
+                        } else {
+                            String buf = (functionName == null) ? name : functionName + name;
+                            functionName = buf;
+                        }
+                    }
+
+                    String arguments = function.get("arguments").asStr();
+                    if (arguments != null) {
+                        String buf = (functionArguments == null) ? arguments : functionArguments + arguments;
+                        functionArguments = buf;
+                    }
+
+                    if (id != null) {
+                        functionId = id;
+                    }
+                }
+                return false;
+            };
+        }
+
+        sseStream(builder, new Handler());
     }
 
     // pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Value {
@@ -398,6 +603,20 @@ public class OpenAIClient {
             .setId(data.get("id").asStr())
             .setInputTokens(data.get("usage", "prompt_tokens").asInt())
             .setOutputTokens(data.get("usage", "completion_tokens").asInt());
+    }
+
+    // fn normalize_function_id(value: &str) -> Option<String> {
+    //    if value.is_empty() {
+    //        None
+    //    } else {
+    //        Some(value.to_string())
+    //    }
+    // }
+    public static String normalizeFunctionId(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value;
     }
 
     private static Map<String, Object> jsonItem(Object ... kv) {
