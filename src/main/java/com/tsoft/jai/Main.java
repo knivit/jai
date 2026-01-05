@@ -1,11 +1,10 @@
 package com.tsoft.jai;
 
+import com.tsoft.jai.cli.Cli;
+
 public class Main {
 
     public static void main(String[] args) {
-        try {
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        Cli cli = Cli.parse(args);
     }
 }
