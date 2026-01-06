@@ -1,6 +1,7 @@
 package com.tsoft.jai.client.common;
 
 import com.tsoft.jai.client.message.Message;
+import com.tsoft.jai.function.FunctionDeclaration;
 import lombok.Data;
 import lombok.experimental.Accessors;
 

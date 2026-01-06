@@ -30,6 +30,13 @@
     </properties>
 
     <dependencies>
+        <!-- JLine is a Java library for handling console input https://github.com/jline/jline3 -->
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline</artifactId>
+            <version>3.30.6</version>
+        </dependency>
+
         <!-- JSON/YAML processing -->
         <dependency>
             <groupId>tools.jackson.core</groupId>
@@ -93,7 +100,7 @@
                 <version>${maven-compiler-plugin.version}</version>
                 <configuration>
                     <encoding>UTF-8</encoding>
-                    <release>21</release>
+                    <release>25</release>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>

@@ -3,6 +3,7 @@ package com.tsoft.jai.client.openaicompatible;
 import com.tsoft.jai.client.common.ChatCompletionsData;
 import com.tsoft.jai.client.common.RequestData;
 import com.tsoft.jai.client.model.Model;
+import com.tsoft.jai.config.ClientConfig;
 import lombok.RequiredArgsConstructor;
 
 import java.util.HashMap;
@@ -36,7 +37,7 @@ public class OpenAICompatibleClient {
         put("voyageai", "https://api.voyageai.com/v1");
     }};
 
-    private final OpenAICompatibleConfig config;
+    private final ClientConfig config;
     private final Model model;
 
     // fn prepare_chat_completions(

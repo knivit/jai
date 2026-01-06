@@ -1,22 +1,25 @@
 package com.tsoft.jai.serdejson;
 
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Data
 @Accessors(chain = true)
-@RequiredArgsConstructor
 public class Value {
 
     private final Object data;
+
+    public Value() {
+        data = new LinkedHashMap<>();
+    }
+
+    public Value(Object data) {
+        this.data = data;
+    }
 
     public Value get(Object ... path) {
         Object ptr = data;

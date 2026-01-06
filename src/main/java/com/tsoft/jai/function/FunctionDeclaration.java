@@ -1,6 +1,5 @@
-package com.tsoft.jai.client.common;
+package com.tsoft.jai.function;
 
-import com.tsoft.jai.function.JsonSchema;
 import lombok.Data;
 import lombok.experimental.Accessors;
 

@@ -4,7 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
+import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -12,7 +14,8 @@ import java.util.function.BiConsumer;
 @Slf4j
 public class SerDe {
 
-    public static final JsonMapper jsonMapper = new JsonMapper();
+    private static final JsonMapper jsonMapper = new JsonMapper();
+    private static final YAMLMapper yamlMapper = new YAMLMapper();
 
     public static Value parse(String value) {
         return parse(value, (data, ex) -> {
@@ -50,5 +53,13 @@ public class SerDe {
         }
 
         return null;
+    }
+
+    public static String toYamlString(Value value) {
+        return YAMLMapper.shared().writeValueAsString(value.getData());
+    }
+
+    public static <T> T readFromYamlFile(File file, Class<T> clazz) {
+        return YAMLMapper.shared().readValue(file, clazz);
     }
 }

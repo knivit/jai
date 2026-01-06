@@ -3,11 +3,18 @@ package com.tsoft.jai.cli;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Data
 @Accessors(chain = true)
 public class Cli {
+
+    /// Path to a config file
+    private String configFile;
 
     /// Select a LLM model
     //#[clap(short, long)]
@@ -119,6 +126,76 @@ public class Cli {
         return cli;
     }
 
+    // pub fn text(&self) -> Result<Option<String>> {
+    //    let mut stdin_text = String::new();
+    //    if !stdin().is_terminal() {
+    //        let _ = stdin()
+    //            .read_to_string(&mut stdin_text)
+    //            .context("Invalid stdin pipe")?;
+    //    };
+    //    match self.text.is_empty() {
+    //        true => {
+    //            if stdin_text.is_empty() {
+    //                Ok(None)
+    //            } else {
+    //                Ok(Some(stdin_text))
+    //            }
+    //        }
+    //        false => {
+    //            if self.macro_name.is_some() {
+    //                let text = self
+    //                    .text
+    //                    .iter()
+    //                    .map(|v| shell_words::quote(v))
+    //                    .collect::<Vec<_>>()
+    //                    .join(" ");
+    //                if stdin_text.is_empty() {
+    //                    Ok(Some(text))
+    //                } else {
+    //                    Ok(Some(format!("{text} -- {stdin_text}")))
+    //                }
+    //            } else {
+    //                let text = self.text.join(" ");
+    //                if stdin_text.is_empty() {
+    //                    Ok(Some(text))
+    //                } else {
+    //                    Ok(Some(format!("{text}\n{stdin_text}")))
+    //                }
+    //            }
+    //        }
+    //    }
+    // }
+    public String text() {
+        String stdinText = null;
+        try {
+            if (System.in.available() > 0) {
+                try (Reader in = new BufferedReader(new InputStreamReader(System.in))) {
+                    stdinText = String.join("\n", in.readAllLines());
+                }
+            }
+        } catch (Exception ex) {
+            throw new IllegalStateException("Error reading from a pipe", ex);
+        }
+
+        if (text == null || text.isEmpty()) {
+            return stdinText;
+        }
+
+        if (macroName != null && !macroName.isBlank()) {
+            String str = text.stream().map(e -> e /* TODO */).collect(Collectors.joining(" "));
+            if (stdinText == null || stdinText.isBlank()) {
+                return str;
+            }
+            return "%s -- %s".formatted(str, stdinText);
+        }
+
+        String str = String.join(" ", text);
+        if (stdinText == null || stdinText.isBlank()) {
+            return str;
+        }
+        return "%s\n%s".formatted(str, stdinText);
+    }
+
     private void doParse(String[] args) {
         if (args == null) {
             return;
@@ -128,6 +205,12 @@ public class Cli {
 
         while (!stack.isEmpty()) {
             String arg = stack.pop();
+
+            if ("--config-file".equals(arg)) {
+                configFile = getArg(stack, "error: a value is required for '--config-file <FILE>' but none was supplied");
+                continue;
+            }
+
             if ("--model".equals(arg) || "-m".equals(arg)) {
                 model = getArg(stack, "error: a value is required for '--model <MODEL>' but none was supplied");
                 continue;
@@ -270,7 +353,7 @@ public class Cli {
         }
     }
 
-    public void help() {
+    private void help() {
         System.out.println("""
             All-in-one LLM CLI Tool
             
@@ -280,6 +363,7 @@ public class Cli {
               [TEXT]...  Input text
             
             Options:
+                  --config-file <FILE>             Path to a config file
               -m, --model <MODEL>                  Select a LLM model
                   --prompt <PROMPT>                Use the system prompt
               -r, --role <ROLE>                    Select a role
@@ -312,7 +396,7 @@ public class Cli {
         System.exit(0);
     }
 
-    public void version() {
+    private void version() {
         System.out.println("""
             jai 0.30.0
             """);

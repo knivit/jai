@@ -2,7 +2,7 @@ package com.tsoft.jai.client.openai;
 
 import com.tsoft.jai.client.common.ChatCompletionsData;
 import com.tsoft.jai.client.common.ChatCompletionsOutput;
-import com.tsoft.jai.client.common.FunctionDeclaration;
+import com.tsoft.jai.function.FunctionDeclaration;
 import com.tsoft.jai.client.message.Message;
 import com.tsoft.jai.client.message.MessageContent;
 import com.tsoft.jai.client.message.MessageContentToolCalls;
