@@ -9,6 +9,8 @@ import java.io.Reader;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.tsoft.jai.inquire.Inquire.println;
+
 @Data
 @Accessors(chain = true)
 public class Cli {
@@ -354,7 +356,7 @@ public class Cli {
     }
 
     private void help() {
-        System.out.println("""
+        println("""
             All-in-one LLM CLI Tool
             
             Usage: jai [OPTIONS] [TEXT]...
@@ -397,7 +399,7 @@ public class Cli {
     }
 
     private void version() {
-        System.out.println("""
+        println("""
             jai 0.30.0
             """);
 

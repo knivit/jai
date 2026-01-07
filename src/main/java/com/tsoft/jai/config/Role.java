@@ -37,7 +37,7 @@ public class Role {
     //        .collect()
     // }
     public static List<String> listBuiltinRoleNames() {
-        return Asset.get("assets/roles").stream()
+        return Asset.files("assets/roles").stream()
             .map(File::getName)
             .filter(e -> e.endsWith(".md"))
             .map(e -> e.substring(0, e.length() - 3))

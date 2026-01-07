@@ -13,6 +13,8 @@ import java.nio.charset.StandardCharsets;
 public final class Inquire {
 
     public static final String JAI_DUMB_TERMINAL_MODE = "JAI_DUMB_TERMINAL_MODE";
+    public static final ByteArrayInputStream dumbInput = new ByteArrayInputStream(new byte[0]);
+    public static final ByteArrayOutputStream dumbOutput = new ByteArrayOutputStream();
 
     private static final Inquire INSTANCE = new Inquire();
 
@@ -78,7 +80,7 @@ public final class Inquire {
     private void initDumbTerminal() {
         try {
             terminal = TerminalBuilder.builder()
-                .streams(new ByteArrayInputStream(new byte[0]), new ByteArrayOutputStream())
+                .streams(dumbInput, dumbOutput)
                 .encoding(StandardCharsets.UTF_8)
                 .size(new Size(80, 1024))
                 .dumb(true)

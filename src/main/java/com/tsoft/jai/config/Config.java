@@ -19,6 +19,8 @@ import java.io.File;
 import java.nio.file.*;
 import java.util.*;
 
+import static com.tsoft.jai.inquire.Inquire.println;
+
 @Data
 @Accessors(chain = true)
 public class Config {
@@ -402,7 +404,7 @@ public class Config {
             throw new IllegalStateException(ex);
         }
 
-        System.out.printf("✓ Saved the config file to '%s'.%n", configFile.getAbsolutePath());
+        println("✓ Saved the config file to '{}'.\n", configFile.getAbsolutePath());
     }
 
     // fn load_from_file(config_path: &Path) -> Result<Self> {
