@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import static com.tsoft.jai.Main.main;
 import static com.tsoft.jai.inquire.Inquire.*;
+import static com.tsoft.jai.testutils.TestStringUtils.normalizeLineSeparators;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MainTest {
@@ -27,7 +28,7 @@ class MainTest {
             %functions%
             %shell%
             
-            """, dumbOutput.toString());
+            """, normalizeLineSeparators(dumbOutput.toString()));
     }
 
 }

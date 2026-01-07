@@ -1252,9 +1252,9 @@ public class DefaultPrompter implements Prompter {
 
         // Create prompt message using proper styling like ConsolePrompt
         AttributedStringBuilder asb = createMessage(prompt.getMessage(), null);
-        asb.append("(y/N) ");
+        asb.append(prompt.getDefaultValue() ? "(Y/n) " : "(y/N) ");
 
-        ConfirmResult.ConfirmationValue confirm = ConfirmResult.ConfirmationValue.NO; // Default
+        ConfirmResult.ConfirmationValue confirm = prompt.getDefaultValue() ? ConfirmResult.ConfirmationValue.YES : ConfirmResult.ConfirmationValue.NO;
         StringBuilder buffer = new StringBuilder();
 
         while (true) {
