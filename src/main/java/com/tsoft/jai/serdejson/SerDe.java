@@ -56,10 +56,10 @@ public class SerDe {
     }
 
     public static String toYamlString(Value value) {
-        return YAMLMapper.shared().writeValueAsString(value.getData());
+        return yamlMapper.writeValueAsString(value.getData());
     }
 
     public static <T> T readFromYamlFile(File file, Class<T> clazz) {
-        return YAMLMapper.shared().readValue(file, clazz);
+        return yamlMapper.readValue(file, clazz);
     }
 }

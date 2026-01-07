@@ -201,7 +201,7 @@ public class Cli {
             return;
         }
 
-        Deque<String> stack = new ArrayDeque<>(Arrays.asList(args).reversed());
+        Deque<String> stack = new ArrayDeque<>(Arrays.asList(args));
 
         while (!stack.isEmpty()) {
             String arg = stack.pop();
