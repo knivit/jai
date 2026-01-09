@@ -5,10 +5,17 @@ import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.client.model.ModelType;
 import com.tsoft.jai.config.Config;
 import com.tsoft.jai.config.WorkingMode;
+import com.tsoft.jai.config.agent.Agent;
 import com.tsoft.jai.utils.AbortSignal;
 
+import java.util.Collections;
+
 import static com.tsoft.jai.client.macros.Macros.listModels;
+import static com.tsoft.jai.config.Config.TEMP_SESSION_NAME;
+import static com.tsoft.jai.config.Role.CODE_ROLE;
+import static com.tsoft.jai.config.Role.SHELL_ROLE;
 import static com.tsoft.jai.inquire.Inquire.println;
+import static com.tsoft.jai.utils.StringUtils.isBlank;
 
 public class Main {
 
@@ -45,9 +52,9 @@ public class Main {
 
         String text = cli.text();
         WorkingMode workingMode = WorkingMode.Cmd;
-        if (cli.getServe() != null && !cli.getServe().isBlank()) {
+        if (!isBlank(cli.getServe())) {
             workingMode = WorkingMode.Serve;
-        } else if ((text == null || text.isBlank()) && cli.getFile().isEmpty()) {
+        } else if (isBlank(text) && cli.getFile().isEmpty()) {
             workingMode = WorkingMode.Repl;
         }
 
@@ -214,6 +221,81 @@ public class Main {
         if (cli.isListRoles()) {
             String roles = String.join("\n", config.listRoles(true));
             println("{}", roles);
+            return;
+        }
+
+        if (cli.isListAgents()) {
+            String agents = String.join("\n", Agent.listAgents(config));
+            println("{}", agents);
+            return;
+        }
+
+        if (cli.isListRags()) {
+            String rags = String.join("\n", config.listRags());
+            println("{}", rags);
+            return;
+        }
+
+        if (cli.isListMacros()) {
+            String macros = String.join("\n", config.listMacros());
+            println("{}", macros);
+            return;
+        }
+
+        if (cli.isDryRun()) {
+            config.setDryRun(true);
+        }
+
+        String agent = cli.getAgent();
+        if (!isBlank(agent)) {
+            String session = cli.getSession();
+            if (isBlank(session)) {
+                session = TEMP_SESSION_NAME;
+            }
+            if (cli.getAgentVariable() != null) {
+                config.setAgentVariables(cli.getAgentVariable());
+            }
+            config.useAgent(agent, session, abortSignal);
+            config.setAgentVariables(Collections.emptyMap());
+            return;
+        } else {
+            String prompt = cli.getPrompt();
+            if (!isBlank(prompt)) {
+                config.usePrompt(prompt);
+            } else if (!isBlank(cli.getRole())) {
+                config.useRole(cli.getRole());
+            } else if (cli.isExecute()) {
+                config.useRole(SHELL_ROLE);
+            } else if (cli.isCode()) {
+                config.useRole(CODE_ROLE);
+            }
+            if (!isBlank(cli.getSession())) {
+                config.useSession(cli.getSession());
+            }
+            if (!isBlank(cli.getRag())) {
+                config.useRag(cli.getRag(), abortSignal);
+            }
+        }
+        if (cli.isListSessions()) {
+            String macros = String.join("\n", config.listSessions());
+            println("{}", macros);
+            return;
+        }
+        if (!isBlank(cli.getModel())) {
+            config.setModel(cli.getModel());
+        }
+        if (cli.isNoStream()) {
+            config.setStream(false);
+        }
+        if (cli.isEmptySession()) {
+            config.emptySession();
+        }
+        if (cli.isSaveSession()) {
+            //config.setSaveSessionThisTime();
+        }
+        if (cli.isInfo()) {
+            String info = config.info();
+            println("{}", info);
             return;
         }
     }

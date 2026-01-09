@@ -10,6 +10,8 @@ import lombok.experimental.Accessors;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.tsoft.jai.utils.StringUtils.isBlank;
+
 @Data
 @Accessors(chain = true)
 @RequiredArgsConstructor
@@ -39,7 +41,7 @@ public class SseHandler {
     //    Ok(())
     // }
     public void text(String text) {
-        if (text == null || text.isBlank()) {
+        if (isBlank(text)) {
             return;
         }
         buffer.append(text);

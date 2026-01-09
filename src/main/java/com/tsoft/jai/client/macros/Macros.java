@@ -30,6 +30,29 @@ public class Macros {
         return Model.fromConfig(clientName, clientConfig.getModels());
     }
 
+    // pub fn list_client_names(config: &$crate::config::Config) -> Vec<&'static String> {
+    //    let names = ALL_CLIENT_NAMES.get_or_init(|| {
+    //        config
+    //            .clients
+    //            .iter()
+    //            .flat_map(|v| match v {
+    //                $(ClientConfig::$config(c) => vec![$client::name(c).to_string()],)+
+    //                ClientConfig::Unknown => vec![],
+    //            })
+    //            .collect()
+    //    });
+    //    names.iter().collect()
+    // }
+    public static List<String> listClientNames(Config config) {
+        List<ClientConfig> clients = config.getClients();
+        if (clients == null || clients.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return clients.stream()
+            .map(ClientConfig::getName)
+            .toList();
+    }
+
     // pub fn list_all_models(config: &$crate::config::Config) -> Vec<&'static $crate::client::Model> {
     //    let models = ALL_MODELS.get_or_init(|| {
     //        config

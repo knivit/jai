@@ -10,6 +10,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 
+import static com.tsoft.jai.utils.StringUtils.format;
+
 public final class Inquire {
 
     public static final String JAI_DUMB_TERMINAL_MODE = "JAI_DUMB_TERMINAL_MODE";
@@ -30,29 +32,9 @@ public final class Inquire {
         return INSTANCE.prompter;
     }
 
-    public static void println(String message, Object ... args) {
-        if (message == null) {
-            terminal().writer().println();
-            terminal().flush();
-            return;
-        }
-
-        if (args == null || args.length == 0) {
-            terminal().writer().println(message);
-            terminal().flush();
-            return;
-        }
-
-        for (int i = 0; i < args.length; i ++) {
-            int n = message.indexOf("{}");
-            if (n < 0) {
-                break;
-            }
-            String arg = (args[i] == null) ? "null" : args[i].toString();
-            message = message.substring(0, n) + arg + message.substring(n + 2);
-        }
-
-        terminal().writer().println(message);
+    public static void println(String msg, Object ... args) {
+        msg = format(msg, args);
+        terminal().writer().println((msg == null) ? "" : msg);
         terminal().flush();
     }
 

@@ -5,5 +5,17 @@ public enum MessageRole {
     System,
     Assistant,
     User,
-    Tool
+    Tool;
+
+    public static boolean isSystem(MessageRole role) {
+        return MessageRole.System.equals(role);
+    }
+
+    public static boolean isUser(MessageRole role) {
+        return MessageRole.User.equals(role);
+    }
+
+    public static boolean isAssistant(MessageRole role) {
+        return MessageRole.Assistant.equals(role);
+    }
 }

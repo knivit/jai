@@ -26,7 +26,9 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static com.tsoft.jai.client.stream.Stream.sseStream;
+import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.Mod.stripThinkTag;
+import static com.tsoft.jai.utils.StringUtils.isBlank;
 
 @Slf4j
 public class OpenAIClient {
@@ -171,7 +173,7 @@ public class OpenAIClient {
                         if (functionArguments == null) {
                             functionArguments = "{}";
                         }
-                        Value arguments = SerDe.parse(functionArguments, (__, ex) -> log.warn("Tool call '{}' have non-JSON arguments '{}'", functionName, functionArguments));
+                        Value arguments = SerDe.parseJson(functionArguments);
                         handler.toolCall(new ToolCall()
                             .setName(functionName)
                             .setArguments(arguments)
@@ -180,35 +182,37 @@ public class OpenAIClient {
                     return true;
                 }
 
-                Value data = SerDe.parse(message.getData());
+                Value data = SerDe.parseJson(message.getData());
                 log.debug("stream-data: {}", data);
-                if (data != null) {
-                    String text = data.get("choices", 0, "delta", "content").asStr();
-                    if (text != null && !text.isEmpty()) {
-                        if (reasoningState == 1) {
-                            handler.text("\n</think>\n\n");
-                            reasoningState = 0;
+                if (data == null) {
+                    return false;
+                }
+
+                String text = data.get("choices", 0, "delta", "content").asStr();
+                if (!isBlank(text)) {
+                    if (reasoningState == 1) {
+                        handler.text("\n</think>\n\n");
+                        reasoningState = 0;
+                    }
+                    handler.text(text);
+                } else {
+                    text = data.get("choices", 0, "delta", "reasoning_content").asStr();
+                    if (text == null) {
+                        text = data.get("choices", 0, "delta", "reasoning").asStr();
+                    }
+                    if (!isBlank(text)) {
+                        if (reasoningState == 0) {
+                            handler.text("<think>\n");
+                            reasoningState = 1;
                         }
                         handler.text(text);
-                    } else {
-                        text = data.get("choices", 0, "delta", "reasoning_content").asStr();
-                        if (text == null) {
-                            text = data.get("choices", 0, "delta", "reasoning").asStr();
-                        }
-                        if (text != null && !text.isEmpty()) {
-                            if (reasoningState == 0) {
-                                handler.text("<think>\n");
-                                reasoningState = 1;
-                            }
-                            handler.text(text);
-                        }
                     }
                 }
 
                 Value function = data.get("choices", 0, "delta", "tool_calls", 0, "function");
                 Integer index = data.get("choices", 0, "delta", "tool_calls", 0, "index").asInt();
                 String id = data.get("choices", 0, "delta", "tool_calls", 0, "id").asStr();
-                if (function != null && id != null && !id.isBlank()) {
+                if (function != null && !isBlank(id)) {
                     if (reasoningState == 1) {
                         handler.text("\n</think>\n\n");
                         reasoningState = 0;
@@ -219,7 +223,7 @@ public class OpenAIClient {
                             if (functionArguments == null) {
                                 functionArguments = "{}";
                             }
-                            Value arguments = SerDe.parse(functionArguments, (__, ex) -> log.warn("Tool call '{}' have non-JSON arguments '{}'", functionName, functionArguments));
+                            Value arguments = SerDe.parseJson(functionArguments);
                             handler.toolCall(new ToolCall()
                                 .setName(functionName)
                                 .setArguments(arguments)
@@ -381,7 +385,7 @@ public class OpenAIClient {
         List<Map<String, Object>> bodyMessages = new ArrayList<>();
 
         List<Message> messages = data.getMessages();
-        if (messages != null && !messages.isEmpty()) {
+        if (!isEmpty(messages)) {
             for (int i = 0; i < messages.size(); i ++) {
                 Message message = messages.get(i);
                 if (message == null) {
@@ -399,7 +403,7 @@ public class OpenAIClient {
                     if (!toolCalls.isSequence()) {
                         List<ToolResult> toolResults = toolCalls.getToolResults();
 
-                        if (toolResults != null) {
+                        if (!isEmpty(toolResults)) {
                             List<Map<String, Object>> bodyToolCalls = new ArrayList<>();
 
                             for (ToolResult toolResult : toolResults) {
@@ -428,7 +432,7 @@ public class OpenAIClient {
                     } else {
                         List<ToolResult> toolResults = toolCalls.getToolResults();
 
-                        if (toolResults != null) {
+                        if (!isEmpty(toolResults)) {
                             for (ToolResult toolResult : toolResults) {
                                 bodyMessages.add(jsonItem(
                                     "role", MessageRole.Assistant,
@@ -452,7 +456,7 @@ public class OpenAIClient {
                     continue;
                 }
 
-                if (content.getText() != null) {
+                if (!isBlank(content.getText())) {
                     if (MessageRole.Assistant.equals(role) && i != messages.size() - 1) {
                         bodyMessages.add(jsonItem(
                             "role", role,
@@ -477,7 +481,7 @@ public class OpenAIClient {
         if (maxTokensParam != null) {
             Object maxTokens = null;
             Map<String, Object> patch = model.getPatch();
-            if (patch != null) {
+            if (!isEmpty(patch)) {
                 Object bodyPatch = patch.get("body");
                 if (bodyPatch instanceof Map<?, ?> map) {
                     maxTokens = map.get("max_tokens");
@@ -506,7 +510,7 @@ public class OpenAIClient {
         }
 
         List<FunctionDeclaration> functions = data.getFunctions();
-        if (functions != null && !functions.isEmpty()) {
+        if (!isEmpty(functions)) {
             body.put("tools", functions.stream()
                 .map(e -> jsonItem(
                     "type", "function",
@@ -575,7 +579,7 @@ public class OpenAIClient {
 
         List<ToolCall> toolCalls = new ArrayList<>();
         List<Value> calls = data.get("choices", 0, "message", "tool_calls").asList();
-        if (calls != null) {
+        if (!isEmpty(calls)) {
             for (Value call : calls) {
                 String name = call.get("function", "name").asStr();
                 String arguments = call.get("function", "arguments").asStr();
@@ -593,7 +597,7 @@ public class OpenAIClient {
             throw new IllegalStateException("Invalid response data: " + data);
         }
 
-        if (reasoning != null && !reasoning.isBlank()) {
+        if (!isBlank(reasoning)) {
             text = "<think>\n%s\n</think>\n\n%s".formatted(reasoning.trim(), text);
         }
 
@@ -613,7 +617,7 @@ public class OpenAIClient {
     //    }
     // }
     public static String normalizeFunctionId(String value) {
-        if (value == null || value.isBlank()) {
+        if (isBlank(value)) {
             return null;
         }
         return value;

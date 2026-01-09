@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.tsoft.jai.client.openai.OpenAIClient.openaiBuildChatCompletionsBody;
+import static com.tsoft.jai.utils.StringUtils.isBlank;
 
 @RequiredArgsConstructor
 public class OpenAICompatibleClient {
@@ -70,7 +71,7 @@ public class OpenAICompatibleClient {
 
         RequestData requestData = new RequestData(url, body);
 
-        if (apiKey != null && !apiKey.isBlank()) {
+        if (!isBlank(apiKey)) {
             requestData.bearerAuth(apiKey);
         }
 
@@ -99,7 +100,7 @@ public class OpenAICompatibleClient {
     // }
     private String getApiBaseExt() {
         String apiBase = config.getApiBase();
-        if (apiBase == null || apiBase.isBlank()) {
+        if (isBlank(apiBase)) {
             apiBase = OPENAI_COMPATIBLE_PROVIDERS.get("todo");
         }
         return apiBase;

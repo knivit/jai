@@ -10,6 +10,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.tsoft.jai.inquire.Inquire.println;
+import static com.tsoft.jai.utils.StringUtils.format;
+import static com.tsoft.jai.utils.StringUtils.isBlank;
 
 @Data
 @Accessors(chain = true)
@@ -48,7 +50,7 @@ public class Cli {
 
     /// Set agent variables
     //#[clap(long, value_names = ["NAME", "VALUE"], num_args = 2)]
-    private List<String> agentVariable = new ArrayList<>();
+    private Map<String, String> agentVariable = new HashMap<>();
 
     /// Start a RAG
     //#[clap(long)]
@@ -183,19 +185,19 @@ public class Cli {
             return stdinText;
         }
 
-        if (macroName != null && !macroName.isBlank()) {
+        if (!isBlank(macroName)) {
             String str = text.stream().map(e -> e /* TODO */).collect(Collectors.joining(" "));
-            if (stdinText == null || stdinText.isBlank()) {
+            if (isBlank(stdinText)) {
                 return str;
             }
             return "%s -- %s".formatted(str, stdinText);
         }
 
         String str = String.join(" ", text);
-        if (stdinText == null || stdinText.isBlank()) {
+        if (isBlank(stdinText)) {
             return str;
         }
-        return "%s\n%s".formatted(str, stdinText);
+        return format("{}\n{}", str, stdinText);
     }
 
     private void doParse(String[] args) {
@@ -251,7 +253,7 @@ public class Cli {
             if ("--agent-variable".equals(arg)) {
                 String[] vars = getArg(stack, "error: a value is required for '--agent-variable <NAME> <VALUE>' but none was supplied",
                     "error: 2 values required for '--agent-variable <NAME> <VALUE>' but 1 was provided");
-                agentVariable.add(vars[0] + "=" + args[1]);
+                agentVariable.put(vars[0], vars[1]);
                 continue;
             }
 

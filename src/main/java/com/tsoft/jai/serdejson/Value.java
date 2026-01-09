@@ -42,6 +42,11 @@ public class Value {
         return new Value(ptr);
     }
 
+    public <T> Value put(String key, T value) {
+        ((Map<String, T>)data).put(key, value);
+        return this;
+    }
+
     public String asStr() {
         return (data == null) ? null : data.toString();
     }
@@ -64,5 +69,17 @@ public class Value {
         }
 
         throw new IllegalStateException("Not a list: " + data);
+    }
+
+    public Map<String, String> asMap() {
+        if (data == null) {
+            return Collections.emptyMap();
+        }
+
+        if (data instanceof Map map) {
+            return map;
+        }
+
+        throw new IllegalStateException("Not a map: " + data);
     }
 }

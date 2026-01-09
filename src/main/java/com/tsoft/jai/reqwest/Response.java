@@ -32,7 +32,7 @@ public class Response {
             jsonValueInitialized.set(true);
 
             if (value != null) {
-                Value val = SerDe.parse(value.toString());
+                Value val = SerDe.parseJson(value.toString());
                 if (val != null) {
                     return val;
                 }

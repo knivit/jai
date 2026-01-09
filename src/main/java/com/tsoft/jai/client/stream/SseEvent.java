@@ -7,13 +7,20 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class SseEvent {
 
-    private Object value;
+    public enum SseEventEnum {
+        Text,
+        Done
+    }
+
+    private SseEventEnum type;
+
+    private String text;
 
     public static SseEvent Text(String text) {
-        return new SseEvent().setValue(text);
+        return new SseEvent().setType(SseEventEnum.Text).setText(text);
     }
 
     public static SseEvent Done() {
-        return new SseEvent().setValue("Done");
+        return new SseEvent().setType(SseEventEnum.Done);
     }
 }

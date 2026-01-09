@@ -5,9 +5,9 @@ import com.tsoft.jai.reqwest.RequestBuilder;
 public class Stream {
 
     // pub async fn sse_stream<F>(builder: RequestBuilder, mut handle: F) -> Result<()>
-    //where
+    // where
     //    F: FnMut(SseMmessage) -> Result<bool>,
-    //{
+    // {
     //    let mut es = builder.eventsource()?;
     //    while let Some(event) = es.next().await {
     //        match event {

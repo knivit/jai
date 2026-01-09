@@ -2,8 +2,16 @@ package com.tsoft.jai.rag;
 
 import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.config.Config;
+import com.tsoft.jai.serdejson.SerDe;
+import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.utils.AbortSignal;
 import lombok.Data;
 import lombok.experimental.Accessors;
+
+import java.io.File;
+import java.util.List;
+
+import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
 
 @Data
 @Accessors(chain = true)
@@ -15,6 +23,131 @@ public class Rag {
     private Model embeddingModel;
     // ? hnsw: Hnsw<'static, f32, DistCosine>,
     // ? bm25: SearchEngine<DocumentId>,
-    // ? data: RagData,
+    private RagData data;
     private String lastSources;
+
+    // pub async fn init(
+    //    config: &GlobalConfig,
+    //    name: &str,
+    //    save_path: &Path,
+    //    doc_paths: &[String],
+    //    abort_signal: AbortSignal,
+    // ) -> Result<Self> {
+    //    if !*IS_STDOUT_TERMINAL {
+    //        bail!("Failed to init rag in non-interactive mode");
+    //    }
+    //    println!("⚙ Initializing RAG...");
+    //    let (embedding_model, chunk_size, chunk_overlap) = Self::create_config(config)?;
+    //    let (reranker_model, top_k) = {
+    //        let config = config.read();
+    //        (config.rag_reranker_model.clone(), config.rag_top_k)
+    //    };
+    //    let data = RagData::new(
+    //        embedding_model.id(),
+    //        chunk_size,
+    //        chunk_overlap,
+    //        reranker_model,
+    //        top_k,
+    //        embedding_model.max_batch_size(),
+    //    );
+    //    let mut rag = Self::create(config, name, save_path, data)?;
+    //    let mut paths = doc_paths.to_vec();
+    //    if paths.is_empty() {
+    //        paths = add_documents()?;
+    //    };
+    //    let loaders = config.read().document_loaders.clone();
+    //    let (spinner, spinner_rx) = Spinner::create("");
+    //    abortable_run_with_spinner_rx(
+    //        rag.sync_documents(&paths, true, loaders, Some(spinner)),
+    //        spinner_rx,
+    //        abort_signal,
+    //    )
+    //    .await?;
+    //    if rag.save()? {
+    //        println!("✓ Saved RAG to '{}'.", save_path.display());
+    //    }
+    //    Ok(rag)
+    // }
+    public static Rag init(Config config, String name, File savePath, List<String> docPaths, AbortSignal abortSignal) {
+        return new Rag();
+    }
+
+    // pub fn load(config: &GlobalConfig, name: &str, path: &Path) -> Result<Self> {
+    //    let err = || format!("Failed to load rag '{name}' at '{}'", path.display());
+    //    let content = fs::read_to_string(path).with_context(err)?;
+    //    let data: RagData = serde_yaml::from_str(&content).with_context(err)?;
+    //    Self::create(config, name, path, data)
+    // }
+    public static Rag load(Config config, String name, File path) {
+        RagData data = SerDe.readFromYamlFile(path, RagData.class);
+        return create(config, name, path, data);
+    }
+
+    // pub fn create(config: &GlobalConfig, name: &str, path: &Path, data: RagData) -> Result<Self> {
+    //    let hnsw = data.build_hnsw();
+    //    let bm25 = data.build_bm25();
+    //    let embedding_model =
+    //        Model::retrieve_model(&config.read(), &data.embedding_model, ModelType::Embedding)?;
+    //    let rag = Rag {
+    //        config: config.clone(),
+    //        name: name.to_string(),
+    //        path: path.display().to_string(),
+    //        data,
+    //        embedding_model,
+    //        hnsw,
+    //        bm25,
+    //        last_sources: RwLock::new(None),
+    //    };
+    //    Ok(rag)
+    // }
+    public static Rag create(Config config, String name, File path, RagData data) {
+        return new Rag();
+    }
+
+    // pub fn export(&self) -> Result<String> {
+    //    let files: Vec<_> = self
+    //        .data
+    //        .files
+    //        .iter()
+    //        .map(|(_, v)| {
+    //            json!({
+    //                "path": v.path,
+    //                "num_chunks": v.documents.len(),
+    //            })
+    //        })
+    //        .collect();
+    //    let data = json!({
+    //        "path": self.path,
+    //        "embedding_model": self.embedding_model.id(),
+    //        "chunk_size": self.data.chunk_size,
+    //        "chunk_overlap": self.data.chunk_overlap,
+    //        "reranker_model": self.data.reranker_model,
+    //        "top_k": self.data.top_k,
+    //        "batch_size": self.data.batch_size,
+    //        "document_paths": self.data.document_paths,
+    //        "files": files,
+    //    });
+    //    let output = serde_yaml::to_string(&data)
+    //        .with_context(|| format!("Unable to show info about rag '{}'", self.name))?;
+    //    Ok(output)
+    // }
+    public String export() {
+        List<Value> files = data.getFiles().values().stream()
+            .map(e -> new Value()
+                .put("path", e.getPath())
+                .put("num_chunks", isEmpty(e.getDocuments()) ? 0 : e.getDocuments().size()))
+            .toList();
+        Value value = new Value()
+            .put("path", path)
+            .put("embedding_model", embeddingModel.id())
+            .put("chunk_size", data.getChunkSize())
+            .put("chunk_overlap", data.getChunkOverlap())
+            .put("reranker_model", data.getRerankerModel())
+            .put("top_k", data.getTopK())
+            .put("batch_size", data.getBatchSize())
+            .put("document_paths", data.getDocumentPaths())
+            .put("files", files);
+        String output = SerDe.toYamlString(value);
+        return output;
+    }
 }

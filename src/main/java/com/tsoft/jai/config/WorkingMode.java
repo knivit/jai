@@ -4,5 +4,9 @@ public enum WorkingMode {
 
     Cmd,
     Repl,
-    Serve
+    Serve;
+
+    public static boolean isCmd(WorkingMode mode) {
+        return Cmd.equals(mode);
+    }
 }
