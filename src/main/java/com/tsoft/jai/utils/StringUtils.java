@@ -50,6 +50,22 @@ public final class StringUtils {
         return '\0';
     }
 
+    public static String padRight(String value, int len) {
+        if (len < 0 || len > 1024) {
+            throw new IllegalArgumentException("len must be >= 0 and < 1024");
+        }
+        if (len == 0) {
+            return "";
+        }
+        if (isBlank(value)) {
+            return " ".repeat(len);
+        }
+        if (value.length() >= len) {
+            return value.substring(0, len);
+        }
+        return value + " ".repeat(len - value.length());
+    }
+
     public static String readFile(File file) {
         try {
             return Files.readString(file.toPath());

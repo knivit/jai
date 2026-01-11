@@ -23,9 +23,12 @@ import java.io.File;
 import java.nio.file.*;
 import java.util.*;
 
+import static com.tsoft.jai.anyhow.Macros.anyhow;
 import static com.tsoft.jai.anyhow.Macros.bail;
+import static com.tsoft.jai.client.macros.Macros.listModels;
 import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.NumberUtils.parseInt;
 import static com.tsoft.jai.utils.StringUtils.*;
 
 @Data
@@ -39,15 +42,15 @@ public class Config {
     private Double temperature;
     private Double topP;
 
-    private boolean dryRun;
-    private boolean stream;
-    private boolean save;
-    private String keyBindings;
+    private boolean dryRun = false;
+    private boolean stream = true;
+    private boolean save = false;
+    private String keyBindings = "emacs";
     private String editor;
     private String wrap;
-    private boolean wrapCode;
+    private boolean wrapCode = false;
 
-    private boolean functionCalling;
+    private boolean functionCalling = true;
     private Map<String, String> mappingTools;
     private String useTools;
 
@@ -56,13 +59,13 @@ public class Config {
     private String agentPrelude;
 
     private boolean saveSession;
-    private Integer compressThreshold;
+    private Integer compressThreshold = 4000;
     private String summarizePrompt;
     private String summaryPrompt;
 
     private String ragEmbeddingModel;
     private String ragRerankerModel;
-    private Integer ragTopK;
+    private Integer ragTopK = 5;
     private Integer ragChunkSize;
     private Integer ragChunkOverlap;
     private String ragTemplate;
@@ -70,24 +73,24 @@ public class Config {
     //#[serde(default)]
     private Map<String, String> documentLoaders;
 
-    private boolean highlight;
+    private boolean highlight = true;
     private String theme;
     private String leftPrompt;
     private String rightPrompt;
 
     private String serveAddr;
     private String userAgent;
-    private boolean saveShellHistory;
+    private boolean saveShellHistory = true;
     private String syncModelsUrl;
 
-    private List<ClientConfig> clients;
+    private List<ClientConfig> clients = new ArrayList<>();
 
     //#[serde(skip)]
     @JsonIgnore
-    private boolean macroFlag;
+    private boolean macroFlag = false;
     //#[serde(skip)]
     @JsonIgnore
-    private boolean infoFlag;
+    private boolean infoFlag = false;
     //#[serde(skip)]
     @JsonIgnore
     private Map<String, String> agentVariables;
@@ -100,7 +103,7 @@ public class Config {
     private Functions functions;
     //#[serde(skip)]
     @JsonIgnore
-    private WorkingMode workingMode;
+    private WorkingMode workingMode = WorkingMode.Cmd;
     //#[serde(skip)]
     @JsonIgnore
     private LastMessage lastMessage;
@@ -191,7 +194,7 @@ public class Config {
                 config = loadFromFile(configFile);
             } else {
                 configFile = configFile(null);
-                config = createDefaultConfig();
+                config = defaultConfig();
             }
         } else {
             config = loadFromFile(configFile);
@@ -201,6 +204,11 @@ public class Config {
         config.setInfoFlag(infoFlag);
 
         config.loadEnvs();
+
+        if (!isBlank(config.getWrap())) {
+            config.initWrap(config.getWrap());
+        }
+
         config.loadFunctions();
 
         config.setupModel();
@@ -1000,9 +1008,59 @@ public class Config {
         }
     }
 
+    // pub fn set_wrap(&mut self, value: &str) -> Result<()> {
+    //    if value == "no" {
+    //        self.wrap = None;
+    //    } else if value == "auto" {
+    //        self.wrap = Some(value.into());
+    //    } else {
+    //        value
+    //            .parse::<u16>()
+    //            .map_err(|_| anyhow!("Invalid wrap value"))?;
+    //        self.wrap = Some(value.into())
+    //    }
+    //    Ok(())
+    // }
+    public void initWrap(String value) {
+        if ("no".equalsIgnoreCase(value)) {
+            wrap = null;
+        } else if ("auto".equalsIgnoreCase(value)) {
+            wrap = "auto";
+        } else {
+            parseInt(value, __ -> anyhow("Invalid wrap value"));
+            wrap = value;
+        }
+    }
+
     private void loadEnvs(){ }
     private void loadFunctions() { }
-    private void setupModel() { }
+
+    // fn setup_model(&mut self) -> Result<()> {
+    //    let mut model_id = self.model_id.clone();
+    //    if model_id.is_empty() {
+    //        let models = list_models(self, ModelType::Chat);
+    //        if models.is_empty() {
+    //            bail!("No available model");
+    //        }
+    //        model_id = models[0].id()
+    //    };
+    //    self.set_model(&model_id)?;
+    //    self.model_id = model_id;
+    //    Ok(())
+    // }
+    private void setupModel() {
+        String modelId = this.modelId;
+        if (isBlank(modelId)) {
+            List<Model> models = listModels(this, ModelType.Chat);
+            if (isEmpty(models)) {
+                bail("No available model");
+            }
+            modelId = models.getFirst().id();
+        }
+        setModel(modelId);
+        this.modelId = modelId;
+    }
+
     private void setupDocumentLoaders() { }
     private void setupUserAgent() { }
 
@@ -1066,6 +1124,15 @@ public class Config {
     // }
     private String sysinfo() {
         String displayPath = configPath.toString();
+        String ragRerankerModel = this.ragRerankerModel;
+        Integer ragTopK = this.ragTopK;
+        if (rag != null) {
+            Tuple<String, Integer> tuple = rag.getConfig();
+            ragRerankerModel = tuple.first();
+            ragTopK = tuple.second();
+        }
+
+        Role role = extractRole();
         List<Tuple<String, Object>> items = List.of(
             new Tuple<>("model", role.getModel().id()),
             new Tuple<>("temperature", formatOptionValue(role.getTemperature())),
@@ -1096,7 +1163,7 @@ public class Config {
             //new Tuple<>("logs_path", logsPath)
         );
         String output = String.join("\n", items.stream()
-            .map(e -> format("{}{}", e.first(), e.second()))
+            .map(e -> format("{}{}", padRight(e.first(), 24), e.second()))
             .toList());
         return output;
     }
@@ -1194,7 +1261,7 @@ public class Config {
     //        }
     //    }
     // }
-    private static Config createDefaultConfig() {
+    private static Config defaultConfig() {
         return new Config()
             .setDryRun(false)
             .setStream(true)

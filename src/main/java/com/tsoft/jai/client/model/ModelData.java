@@ -1,6 +1,8 @@
 package com.tsoft.jai.client.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
@@ -16,7 +18,7 @@ public class ModelData {
     private String name;
     // #[serde(default = "default_model_type", rename = "type")]
     @JsonProperty("type")
-    private String modelType;
+    private String modelType = defaultModelType();
     // #[serde(skip_serializing_if = "Option::is_none")]
     private String realName;
     // #[serde(skip_serializing_if = "Option::is_none")]
@@ -67,7 +69,7 @@ public class ModelData {
     // fn default_model_type() -> String {
     //    "chat".into()
     // }
-    private String defaultModelType() {
+    private static String defaultModelType() {
         return "chat";
     }
 }

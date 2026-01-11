@@ -52,7 +52,7 @@ public class Model {
     //    }
     // }
     public Model(String clientName, String name) {
-        this.clientName = name;
+        this.clientName = clientName;
         this.data = new ModelData(name);
     }
 

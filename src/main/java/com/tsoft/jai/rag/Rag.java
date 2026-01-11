@@ -5,6 +5,7 @@ import com.tsoft.jai.config.Config;
 import com.tsoft.jai.serdejson.SerDe;
 import com.tsoft.jai.serdejson.Value;
 import com.tsoft.jai.utils.AbortSignal;
+import com.tsoft.jai.utils.Tuple;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -149,5 +150,12 @@ public class Rag {
             .put("files", files);
         String output = SerDe.toYamlString(value);
         return output;
+    }
+
+    // pub fn get_config(&self) -> (Option<String>, usize) {
+    //    (self.data.reranker_model.clone(), self.data.top_k)
+    // }
+    public Tuple<String, Integer> getConfig() {
+        return new Tuple<>(data.getRerankerModel(), data.getTopK());
     }
 }

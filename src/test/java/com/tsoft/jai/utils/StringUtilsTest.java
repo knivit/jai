@@ -2,8 +2,7 @@ package com.tsoft.jai.utils;
 
 import org.junit.jupiter.api.Test;
 
-import static com.tsoft.jai.utils.StringUtils.format;
-import static com.tsoft.jai.utils.StringUtils.splitOnce;
+import static com.tsoft.jai.utils.StringUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class StringUtilsTest {
@@ -31,5 +30,13 @@ class StringUtilsTest {
         assertEquals("a{}", format("{}{}", "a"));
         assertEquals("ab", format("{}{}", "a", "b"));
         assertEquals("a", format("{}{}", "a", null));
+    }
+
+    @Test
+    void pad_right() {
+        assertEquals("          ", padRight(null, 10));
+        assertEquals("12345     ", padRight("12345", 10));
+        assertEquals("1234567890", padRight("1234567890", 10));
+        assertEquals("1234567890", padRight("12345678901", 10));
     }
 }

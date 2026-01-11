@@ -6,19 +6,23 @@ import org.junit.jupiter.api.Test;
 
 import static com.tsoft.jai.Main.main;
 import static com.tsoft.jai.inquire.Inquire.*;
-import static com.tsoft.jai.testutils.TestStringUtils.normalizeLineSeparators;
+import static com.tsoft.jai.testutils.TestStringUtils.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MainTest {
 
+    static final String CONFIG_DIR = Asset.file("configs/config1").toString();
+    static final String CONFIG_FILE = Asset.file("configs/config1/config.yaml").toString();
+
     @BeforeEach
     void beforeEach() {
         System.setProperty(JAI_DUMB_TERMINAL_MODE, "ON");
+        dumbOutput.reset();
     }
 
     @Test
     void main_list_roles() {
-        main(new String[] { "--config-file", Asset.file("configs/config1/config.yaml").toString(), "--list-roles"});
+        main(new String[] { "--config-file", CONFIG_FILE, "--list-roles"});
         
         assertEquals("""
             %code%
@@ -31,4 +35,49 @@ class MainTest {
             """, normalizeLineSeparators(dumbOutput.toString()));
     }
 
+    @Test
+    void main_info() {
+        main(new String[] { "--config-file", CONFIG_FILE, "--info"});
+
+        assertEquals("""
+            model                   ollama:deepseek-v3.2:cloud
+            temperature             null
+            top_p                   null
+            use_tools               null
+            max_output_tokens       null
+            save_session            false
+            compress_threshold      4000
+            rag_reranker_model      null
+            rag_top_k               5
+            dry_run                 false
+            function_calling        true
+            stream                  true
+            save                    false
+            keybindings             emacs
+            wrap                    no
+            wrap_code               false
+            highlight               true
+            theme                   null
+            config_file             <dir>/config.yaml
+            roles_dir               <dir>/roles
+            sessions_dir            <dir>/sessions
+            rags_dir                <dir>/rags
+            macros_dir              <dir>/macros
+            functions_dir           <dir>/functions
+            messages_file           <dir>/messages.md
+            
+            """, normalize(dumbOutput.toString(), CONFIG_DIR, "<dir>"));
+    }
+
+    private String normalize(String value, String ... repls) {
+        value = normalizePathSeparators(value);
+        value = normalizeLineSeparators(value);
+        if (repls == null || repls.length == 0){
+            return value;
+        }
+        for (int i = 0; i < repls.length; i += 2) {
+            value = value.replace(normalizePathSeparators(repls[i]), repls[i + 1]);
+        }
+        return value;
+    }
 }
