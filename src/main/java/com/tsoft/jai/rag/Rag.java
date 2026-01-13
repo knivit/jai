@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 
 import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
@@ -157,5 +158,36 @@ public class Rag {
     // }
     public Tuple<String, Integer> getConfig() {
         return new Tuple<>(data.getRerankerModel(), data.getTopK());
+    }
+
+    // pub fn document_paths(&self) -> &[String] {
+    //    &self.data.document_paths
+    // }
+    public List<String> documentPaths() {
+        return (data == null) ? Collections.emptyList() : data.getDocumentPaths();
+    }
+
+    // pub async fn refresh_document_paths(
+    //     &mut self,
+    //     document_paths: &[String],
+    //     refresh: bool,
+    //     config: &GlobalConfig,
+    //     abort_signal: AbortSignal,
+    // ) -> Result<()> {
+    //     let loaders = config.read().document_loaders.clone();
+    //     let (spinner, spinner_rx) = Spinner::create("");
+    //     abortable_run_with_spinner_rx(
+    //         self.sync_documents(document_paths, refresh, loaders, Some(spinner)),
+    //         spinner_rx,
+    //         abort_signal,
+    //     )
+    //     .await?;
+    //     if self.save()? {
+    //         println!("✓ Saved rag to '{}'.", self.path);
+    //     }
+    //     Ok(())
+    // }
+    public void refreshDocumentPaths(List<String> documentPaths, boolean b, Config config, AbortSignal abortSignal) {
+
     }
 }

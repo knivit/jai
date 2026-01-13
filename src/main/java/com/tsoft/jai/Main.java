@@ -4,18 +4,24 @@ import com.tsoft.jai.cli.Cli;
 import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.client.model.ModelType;
 import com.tsoft.jai.config.Config;
+import com.tsoft.jai.config.Input;
 import com.tsoft.jai.config.WorkingMode;
 import com.tsoft.jai.config.agent.Agent;
 import com.tsoft.jai.utils.AbortSignal;
+import com.tsoft.jai.utils.command.Shell;
 
 import java.util.Collections;
+import java.util.List;
 
+import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.client.macros.Macros.listModels;
 import static com.tsoft.jai.config.Config.TEMP_SESSION_NAME;
 import static com.tsoft.jai.config.Role.CODE_ROLE;
 import static com.tsoft.jai.config.Role.SHELL_ROLE;
 import static com.tsoft.jai.inquire.Inquire.println;
+import static com.tsoft.jai.inquire.Inquire.terminal;
 import static com.tsoft.jai.utils.StringUtils.isBlank;
+import static com.tsoft.jai.utils.command.Command.SHELL;
 
 public class Main {
 
@@ -298,5 +304,205 @@ public class Main {
             println("{}", info);
             return;
         }
+
+        boolean isRepl = WorkingMode.Repl.equals(config.getWorkingMode());
+        if (cli.isRebuildRag()) {
+            Config.rebuildRag(config, abortSignal);
+            if (isRepl) {
+                return;
+            }
+        }
+        if (!isBlank(cli.getMacroName())) {
+            Config.macroExecute(config, cli.getMacroName(), text, abortSignal);
+            return;
+        }
+        if (cli.isExecute() && !isRepl) {
+            Input input = createInput(config, text, cli.getFile(), abortSignal);
+            shellExecute(config, SHELL, input, abortSignal);
+            return;
+        }
+
+        config.applyPrelude();
+
+        if (!isRepl) {
+            Input input = createInput(config, text, cli.getFile(), abortSignal);
+            input.useEmbeddings(abortSignal);
+            startDirective(config, input, cli.isCode(), abortSignal);
+        } else {
+            if (terminal() == null) {
+                bail("No TTY for REPL");
+                return;
+            }
+            startInteractive(config);
+        }
+    }
+
+    // #[async_recursion::async_recursion]
+    // async fn start_directive(
+    //    config: &GlobalConfig,
+    //    input: Input,
+    //    code_mode: bool,
+    //    abort_signal: AbortSignal,
+    //) -> Result<()> {
+    //    let client = input.create_client()?;
+    //    let extract_code = !*IS_STDOUT_TERMINAL && code_mode;
+    //    config.write().before_chat_completion(&input)?;
+    //    let (output, tool_results) = if !input.stream() || extract_code {
+    //        call_chat_completions(
+    //            &input,
+    //            true,
+    //            extract_code,
+    //            client.as_ref(),
+    //            abort_signal.clone(),
+    //        )
+    //        .await?
+    //    } else {
+    //        call_chat_completions_streaming(&input, client.as_ref(), abort_signal.clone()).await?
+    //    };
+    //    config
+    //        .write()
+    //        .after_chat_completion(&input, &output, &tool_results)?;
+    //
+    //    if !tool_results.is_empty() {
+    //        start_directive(
+    //            config,
+    //            input.merge_tool_results(output, tool_results),
+    //            code_mode,
+    //            abort_signal,
+    //        )
+    //        .await?;
+    //    }
+    //
+    //    config.write().exit_session()?;
+    //    Ok(())
+    // }
+    private static void startDirective(Config config, Input input, boolean isCodeMode, AbortSignal abortSignal) {
+
+    }
+
+    // async fn start_interactive(config: &GlobalConfig) -> Result<()> {
+    //    let mut repl: Repl = Repl::init(config)?;
+    //    repl.run().await
+    // }
+    private static void startInteractive(Config config) {
+
+    }
+
+    // async fn create_input(
+    //    config: &GlobalConfig,
+    //    text: Option<String>,
+    //    file: &[String],
+    //    abort_signal: AbortSignal,
+    // ) -> Result<Input> {
+    //    let input = if file.is_empty() {
+    //        Input::from_str(config, &text.unwrap_or_default(), None)
+    //    } else {
+    //        Input::from_files_with_spinner(
+    //            config,
+    //            &text.unwrap_or_default(),
+    //            file.to_vec(),
+    //            None,
+    //            abort_signal,
+    //        )
+    //        .await?
+    //    };
+    //    if input.is_empty() {
+    //        bail!("No input");
+    //    }
+    //    Ok(input)
+    // }
+    private static Input createInput(Config config, String text, List<String> file, AbortSignal abortSignal) {
+        return null;
+    }
+
+    // #[async_recursion::async_recursion]
+    // async fn shell_execute(
+    //    config: &GlobalConfig,
+    //    shell: &Shell,
+    //    mut input: Input,
+    //    abort_signal: AbortSignal,
+    // ) -> Result<()> {
+    //    let client = input.create_client()?;
+    //    config.write().before_chat_completion(&input)?;
+    //    let (eval_str, _) =
+    //        call_chat_completions(&input, false, true, client.as_ref(), abort_signal.clone()).await?;
+    //
+    //    config
+    //        .write()
+    //        .after_chat_completion(&input, &eval_str, &[])?;
+    //    if eval_str.is_empty() {
+    //        bail!("No command generated");
+    //    }
+    //    if config.read().dry_run {
+    //        config.read().print_markdown(&eval_str)?;
+    //        return Ok(());
+    //    }
+    //    if *IS_STDOUT_TERMINAL {
+    //        let options = ["execute", "revise", "describe", "copy", "quit"];
+    //        let command = color_text(eval_str.trim(), nu_ansi_term::Color::Rgb(255, 165, 0));
+    //        let first_letter_color = nu_ansi_term::Color::Cyan;
+    //        let prompt_text = options
+    //            .iter()
+    //            .map(|v| format!("{}{}", color_text(&v[0..1], first_letter_color), &v[1..]))
+    //            .collect::<Vec<String>>()
+    //            .join(&dimmed_text(" | "));
+    //        loop {
+    //            println!("{command}");
+    //            let answer_char =
+    //                read_single_key(&['e', 'r', 'd', 'c', 'q'], 'e', &format!("{prompt_text}: "))?;
+    //
+    //            match answer_char {
+    //                'e' => {
+    //                    debug!("{} {:?}", shell.cmd, &[&shell.arg, &eval_str]);
+    //                    let code = run_command(&shell.cmd, &[&shell.arg, &eval_str], None)?;
+    //                    if code == 0 && config.read().save_shell_history {
+    //                        let _ = append_to_shell_history(&shell.name, &eval_str, code);
+    //                    }
+    //                    process::exit(code);
+    //                }
+    //                'r' => {
+    //                    let revision = Text::new("Enter your revision:").prompt()?;
+    //                    let text = format!("{}\n{revision}", input.text());
+    //                    input.set_text(text);
+    //                    return shell_execute(config, shell, input, abort_signal.clone()).await;
+    //                }
+    //                'd' => {
+    //                    let role = config.read().retrieve_role(EXPLAIN_SHELL_ROLE)?;
+    //                    let input = Input::from_str(config, &eval_str, Some(role));
+    //                    if input.stream() {
+    //                        call_chat_completions_streaming(
+    //                            &input,
+    //                            client.as_ref(),
+    //                            abort_signal.clone(),
+    //                        )
+    //                        .await?;
+    //                    } else {
+    //                        call_chat_completions(
+    //                            &input,
+    //                            true,
+    //                            false,
+    //                            client.as_ref(),
+    //                            abort_signal.clone(),
+    //                        )
+    //                        .await?;
+    //                    }
+    //                    println!();
+    //                    continue;
+    //                }
+    //                'c' => {
+    //                    set_text(&eval_str)?;
+    //                    println!("{}", dimmed_text("✓ Copied the command."));
+    //                }
+    //                _ => {}
+    //            }
+    //            break;
+    //        }
+    //    } else {
+    //        println!("{eval_str}");
+    //    }
+    //    Ok(())
+    // }
+    private static void shellExecute(Config config, Shell shell, Input input, AbortSignal abortSignal) {
+
     }
 }

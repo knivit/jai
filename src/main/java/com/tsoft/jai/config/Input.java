@@ -4,6 +4,8 @@ import com.tsoft.jai.client.message.ImageUrl;
 import com.tsoft.jai.client.message.MessageContent;
 import com.tsoft.jai.client.message.MessageContentPart;
 import com.tsoft.jai.client.message.MessageContentToolCalls;
+import com.tsoft.jai.rag.Rag;
+import com.tsoft.jai.utils.AbortSignal;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -63,6 +65,29 @@ public class Input {
                 list.addFirst(MessageContentPart.Text(text));
             }
             return MessageContent.Array(list);
+        }
+    }
+
+    // pub async fn use_embeddings(&mut self, abort_signal: AbortSignal) -> Result<()> {
+    //    if self.text.is_empty() {
+    //        return Ok(());
+    //    }
+    //    let rag = self.config.read().rag.clone();
+    //    if let Some(rag) = rag {
+    //        let result = Config::search_rag(&self.config, &rag, &self.text, abort_signal).await?;
+    //        self.patched_text = Some(result);
+    //        self.rag_name = Some(rag.name().to_string());
+    //    }
+    //    Ok(())
+    // }
+    public void useEmbeddings(AbortSignal abortSignal) {
+        if (isBlank(text)) {
+            return;
+        }
+        Rag rag = config.getRag();
+        if (rag != null) {
+            patchedText = Config.searchRag(config, rag, text, abortSignal);
+            ragName = rag.getName();
         }
     }
 }

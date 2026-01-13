@@ -228,6 +228,24 @@ public class Config {
         return Paths.get(CONFIG_FILE_NAME).toAbsolutePath().toFile();
     }
 
+    // pub async fn search_rag(
+    //     config: &GlobalConfig,
+    //     rag: &Rag,
+    //     text: &str,
+    //     abort_signal: AbortSignal,
+    // ) -> Result<String> {
+    //     let (reranker_model, top_k) = rag.get_config();
+    //     let (embeddings, ids) = rag
+    //         .search(text, top_k, reranker_model.as_deref(), abort_signal)
+    //         .await?;
+    //     let text = config.read().rag_template(&embeddings, text);
+    //     rag.set_last_sources(&ids);
+    //     Ok(text)
+    // }
+    public static String searchRag(Config config, Rag rag, String text, AbortSignal abortSignal) {
+        return null;
+    }
+
     // pub fn list_roles(with_builtin: bool) -> Vec<String> {
     //    let mut names = HashSet::new();
     //    if let Ok(rd) = read_dir(Self::roles_dir()) {
@@ -1032,6 +1050,67 @@ public class Config {
         }
     }
 
+    // pub async fn rebuild_rag(config: &GlobalConfig, abort_signal: AbortSignal) -> Result<()> {
+    //    let mut rag = match config.read().rag.clone() {
+    //        Some(v) => v.as_ref().clone(),
+    //        None => bail!("No RAG"),
+    //    };
+    //    let document_paths = rag.document_paths().to_vec();
+    //    rag.refresh_document_paths(&document_paths, true, config, abort_signal)
+    //        .await?;
+    //    config.write().rag = Some(Arc::new(rag));
+    //    Ok(())
+    // }
+    public static void rebuildRag(Config config, AbortSignal abortSignal) {
+        Rag rag = config.getRag();
+        if (rag == null) {
+            bail("No RAG");
+            return;
+        }
+        List<String> documentPaths = rag.documentPaths();
+        rag.refreshDocumentPaths(documentPaths, true, config, abortSignal);
+    }
+
+    // #[async_recursion::async_recursion]
+    // pub async fn macro_execute(
+    //    config: &GlobalConfig,
+    //    name: &str,
+    //    args: Option<&str>,
+    //    abort_signal: AbortSignal,
+    // ) -> Result<()> {
+    //    let macro_value = Config::load_macro(name)?;
+    //    let (mut new_args, text) = split_args_text(args.unwrap_or_default(), cfg!(windows));
+    //    if !text.is_empty() {
+    //        new_args.push(text.to_string());
+    //    }
+    //    let variables = macro_value
+    //        .resolve_variables(&new_args)
+    //        .map_err(|err| anyhow!("{err}. Usage: {}", macro_value.usage(name)))?;
+    //    let role = config.read().extract_role();
+    //    let mut config = config.read().clone();
+    //    config.temperature = role.temperature();
+    //    config.top_p = role.top_p();
+    //    config.use_tools = role.use_tools().clone();
+    //    config.macro_flag = true;
+    //    config.model = role.model().clone();
+    //    config.role = None;
+    //    config.session = None;
+    //    config.rag = None;
+    //    config.agent = None;
+    //    config.discontinuous_last_message();
+    //    let config = Arc::new(RwLock::new(config));
+    //    config.write().macro_flag = true;
+    //    for step in &macro_value.steps {
+    //        let command = Macro::interpolate_command(step, &variables);
+    //        println!(">> {}", multiline_text(&command));
+    //        run_repl_command(&config, abort_signal.clone(), &command).await?;
+    //    }
+    //    Ok(())
+    // }
+    public static void macroExecute(Config config, String macroName, String text, AbortSignal abortSignal) {
+
+    }
+
     private void loadEnvs(){ }
     private void loadFunctions() { }
 
@@ -1123,7 +1202,8 @@ public class Config {
     //    Ok(output)
     // }
     private String sysinfo() {
-        String displayPath = configPath.toString();
+        String wrap = isBlank(this.wrap) ? "no" : this.wrap;
+
         String ragRerankerModel = this.ragRerankerModel;
         Integer ragTopK = this.ragTopK;
         if (rag != null) {
@@ -1394,5 +1474,47 @@ public class Config {
         } catch (Exception ex) {
             throw new IllegalStateException(ex);
         }
+    }
+
+    // pub fn apply_prelude(&mut self) -> Result<()> {
+    //    if self.macro_flag || !self.state().is_empty() {
+    //        return Ok(());
+    //    }
+    //    let prelude = match self.working_mode {
+    //        WorkingMode::Repl => self.repl_prelude.as_ref(),
+    //        WorkingMode::Cmd => self.cmd_prelude.as_ref(),
+    //        WorkingMode::Serve => return Ok(()),
+    //    };
+    //    let prelude = match prelude {
+    //        Some(v) => {
+    //            if v.is_empty() {
+    //                return Ok(());
+    //            }
+    //            v.to_string()
+    //        }
+    //        None => return Ok(()),
+    //    };
+    //
+    //    let err_msg = || format!("Invalid prelude '{prelude}");
+    //    match prelude.split_once(':') {
+    //        Some(("role", name)) => {
+    //            self.use_role(name).with_context(err_msg)?;
+    //        }
+    //        Some(("session", name)) => {
+    //            self.use_session(Some(name)).with_context(err_msg)?;
+    //        }
+    //        Some((session_name, role_name)) => {
+    //            self.use_session(Some(session_name)).with_context(err_msg)?;
+    //            if let Some(true) = self.session.as_ref().map(|v| v.is_empty()) {
+    //                self.use_role(role_name).with_context(err_msg)?;
+    //            }
+    //        }
+    //        _ => {
+    //            bail!("{}", err_msg())
+    //        }
+    //    }
+    //    Ok(())
+    // }
+    public void applyPrelude() {
     }
 }
