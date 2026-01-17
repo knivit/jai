@@ -1,5 +1,6 @@
 package com.tsoft.jai.config;
 
+import com.tsoft.jai.client.Client;
 import com.tsoft.jai.client.message.ImageUrl;
 import com.tsoft.jai.client.message.MessageContent;
 import com.tsoft.jai.client.message.MessageContentPart;
@@ -89,5 +90,12 @@ public class Input {
             patchedText = Config.searchRag(config, rag, text, abortSignal);
             ragName = rag.getName();
         }
+    }
+
+    // pub fn create_client(&self) -> Result<Box<dyn Client>> {
+    //    init_client(&self.config, Some(self.role().model().clone()))
+    // }
+    public Client createClient() {
+        return initClient(config, role.getModel());
     }
 }

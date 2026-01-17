@@ -1,6 +1,7 @@
 package com.tsoft.jai;
 
 import com.tsoft.jai.cli.Cli;
+import com.tsoft.jai.client.Client;
 import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.client.model.ModelType;
 import com.tsoft.jai.config.Config;
@@ -376,8 +377,8 @@ public class Main {
     //    config.write().exit_session()?;
     //    Ok(())
     // }
-    private static void startDirective(Config config, Input input, boolean isCodeMode, AbortSignal abortSignal) {
-
+    private static void startDirective(Config config, Input input, boolean codeMode, AbortSignal abortSignal) {
+        Client client = input.createClient();
     }
 
     // async fn start_interactive(config: &GlobalConfig) -> Result<()> {

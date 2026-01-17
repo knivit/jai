@@ -1,5 +1,6 @@
 package com.tsoft.jai.client.macros;
 
+import com.tsoft.jai.client.Client;
 import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.client.model.ModelType;
 import com.tsoft.jai.config.ClientConfig;
@@ -83,5 +84,20 @@ public class Macros {
         return listAllModels(config).stream()
             .filter(e -> modelType.equals(e.getModelType()))
             .toList();
+    }
+
+    // pub fn init_client(config: &$crate::config::GlobalConfig, model: Option<$crate::client::Model>) -> anyhow::Result<Box<dyn Client>> {
+    //    let model = model.unwrap_or_else(|| config.read().model.clone());
+    //    None
+    //    $(.or_else(|| $client::init(config, &model)))+
+    //    .ok_or_else(|| {
+    //        anyhow::anyhow!("Invalid model '{}'", model.id())
+    //    })
+    // }
+    public Client initClient(Config config, Model model) {
+        if (model == null) {
+            model = config.getModel();
+        }
+        return Client.init(config, model);
     }
 }
