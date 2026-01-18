@@ -8,8 +8,10 @@ import com.tsoft.jai.config.Config;
 import com.tsoft.jai.config.Input;
 import com.tsoft.jai.config.WorkingMode;
 import com.tsoft.jai.config.agent.Agent;
+import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.repl.mod.Repl;
 import com.tsoft.jai.utils.AbortSignal;
+import com.tsoft.jai.utils.Tuple;
 import com.tsoft.jai.utils.command.Shell;
 
 import java.util.Collections;
@@ -22,6 +24,7 @@ import static com.tsoft.jai.config.Role.CODE_ROLE;
 import static com.tsoft.jai.config.Role.SHELL_ROLE;
 import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.inquire.Inquire.terminal;
+import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.StringUtils.isBlank;
 import static com.tsoft.jai.utils.command.Command.SHELL;
 
@@ -380,6 +383,24 @@ public class Main {
     // }
     private static void startDirective(Config config, Input input, boolean codeMode, AbortSignal abortSignal) {
         Client client = input.createClient();
+        boolean extractCode = (terminal() == null) && codeMode;
+        config.beforeChatCompletion(input);
+
+        Tuple<String, List<ToolResult>> tuple;
+        if (!input.stream() || extractCode) {
+            tuple = callChatCompletions(input, true, extractCode, client, abortSignal);
+        } else {
+            tuple = callChatCompletionsStreaming(input, client, abortSignal);
+        }
+        String output = tuple.first();
+        List<ToolResult> toolResults = tuple.second();
+        config.afterChatCompletion(input, output, toolResults);
+
+        if (!isEmpty(toolResults)) {
+            startDirective(config, input.mergeToolResults(output, toolResults), codeMode, abortSignal);
+        }
+
+        config.exitSession();
     }
 
     // async fn start_interactive(config: &GlobalConfig) -> Result<()> {
