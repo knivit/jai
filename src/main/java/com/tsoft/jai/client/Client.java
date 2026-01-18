@@ -1,33 +1,92 @@
 package com.tsoft.jai.client;
 
 import com.tsoft.jai.client.common.*;
+import com.tsoft.jai.client.mod.RegisteredClient;
 import com.tsoft.jai.client.model.Model;
+import com.tsoft.jai.client.model.ModelType;
 import com.tsoft.jai.client.stream.SseHandler;
+import com.tsoft.jai.config.ClientConfig;
 import com.tsoft.jai.config.Config;
+import com.tsoft.jai.config.Input;
+import com.tsoft.jai.function.ToolResult;
+import com.tsoft.jai.reqwest.ClientBuilder;
 import com.tsoft.jai.reqwest.RequestBuilder;
 import com.tsoft.jai.reqwest.ReqwestClient;
+import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.utils.AbortSignal;
+import com.tsoft.jai.utils.Tuple;
+import lombok.Getter;
 
+import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
+
+import static com.tsoft.jai.anyhow.Macros.bail;
+import static com.tsoft.jai.client.mod.Mod.GLOBAL_CONFIG;
+import static com.tsoft.jai.client.mod.Mod.REGISTERED_CLIENTS;
+import static com.tsoft.jai.utils.StringUtils.isBlank;
 
 public abstract class Client {
 
-    // fn global_config(&self) -> &GlobalConfig;
-    public abstract Config globalConfig();
-
-    // fn extra_config(&self) -> Option<&ExtraConfig>;
-    public abstract ExtraConfig extraConfig();
-
-    // fn patch_config(&self) -> Option<&RequestPatch>;
-    public abstract RequestPatch patchConfig();
+    public abstract ClientConfig getClientConfig();
 
     // fn name(&self) -> &str;
-    public abstract String name();
+    public abstract String getName();
 
     // fn model(&self) -> &Model;
-    public abstract Model model();
+    public abstract Model getModel();
+
+    @Getter
+    private Config config;
+
+    // fn extra_config(&self) -> Option<&ExtraConfig>;
+    //
+    // fn extra_config(&self) -> Option<&$crate::client::ExtraConfig> {
+    //     self.config.extra.as_ref()
+    // }
+    public ExtraConfig extraConfig() {
+        return getClientConfig().getExtra();
+    }
+
+    // fn patch_config(&self) -> Option<&RequestPatch>;
+    public RequestPatch patchConfig() {
+        return getClientConfig().getPatch();
+    }
 
     // fn model_mut(&mut self) -> &mut Model;
-    public abstract Model modelMut();
+    //public abstract Model modelMut();
+
+    // pub fn init(global_config: &$crate::config::GlobalConfig, model: &$crate::client::Model) -> Option<Box<dyn Client>> {
+    //    let config = global_config.read().clients.iter().find_map(|client_config| {
+    //        if let ClientConfig::$config(c) = client_config {
+    //            if Self::name(c) == model.client_name() {
+    //                return Some(c.clone())
+    //            }
+    //        }
+    //        None
+    //    })?;
+    //
+    //    Some(Box::new(Self {
+    //        global_config: global_config.clone(),
+    //        config,
+    //        model: model.clone(),
+    //    }))
+    // }
+    public static Client init(Config config, Model model) {
+        RegisteredClient client = REGISTERED_CLIENTS.stream()
+            .filter(e -> e.getName().equals(model.getClientName()))
+            .findAny()
+            .orElse(null);
+        assert client != null;
+
+        ClientConfig clientConfig = GLOBAL_CONFIG.getClients().stream()
+            .filter(e -> e.getName().equals(model.getClientName()))
+            .findAny()
+            .orElse(null);
+        assert clientConfig != null;
+
+        return client.getClientSupplier().apply(clientConfig.clone(), model);
+    }
 
     // fn build_client(&self) -> Result<ReqwestClient> {
     //    let mut builder = ReqwestClient::builder();
@@ -46,7 +105,25 @@ public abstract class Client {
     //    Ok(client)
     // }
     public ReqwestClient buildClient() {
-
+        ClientBuilder builder = ReqwestClient.builder();
+        ExtraConfig extra = extraConfig();
+        Integer timeout = 10;
+        String proxy;
+        if (extra != null) {
+            if (extra.getConnectTimeout() != null) {
+                timeout = extra.getConnectTimeout();
+            }
+            if (!isBlank(extra.getProxy())) {
+                //
+            }
+        }
+        String userAgent = getConfig().getUserAgent();
+        if (!isBlank(userAgent)) {
+            //
+        }
+        return builder
+            .connectTimeout(Duration.ofSeconds(timeout))
+            .build();
     }
 
     // async fn chat_completions(&self, input: Input) -> Result<ChatCompletionsOutput> {
@@ -60,8 +137,10 @@ public abstract class Client {
     //         .await
     //         .with_context(|| "Failed to call chat-completions api")
     // }
-    public ChatCompletionsOutput chatCompletions() {
-
+    public ChatCompletionsOutput chatCompletions(Input input) {
+        if (getConfig().isDryRun()) {
+        }
+        return null;
     }
 
     // async fn chat_completions_streaming(
@@ -102,7 +181,7 @@ public abstract class Client {
     //         .context("Failed to call embeddings api")
     // }
     public List<List<Float>> embeddings() {
-
+        return Collections.emptyList();
     }
 
     // async fn rerank(&self, data: &RerankData) -> Result<RerankOutput> {
@@ -111,8 +190,9 @@ public abstract class Client {
     //         .await
     //         .context("Failed to call rerank api")
     // }
-    public RerankOutput rerank(RerankData data) {
-
+    public List<RerankResult> rerank(RerankData data) {
+        ReqwestClient client = buildClient();
+        return rerankInner(client, data);
     }
 
     // async fn chat_completions_inner(
@@ -120,8 +200,18 @@ public abstract class Client {
     //     client: &ReqwestClient,
     //     data: ChatCompletionsData,
     // ) -> Result<ChatCompletionsOutput>;
-    public abstract ChatCompletionsOutput chatCompletionsInner(ReqwestClient client, ChatCompletionsData data) {
-
+    //
+    // async fn chat_completions_inner(
+    //     &self,
+    //     client: &reqwest::Client,
+    //     data: $crate::client::ChatCompletionsData,
+    // ) -> anyhow::Result<$crate::client::ChatCompletionsOutput> {
+    //     let request_data = $prepare_chat_completions(self, data)?;
+    //     let builder = self.request_builder(client, request_data);
+    //     $chat_completions(builder, self.model()).await
+    // }
+    public ChatCompletionsOutput chatCompletionsInner(ReqwestClient client, ChatCompletionsData data) {
+        return null;
     }
 
     // async fn chat_completions_streaming_inner(
@@ -130,7 +220,7 @@ public abstract class Client {
     //     handler: &mut SseHandler,
     //     data: ChatCompletionsData,
     // ) -> Result<()>;
-    public void chat_completions_streaming_inner(ReqwestClient client, SseHandler handler, ChatCompletionsData data) {
+    public void chatCompletionsStreamingInner(ReqwestClient client, SseHandler handler, ChatCompletionsData data) {
 
     }
 
@@ -142,7 +232,8 @@ public abstract class Client {
     //     bail!("The client doesn't support embeddings api")
     // }
     public EmbeddingsOutput embeddingsInner(ReqwestClient client, EmbeddingsData data) {
-
+        bail("The client doesn't support embeddings api");
+        return null;
     }
 
     // async fn rerank_inner(
@@ -152,8 +243,9 @@ public abstract class Client {
     // ) -> Result<RerankOutput> {
     //     bail!("The client doesn't support rerank api")
     // }
-    public RerankOutput rerankInner(ReqwestClient client, RerankData data) {
-
+    public List<RerankResult> rerankInner(ReqwestClient client, RerankData data) {
+        bail("The client doesn't support rerank api");
+        return Collections.emptyList();
     }
 
     // fn request_builder(
@@ -164,8 +256,9 @@ public abstract class Client {
     //     self.patch_request_data(&mut request_data);
     //     request_data.into_builder(client)
     // }
-    public RequestBuilder requestBuilder(ReqwestClient client) {
-
+    public RequestBuilder requestBuilder(ReqwestClient client, RequestData requestData) {
+        patchRequestData(requestData);
+        return requestData.intoBuilder(client);
     }
 
     // fn patch_request_data(&self, request_data: &mut RequestData) {
@@ -201,6 +294,87 @@ public abstract class Client {
     //     }
     // }
     public void patchRequestData(RequestData requestData) {
+        ModelType modelType = getModel().getModelType();
+        Value patch = getModel().getPatch();
+        if (patch != null) {
+            requestData.applyPatch(patch);
+        }
+    }
 
+    // pub async fn call_chat_completions_streaming(
+    //    input: &Input,
+    //    client: &dyn Client,
+    //    abort_signal: AbortSignal,
+    //) -> Result<(String, Vec<ToolResult>)> {
+    //    let (tx, rx) = unbounded_channel();
+    //    let mut handler = SseHandler::new(tx, abort_signal.clone());
+    //
+    //    let (send_ret, render_ret) = tokio::join!(
+    //        client.chat_completions_streaming(input, &mut handler),
+    //        render_stream(rx, client.global_config(), abort_signal.clone()),
+    //    );
+    //
+    //    if handler.abort().aborted() {
+    //        bail!("Aborted.");
+    //    }
+    //
+    //    render_ret?;
+    //
+    //    let (text, tool_calls) = handler.take();
+    //    match send_ret {
+    //        Ok(_) => {
+    //            if !text.is_empty() && !text.ends_with('\n') {
+    //                println!();
+    //            }
+    //            Ok((text, eval_tool_calls(client.global_config(), tool_calls)?))
+    //        }
+    //        Err(err) => {
+    //            if !text.is_empty() {
+    //                println!();
+    //            }
+    //            Err(err)
+    //        }
+    //    }
+    // }
+    public Tuple<String, List<ToolResult>> callChatCompletionsStreaming(Input input, Client client, AbortSignal abortSignal) {
+        return null;
+    }
+
+    // pub async fn call_chat_completions(
+    //    input: &Input,
+    //    print: bool,
+    //    extract_code: bool,
+    //    client: &dyn Client,
+    //    abort_signal: AbortSignal,
+    // ) -> Result<(String, Vec<ToolResult>)> {
+    //    let ret = abortable_run_with_spinner(
+    //        client.chat_completions(input.clone()),
+    //        "Generating",
+    //        abort_signal,
+    //    )
+    //    .await;
+    //
+    //    match ret {
+    //        Ok(ret) => {
+    //            let ChatCompletionsOutput {
+    //                mut text,
+    //                tool_calls,
+    //                ..
+    //            } = ret;
+    //            if !text.is_empty() {
+    //                if extract_code {
+    //                    text = extract_code_block(&strip_think_tag(&text)).to_string();
+    //                }
+    //                if print {
+    //                    client.global_config().read().print_markdown(&text)?;
+    //                }
+    //            }
+    //            Ok((text, eval_tool_calls(client.global_config(), tool_calls)?))
+    //        }
+    //        Err(err) => Err(err),
+    //    }
+    // }
+    public Tuple<String, List<ToolResult>> callChatCompletions(Input input, boolean print, boolean extractCode, Client client, AbortSignal abortSignal) {
+        return null;
     }
 }

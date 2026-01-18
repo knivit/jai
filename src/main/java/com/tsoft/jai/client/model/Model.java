@@ -8,6 +8,7 @@ import com.tsoft.jai.client.message.MessageRole;
 import com.tsoft.jai.config.Config;
 import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.serdejson.SerDe;
+import com.tsoft.jai.serdejson.Value;
 import com.tsoft.jai.utils.Tuple;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -204,7 +205,7 @@ public class Model {
     // pub fn patch(&self) -> Option<&Value> {
     //     self.data.patch.as_ref()
     // }
-    public Map<String, Object> getPatch() {
+    public Value getPatch() {
         return (data == null) ? null : data.getPatch();
     }
 
@@ -333,5 +334,12 @@ public class Model {
         } else {
             return (numMessages - 1) * PER_MESSAGES_TOKENS + messageTokens;
         }
+    }
+
+    // pub fn no_stream(&self) -> bool {
+    //    self.data.no_stream
+    // }
+    public boolean noStream() {
+        return (data != null) && data.isNoStream();
     }
 }

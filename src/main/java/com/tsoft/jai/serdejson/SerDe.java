@@ -1,11 +1,8 @@
 package com.tsoft.jai.serdejson;
 
-import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.annotation.Nulls;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.dataformat.yaml.YAMLMapper;
@@ -13,6 +10,7 @@ import tools.jackson.dataformat.yaml.YAMLMapper;
 import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.tsoft.jai.utils.StringUtils.*;
 
@@ -52,6 +50,19 @@ public class SerDe {
         }
 
         return null;
+    }
+
+    public static Value json(Object ... values) {
+        if (values == null || values.length == 0) {
+            return null;
+        }
+
+        Value value = new Value();
+        for (int i = 0; i < values.length; i += 2) {
+            value.put((String)values[i], values[i + 1]);
+        }
+
+        return value;
     }
 
     public static Value toJson(Object value) {

@@ -10,7 +10,7 @@ import java.util.List;
 
 @Data
 @Accessors(chain = true)
-public class ClientConfig {
+public class ClientConfig implements Cloneable {
 
     private String name;
     private String apiKey;
@@ -20,4 +20,15 @@ public class ClientConfig {
     private List<ModelData> models;
     private RequestPatch patch;
     private ExtraConfig extra;
+
+    @Override
+    public ClientConfig clone() {
+        try {
+            ClientConfig clone = (ClientConfig) super.clone();
+            // TODO: copy mutable state here, so the clone can't change the internals of the original
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
+    }
 }

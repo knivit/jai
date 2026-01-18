@@ -94,7 +94,7 @@ public class Macros {
     //        anyhow::anyhow!("Invalid model '{}'", model.id())
     //    })
     // }
-    public Client initClient(Config config, Model model) {
+    public static Client initClient(Config config, Model model) {
         if (model == null) {
             model = config.getModel();
         }

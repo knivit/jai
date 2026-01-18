@@ -8,6 +8,7 @@ import com.tsoft.jai.config.Config;
 import com.tsoft.jai.config.Input;
 import com.tsoft.jai.config.WorkingMode;
 import com.tsoft.jai.config.agent.Agent;
+import com.tsoft.jai.repl.mod.Repl;
 import com.tsoft.jai.utils.AbortSignal;
 import com.tsoft.jai.utils.command.Shell;
 
@@ -386,7 +387,8 @@ public class Main {
     //    repl.run().await
     // }
     private static void startInteractive(Config config) {
-
+        Repl repl = Repl.init(config);
+        repl.run();
     }
 
     // async fn create_input(

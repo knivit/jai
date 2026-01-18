@@ -32,6 +32,12 @@ public final class Inquire {
         return INSTANCE.prompter;
     }
 
+    public static void print(String msg, Object ... args) {
+        msg = format(msg, args);
+        terminal().writer().print((msg == null) ? "" : msg);
+        terminal().flush();
+    }
+
     public static void println(String msg, Object ... args) {
         msg = format(msg, args);
         terminal().writer().println((msg == null) ? "" : msg);

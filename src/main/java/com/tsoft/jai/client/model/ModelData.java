@@ -3,6 +3,7 @@ package com.tsoft.jai.client.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
+import com.tsoft.jai.serdejson.Value;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
@@ -28,7 +29,7 @@ public class ModelData {
     // #[serde(skip_serializing_if = "Option::is_none")]
     private BigDecimal outputPrice;
     // #[serde(skip_serializing_if = "Option::is_none")]
-    private Map<String, Object> patch;
+    private Value patch;
 
     // chat-only properties
     // #[serde(skip_serializing_if = "Option::is_none")]

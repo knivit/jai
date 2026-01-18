@@ -7,10 +7,12 @@ import com.tsoft.jai.client.model.ModelType;
 import com.tsoft.jai.config.agent.Agent;
 import com.tsoft.jai.config.role.RoleLike;
 import com.tsoft.jai.function.Functions;
+import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.inquire.Confirm;
 import com.tsoft.jai.inquire.Inquire;
 import com.tsoft.jai.inquire.Select;
 import com.tsoft.jai.rag.Rag;
+import com.tsoft.jai.render.markdown.RenderOptions;
 import com.tsoft.jai.serdejson.SerDe;
 import com.tsoft.jai.serdejson.Value;
 import com.tsoft.jai.std.Fs;
@@ -30,6 +32,7 @@ import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.NumberUtils.parseInt;
 import static com.tsoft.jai.utils.StringUtils.*;
+import static com.tsoft.jai.utils.command.Command.editFile;
 
 @Data
 @Accessors(chain = true)
@@ -246,6 +249,73 @@ public class Config {
         return null;
     }
 
+    // pub fn maybe_autoname_session(config: GlobalConfig) {
+    //    let mut need_autoname = false;
+    //    if let Some(session) = config.write().session.as_mut() {
+    //        if session.need_autoname() {
+    //            session.set_autonaming(true);
+    //            need_autoname = true;
+    //        }
+    //    }
+    //    if !need_autoname {
+    //        return;
+    //    }
+    //    let color = if config.read().light_theme() {
+    //        nu_ansi_term::Color::LightGray
+    //    } else {
+    //        nu_ansi_term::Color::DarkGray
+    //    };
+    //    print!("\n📢 {}\n", color.italic().paint("Autonaming the session."),);
+    //    tokio::spawn(async move {
+    //        if let Err(err) = Config::autoname_session(&config).await {
+    //            warn!("Failed to autonaming the session: {err}");
+    //        }
+    //        if let Some(session) = config.write().session.as_mut() {
+    //            session.set_autonaming(false);
+    //        }
+    //    });
+    // }
+    public static void maybeAutonameSession(Config config) {
+
+    }
+
+    // pub fn maybe_compress_session(config: GlobalConfig) {
+    //    let mut need_compress = false;
+    //    {
+    //        let mut config = config.write();
+    //        let compress_threshold = config.compress_threshold;
+    //        if let Some(session) = config.session.as_mut() {
+    //            if session.need_compress(compress_threshold) {
+    //                session.set_compressing(true);
+    //                need_compress = true;
+    //            }
+    //        }
+    //    };
+    //    if !need_compress {
+    //        return;
+    //    }
+    //    let color = if config.read().light_theme() {
+    //        nu_ansi_term::Color::LightGray
+    //    } else {
+    //        nu_ansi_term::Color::DarkGray
+    //    };
+    //    print!(
+    //        "\n📢 {}\n",
+    //        color.italic().paint("Compressing the session."),
+    //    );
+    //    tokio::spawn(async move {
+    //        if let Err(err) = Config::compress_session(&config).await {
+    //            warn!("Failed to compress the session: {err}");
+    //        }
+    //        if let Some(session) = config.write().session.as_mut() {
+    //            session.set_compressing(false);
+    //        }
+    //    });
+    // }
+    public static void maybeCompressSession(Config config) {
+
+    }
+
     // pub fn list_roles(with_builtin: bool) -> Vec<String> {
     //    let mut names = HashSet::new();
     //    if let Ok(rd) = read_dir(Self::roles_dir()) {
@@ -281,6 +351,60 @@ public class Config {
         List<String> roles = new ArrayList<>(names);
         roles.sort(String::compareToIgnoreCase);
         return roles;
+    }
+
+    // pub fn has_role(name: &str) -> bool {
+    //    let names = Self::list_roles(true);
+    //    names.contains(&name.to_string())
+    // }
+    public boolean hasRole(String name) {
+        List<String> names = listRoles(true);
+        return names.contains(name);
+    }
+
+    // pub fn new_role(&mut self, name: &str) -> Result<()> {
+    //    if self.macro_flag {
+    //        bail!("No role");
+    //    }
+    //    let ans = Confirm::new("Create a new role?")
+    //        .with_default(true)
+    //        .prompt()?;
+    //    if ans {
+    //        self.upsert_role(name)?;
+    //    } else {
+    //        bail!("No role");
+    //    }
+    //    Ok(())
+    // }
+    public void newRole(String name) {
+        if (macroFlag) {
+            bail("No role");
+        }
+        boolean ans = new Confirm("Create a new role?").setDefaultValue(true).prompt();
+        if (ans) {
+            upsertRole(name);
+        } else {
+            bail("No role");
+        }
+    }
+
+    // pub fn upsert_role(&mut self, name: &str) -> Result<()> {
+    //    let role_path = Self::role_file(name);
+    //    ensure_parent_exists(&role_path)?;
+    //    let editor = self.editor()?;
+    //    edit_file(&editor, &role_path)?;
+    //    if self.working_mode.is_repl() {
+    //        println!("✓ Saved the role to '{}'.", role_path.display());
+    //    }
+    //    Ok(())
+    // }
+    public void upsertRole(String name) {
+        File rolePath = roleFile(name);
+        ensureParentExists(rolePath);
+        editFile(editor, rolePath);
+        if (WorkingMode.Repl.equals(workingMode)) {
+            println("✓ Saved the role to '{}'.", rolePath.toString());
+        }
     }
 
     // pub fn roles_dir() -> PathBuf {
@@ -625,6 +749,36 @@ public class Config {
         }
     }
 
+    // pub fn role_info(&self) -> Result<String> {
+    //    if let Some(session) = &self.session {
+    //        if session.role_name().is_some() {
+    //            let role = session.to_role();
+    //            Ok(role.export())
+    //        } else {
+    //            bail!("No session role")
+    //        }
+    //    } else if let Some(role) = &self.role {
+    //        Ok(role.export())
+    //    } else {
+    //        bail!("No role")
+    //    }
+    // }
+    public String roleInfo() {
+        if (session != null) {
+            if (!isBlank(session.getRoleName())) {
+                Role role = session.toRole();
+                return role.export();
+            } else {
+                bail("No session role");
+            }
+        } else if (role != null) {
+            return role.export();
+        } else {
+            bail("No role");
+        }
+        return null;
+    }
+
     // pub fn use_session(&mut self, session_name: Option<&str>) -> Result<()> {
     //    if self.session.is_some() {
     //        bail!(
@@ -726,6 +880,34 @@ public class Config {
         initAgentSessionVariables(newSession);
     }
 
+    // pub fn session_info(&self) -> Result<String> {
+    //    if let Some(session) = &self.session {
+    //        let render_options = self.render_options()?;
+    //        let mut markdown_render = MarkdownRender::init(render_options)?;
+    //        let agent_info: Option<(String, Vec<String>)> = self.agent.as_ref().map(|agent| {
+    //            let functions = agent
+    //                .functions()
+    //                .declarations()
+    //                .iter()
+    //                .filter_map(|v| if v.agent { Some(v.name.clone()) } else { None })
+    //                .collect();
+    //            (agent.name().to_string(), functions)
+    //        });
+    //        session.render(&mut markdown_render, &agent_info)
+    //    } else {
+    //        bail!("No session")
+    //    }
+    // }
+    public String sessionInfo() {
+        if (session != null) {
+            RenderOptions renderOptions = renderOptions();
+            return null;
+        } else {
+            bail("No session");
+        }
+        return null;
+    }
+
     // pub async fn use_rag(
     //    config: &GlobalConfig,
     //    rag: Option<&str>,
@@ -788,6 +970,22 @@ public class Config {
         }
 
         this.rag = rag;
+    }
+
+    // pub fn rag_info(&self) -> Result<String> {
+    //    if let Some(rag) = &self.rag {
+    //        rag.export()
+    //    } else {
+    //        bail!("No RAG")
+    //    }
+    // }
+    public String ragInfo() {
+        if (rag != null) {
+            return rag.export();
+        } else {
+            bail("No RAG");
+            return null;
+        }
     }
 
     // fn init_agent_shared_variables(&mut self) -> Result<()> {
@@ -891,6 +1089,22 @@ public class Config {
     // }
     private void initAgentSessionVariables(boolean newSession) {
 
+    }
+
+    // pub fn agent_info(&self) -> Result<String> {
+    //    if let Some(agent) = &self.agent {
+    //        agent.export()
+    //    } else {
+    //        bail!("No agent")
+    //    }
+    // }
+    public String agentInfo() {
+        if (agent != null) {
+            return agent.export(this);
+        } else {
+            bail("No agent");
+            return null;
+        }
     }
 
     // pub fn retrieve_role(&self, name: &str) -> Result<Role> {
@@ -1111,6 +1325,141 @@ public class Config {
 
     }
 
+    // pub fn before_chat_completion(&mut self, input: &Input) -> Result<()> {
+    //    self.last_message = Some(LastMessage::new(input.clone(), String::new()));
+    //    Ok(())
+    // }
+    public void beforeChatCompletion(Input input) {
+        lastMessage = new LastMessage().setInput(input);
+    }
+
+    // pub fn is_compressing_session(&self) -> bool {
+    //    self.session
+    //        .as_ref()
+    //        .map(|v| v.compressing())
+    //        .unwrap_or_default()
+    // }
+    public boolean isCompressingSession() {
+        return (session != null) && session.isCompressing();
+    }
+
+    // pub fn after_chat_completion(
+    //    &mut self,
+    //    input: &Input,
+    //    output: &str,
+    //    tool_results: &[ToolResult],
+    // ) -> Result<()> {
+    //    if !tool_results.is_empty() {
+    //        return Ok(());
+    //    }
+    //    self.last_message = Some(LastMessage::new(input.clone(), output.to_string()));
+    //    if !self.dry_run {
+    //        self.save_message(input, output)?;
+    //    }
+    //    Ok(())
+    // }
+    public void afterChatCompletion(Input input, String output, List<ToolResult> toolResults) {
+        if (!isEmpty(toolResults)) {
+            return;
+        }
+        lastMessage = new LastMessage().setInput(input).setOutput(output);
+        if (!dryRun) {
+            saveMessage(input, output);
+        }
+    }
+
+    // fn save_message(&mut self, input: &Input, output: &str) -> Result<()> {
+    //    let mut input = input.clone();
+    //    input.clear_patch();
+    //    if let Some(session) = input.session_mut(&mut self.session) {
+    //        session.add_message(&input, output)?;
+    //        return Ok(());
+    //    }
+    //
+    //    if !self.save {
+    //        return Ok(());
+    //    }
+    //    let mut file = self.open_message_file()?;
+    //    if output.is_empty() && input.tool_calls().is_none() {
+    //        return Ok(());
+    //    }
+    //    let now = now();
+    //    let summary = input.summary();
+    //    let raw_input = input.raw();
+    //    let scope = if self.agent.is_none() {
+    //        let role_name = if input.role().is_derived() {
+    //            None
+    //        } else {
+    //            Some(input.role().name())
+    //        };
+    //        match (role_name, input.rag_name()) {
+    //            (Some(role), Some(rag_name)) => format!(" ({role}#{rag_name})"),
+    //            (Some(role), _) => format!(" ({role})"),
+    //            (None, Some(rag_name)) => format!(" (#{rag_name})"),
+    //            _ => String::new(),
+    //        }
+    //    } else {
+    //        String::new()
+    //    };
+    //    let tool_calls = match input.tool_calls() {
+    //        Some(MessageContentToolCalls {
+    //            tool_results, text, ..
+    //        }) => {
+    //            let mut lines = vec!["<tool_calls>".to_string()];
+    //            if !text.is_empty() {
+    //                lines.push(text.clone());
+    //            }
+    //            lines.push(serde_json::to_string(&tool_results).unwrap_or_default());
+    //            lines.push("</tool_calls>\n".to_string());
+    //            lines.join("\n")
+    //        }
+    //        None => String::new(),
+    //    };
+    //    let output = format!(
+    //        "# CHAT: {summary} [{now}]{scope}\n{raw_input}\n--------\n{tool_calls}{output}\n--------\n\n",
+    //    );
+    //    file.write_all(output.as_bytes())
+    //        .with_context(|| "Failed to save message")
+    // }
+    public void saveMessage(Input input, String output) {
+        input = input.clone();
+    }
+
+    // pub fn render_options(&self) -> Result<RenderOptions> {
+    //    let theme = if self.highlight {
+    //        let theme_mode = if self.light_theme() { "light" } else { "dark" };
+    //        let theme_filename = format!("{theme_mode}.tmTheme");
+    //        let theme_path = Self::local_path(&theme_filename);
+    //        if theme_path.exists() {
+    //            let theme = ThemeSet::get_theme(&theme_path)
+    //                .with_context(|| format!("Invalid theme at '{}'", theme_path.display()))?;
+    //            Some(theme)
+    //        } else {
+    //            let theme = if self.light_theme() {
+    //                decode_bin(LIGHT_THEME).context("Invalid builtin light theme")?
+    //            } else {
+    //                decode_bin(DARK_THEME).context("Invalid builtin dark theme")?
+    //            };
+    //            Some(theme)
+    //        }
+    //    } else {
+    //        None
+    //    };
+    //    let wrap = if *IS_STDOUT_TERMINAL {
+    //        self.wrap.clone()
+    //    } else {
+    //        None
+    //    };
+    //    let truecolor = matches!(
+    //        env::var("COLORTERM").as_ref().map(|v| v.as_str()),
+    //        Ok("truecolor")
+    //    );
+    //    Ok(RenderOptions::new(theme, wrap, self.wrap_code, truecolor))
+    // }
+    private RenderOptions renderOptions() {
+        return null;
+    }
+
     private void loadEnvs(){ }
     private void loadFunctions() { }
 
@@ -1201,7 +1550,7 @@ public class Config {
     //        .join("");
     //    Ok(output)
     // }
-    private String sysinfo() {
+    public String sysinfo() {
         String wrap = isBlank(this.wrap) ? "no" : this.wrap;
 
         String ragRerankerModel = this.ragRerankerModel;

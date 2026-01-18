@@ -395,14 +395,13 @@ public class Agent {
         if (!isEmpty(vars)) {
             value.put("variables", vars);
         }
-        value.put("config", toJson(config).asMap());
+        value.put("config", toJson(this.config).asMap());
         value.put("definition", toJson(definition).asMap());
         value.put("functions_dir", config.agentFunctionsDir(name));
         value.put("data_dir", config.agentDataDir(name));
         value.put("config_file", config.agentConfigFile(name));
 
-        String data = SerDe.toYamlString(value);
-        return data;
+        return SerDe.toYamlString(value);
     }
 
     // pub fn variable_envs(&self) -> HashMap<String, String> {

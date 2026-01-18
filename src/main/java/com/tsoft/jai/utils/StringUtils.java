@@ -12,15 +12,18 @@ public final class StringUtils {
         return (str == null) || str.isBlank();
     }
 
-    public static Tuple<String, String> splitOnce(String str, char ch) {
-        if (str == null) {
+    public static Tuple<String, String> splitOnce(String str, char ... chs) {
+        if (str == null || chs == null ||  chs.length == 0) {
             return new Tuple<>(null, null);
         }
-        int n = str.indexOf(ch);
-        if (n == -1) {
-            return new Tuple<>(str, null);
+
+        for (char ch : chs) {
+            int n = str.indexOf(ch);
+            if (n != -1) {
+                return new Tuple<>(str.substring(0, n), str.substring(n + 1));
+            }
         }
-        return new Tuple<>(str.substring(0, n), str.substring(n + 1));
+        return new Tuple<>(str, null);
     }
 
     public static String format(String text, Object ... args) {

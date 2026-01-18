@@ -1,5 +1,7 @@
 package com.tsoft.jai.utils.command;
 
+import java.io.File;
+
 public final class Command {
 
     public static Shell SHELL = detectShell();
@@ -51,6 +53,15 @@ public final class Command {
     // }
     public static Shell detectShell() {
         return null;
+    }
+
+    // pub fn edit_file(editor: &str, path: &Path) -> Result<()> {
+    //    let mut child = Command::new(editor).arg(path).spawn()?;
+    //    child.wait()?;
+    //    Ok(())
+    // }
+    public static void editFile(String editor, File roleFile) {
+
     }
 
     private Command() { }

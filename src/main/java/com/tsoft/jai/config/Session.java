@@ -277,7 +277,7 @@ public class Session {
         } else {
             if (CollectionsUtils.isEmpty(messages)) {
                 if (TEMP_SESSION_NAME.equals(name) && saveSession) {
-                    List<String> rawInput = input.getRaw();
+                    Tuple<String, List<String>> rawInput = input.getRaw();
                     String chatHistory = format("USER: {}\nASSISTANT: {}\n", rawInput, output);
                     autoname = AutoName.newFromChatHistory(chatHistory);
                 }
@@ -381,8 +381,7 @@ public class Session {
         }
         data.put("messages", toJson(messages).asMap());
 
-        String output = SerDe.toYamlString(data);
-        return output;
+        return SerDe.toYamlString(data);
     }
 
     // pub fn tokens_usage(&self) -> (usize, f32) {

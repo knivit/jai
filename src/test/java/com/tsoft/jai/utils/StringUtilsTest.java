@@ -16,6 +16,9 @@ class StringUtilsTest {
         assertEquals(new Tuple<>("a", ""), splitOnce("a:", ':'));
         assertEquals(new Tuple<>("a", "b"), splitOnce("a:b", ':'));
         assertEquals(new Tuple<>("", "b"), splitOnce(":b", ':'));
+
+        assertEquals(new Tuple<>("a", "b c"), splitOnce("a:b c", ':', ' '));
+        assertEquals(new Tuple<>("a b", "c"), splitOnce("a b:c", ':', ' '));
     }
 
     @Test

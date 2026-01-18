@@ -55,6 +55,10 @@ public class Value {
         return (data == null) ? null : Integer.valueOf(data.toString());
     }
 
+    public static boolean isList(Value value) {
+        return (value != null) && (value.data instanceof List);
+    }
+
     public List<Value> asList() {
         if (data == null) {
             return Collections.emptyList();
@@ -71,6 +75,10 @@ public class Value {
         throw new IllegalStateException("Not a list: " + data);
     }
 
+    public static boolean isMap(Value value) {
+        return (value != null) && (value.data instanceof Map);
+    }
+
     public Map<String, String> asMap() {
         if (data == null) {
             return Collections.emptyMap();
@@ -81,5 +89,33 @@ public class Value {
         }
 
         throw new IllegalStateException("Not a map: " + data);
+    }
+
+    public static Value jsonPatch(Value value, Value patch) {
+        if (value == null || value.data == null) {
+            return patch;
+        }
+        if (patch == null || patch.data == null) {
+            return value;
+        }
+        if (isMap(value)) {
+            if (isMap(patch)) {
+                Map valueMap = (Map)value.data;
+                Map patchMap = (Map)patch.data;
+                valueMap.putAll(patchMap);
+                return value;
+            }
+            throw new IllegalStateException("The patch is not a map: " + patch);
+        }
+        if (isList(value)) {
+            if (isList(patch)) {
+                List valueList = (List)value.data;
+                List patchList = (List)patch.data;
+                valueList.addAll(patchList);
+                return value;
+            }
+            throw new IllegalStateException("The patch is not a list: " + patch);
+        }
+        throw new IllegalStateException("Unsupported operation");
     }
 }

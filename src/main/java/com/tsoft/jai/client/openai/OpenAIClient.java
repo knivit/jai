@@ -1,7 +1,9 @@
 package com.tsoft.jai.client.openai;
 
+import com.tsoft.jai.client.Client;
 import com.tsoft.jai.client.common.ChatCompletionsData;
 import com.tsoft.jai.client.common.ChatCompletionsOutput;
+import com.tsoft.jai.config.ClientConfig;
 import com.tsoft.jai.function.FunctionDeclaration;
 import com.tsoft.jai.client.message.Message;
 import com.tsoft.jai.client.message.MessageContent;
@@ -17,21 +19,29 @@ import com.tsoft.jai.reqwest.Response;
 import com.tsoft.jai.reqwest.StatusCode;
 import com.tsoft.jai.serdejson.SerDe;
 import com.tsoft.jai.serdejson.Value;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
 import static com.tsoft.jai.client.stream.Stream.sseStream;
+import static com.tsoft.jai.serdejson.SerDe.json;
 import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.Mod.stripThinkTag;
 import static com.tsoft.jai.utils.StringUtils.isBlank;
 
 @Slf4j
-public class OpenAIClient {
+@Getter
+@RequiredArgsConstructor
+public class OpenAIClient extends Client {
+
+    private final String name = "openai";
+    private final ClientConfig clientConfig;
+    private final Model model;
 
     // pub async fn openai_chat_completions(
     //    builder: RequestBuilder,
@@ -381,8 +391,8 @@ public class OpenAIClient {
     //    }
     //    body
     // }
-    public static Map<String, Object> openaiBuildChatCompletionsBody(ChatCompletionsData data, Model model) {
-        List<Map<String, Object>> bodyMessages = new ArrayList<>();
+    public static Value openaiBuildChatCompletionsBody(ChatCompletionsData data, Model model) {
+        List<Value> bodyMessages = new ArrayList<>();
 
         List<Message> messages = data.getMessages();
         if (!isEmpty(messages)) {
@@ -404,25 +414,25 @@ public class OpenAIClient {
                         List<ToolResult> toolResults = toolCalls.getToolResults();
 
                         if (!isEmpty(toolResults)) {
-                            List<Map<String, Object>> bodyToolCalls = new ArrayList<>();
+                            List<Value> bodyToolCalls = new ArrayList<>();
 
                             for (ToolResult toolResult : toolResults) {
-                                bodyToolCalls.add(jsonItem(
+                                bodyToolCalls.add(json(
                                     "id", toolResult.getCall().getId(),
                                     "type", "function",
-                                    "function", jsonItem(
+                                    "function", json(
                                         "name", toolResult.getCall().getName(),
                                         "arguments", toolResult.getCall().getArguments()
                                     )));
                             }
 
-                            bodyMessages.add(jsonItem(
+                            bodyMessages.add(json(
                                 "role", MessageRole.Assistant,
                                 "tool_calls", bodyToolCalls
                             ));
 
                             for (ToolResult toolResult : toolResults) {
-                                bodyMessages.add(jsonItem(
+                                bodyMessages.add(json(
                                     "role", "tool",
                                     "content", toolResult.getOutput(),
                                     "tool_call_id", toolResult.getCall().getId()
@@ -434,17 +444,17 @@ public class OpenAIClient {
 
                         if (!isEmpty(toolResults)) {
                             for (ToolResult toolResult : toolResults) {
-                                bodyMessages.add(jsonItem(
+                                bodyMessages.add(json(
                                     "role", MessageRole.Assistant,
-                                    "tool_calls", List.of(jsonItem(
+                                    "tool_calls", List.of(json(
                                         "id", toolResult.getCall().getId(),
                                         "type", "function",
-                                        "function", jsonItem(
+                                        "function", json(
                                             "name", toolResult.getCall().getName(),
                                             "arguments", toolResult.getCall().getArguments()
                                         )))));
 
-                                bodyMessages.add(jsonItem(
+                                bodyMessages.add(json(
                                     "role", "tool",
                                     "content", toolResult.getOutput(),
                                     "tool_call_id", toolResult.getCall().getId()
@@ -458,12 +468,12 @@ public class OpenAIClient {
 
                 if (!isBlank(content.getText())) {
                     if (MessageRole.Assistant.equals(role) && i != messages.size() - 1) {
-                        bodyMessages.add(jsonItem(
+                        bodyMessages.add(json(
                             "role", role,
                             "content", stripThinkTag(content.getText())
                         ));
                     } else {
-                        bodyMessages.add(jsonItem(
+                        bodyMessages.add(json(
                             "role", role,
                             "content", content.getText()
                         ));
@@ -472,7 +482,7 @@ public class OpenAIClient {
             }
         }
 
-        Map<String, Object> body = jsonItem(
+        Value body = json(
             "model", model.getRealName(),
             "messages", bodyMessages
         );
@@ -480,8 +490,8 @@ public class OpenAIClient {
         Integer maxTokensParam = model.getMaxTokensParam();
         if (maxTokensParam != null) {
             Object maxTokens = null;
-            Map<String, Object> patch = model.getPatch();
-            if (!isEmpty(patch)) {
+            Value patch = model.getPatch();
+            if (patch != null) {
                 Object bodyPatch = patch.get("body");
                 if (bodyPatch instanceof Map<?, ?> map) {
                     maxTokens = map.get("max_tokens");
@@ -512,7 +522,7 @@ public class OpenAIClient {
         List<FunctionDeclaration> functions = data.getFunctions();
         if (!isEmpty(functions)) {
             body.put("tools", functions.stream()
-                .map(e -> jsonItem(
+                .map(e -> json(
                     "type", "function",
                     "function", e))
                 .toList());
@@ -621,13 +631,5 @@ public class OpenAIClient {
             return null;
         }
         return value;
-    }
-
-    private static Map<String, Object> jsonItem(Object ... kv) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        for (int i = 0; i < kv.length; i += 2) {
-            map.put((String)kv[i], kv[i + 1]);
-        }
-        return map;
     }
 }
