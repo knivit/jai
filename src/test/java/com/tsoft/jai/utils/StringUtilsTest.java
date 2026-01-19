@@ -22,6 +22,15 @@ class StringUtilsTest {
     }
 
     @Test
+    void strip_suffix() {
+        assertEquals(null, stripSuffix(null, null));
+        assertEquals("", stripSuffix("", null));
+        assertEquals("", stripSuffix("", ""));
+        assertEquals("test", stripSuffix("test", ""));
+        assertEquals("test", stripSuffix("test**", "**"));
+    }
+
+    @Test
     void format_str() {
         assertEquals(null, format(null));
         assertEquals(null, format(null, null));

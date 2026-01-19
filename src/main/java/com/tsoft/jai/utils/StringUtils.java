@@ -26,6 +26,13 @@ public final class StringUtils {
         return new Tuple<>(str, null);
     }
 
+    public static String stripSuffix(String str, String suffix) {
+        if (str != null && suffix != null && str.endsWith(suffix)) {
+            return str.substring(0, str.length() - suffix.length());
+        }
+        return str;
+    }
+
     public static String format(String text, Object ... args) {
         if (text == null || args == null) {
             return text;

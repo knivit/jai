@@ -1,5 +1,7 @@
 package com.tsoft.jai.utils;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -9,7 +11,7 @@ public final class CollectionsUtils {
         return (map == null) || map.isEmpty();
     }
 
-    public static boolean isEmpty(List<?> list) {
+    public static boolean isEmpty(Collection<?> list) {
         return (list == null) || list.isEmpty();
     }
 }

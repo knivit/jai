@@ -14,6 +14,7 @@ import com.tsoft.jai.utils.AbortSignal;
 import com.tsoft.jai.utils.Tuple;
 import com.tsoft.jai.utils.command.Shell;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -435,8 +436,17 @@ public class Main {
     //    }
     //    Ok(input)
     // }
-    private static Input createInput(Config config, String text, List<String> file, AbortSignal abortSignal) {
-        return null;
+    private static Input createInput(Config config, String text, List<String> files, AbortSignal abortSignal) {
+        Input input;
+        if (isEmpty(files)) {
+            input = Input.fromStr(config, text, null);
+        } else {
+            input = Input.fromFilesWithSpinner(config, text, files, null, abortSignal);
+        }
+        if (input == null) {
+            bail("No input");
+        }
+        return input;
     }
 
     // #[async_recursion::async_recursion]

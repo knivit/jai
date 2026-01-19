@@ -1,10 +1,76 @@
 package com.tsoft.jai.utils.command;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
+
+import static java.util.Collections.addAll;
 
 public final class Command {
 
     public static Shell SHELL = detectShell();
+
+    private static final Duration DEFAULT_EXEC_TIMEOUT = Duration.ofSeconds(30);
+
+    public static ShellCommandResult execute(String ... args) {
+        return executeWithTimeout(DEFAULT_EXEC_TIMEOUT, args);
+    }
+
+    public static ShellCommandResult executeWithTimeout(Duration timeout, String ... args) {
+        try {
+            List<String> cmd = new ArrayList<>();
+            cmd.add(SHELL.getCmd());
+            if (args != null) {
+                addAll(cmd, args);
+            }
+
+            ProcessBuilder pb = new ProcessBuilder(cmd);
+            Process process = pb.start();
+
+            // Read output in separate thread
+            Future<String> outputFuture = readStreamAsync(process.getInputStream());
+            Future<String> errorFuture = readStreamAsync(process.getErrorStream());
+
+            // Wait for process to complete with timeout
+            if (!process.waitFor(timeout)) {
+                process.destroyForcibly();
+                throw new TimeoutException("Command timed out after " + timeout + " " + timeout);
+            }
+
+            int exitCode = process.exitValue();
+            String output = outputFuture.get();
+            String error = errorFuture.get();
+
+            return new ShellCommandResult(exitCode, output, error);
+        } catch (Exception ex) {
+            return new ShellCommandResult(null, null, ex.getMessage());
+        }
+    }
+
+    private static Future<String> readStreamAsync(InputStream stream) {
+        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+            return executor.submit(() -> {
+                StringBuilder sb = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(stream))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        sb.append(line).append("\n");
+                    }
+                }
+                executor.shutdown();
+                return sb.toString();
+            });
+        }
+    }
 
     // pub fn detect_shell() -> Shell {
     //    let cmd = env::var(get_env_name("shell")).ok().or_else(|| {
