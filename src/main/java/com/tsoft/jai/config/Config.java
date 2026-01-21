@@ -1866,4 +1866,18 @@ public class Config {
     // }
     public void applyPrelude() {
     }
+
+    // pub fn print_markdown(&self, text: &str) -> Result<()> {
+    //    if *IS_STDOUT_TERMINAL {
+    //        let render_options = self.render_options()?;
+    //        let mut markdown_render = MarkdownRender::init(render_options)?;
+    //        println!("{}", markdown_render.render(text));
+    //    } else {
+    //        println!("{text}");
+    //    }
+    //    Ok(())
+    // }
+    public void printMarkdown(String text) {
+        println(text);
+    }
 }

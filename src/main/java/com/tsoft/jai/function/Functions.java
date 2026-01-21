@@ -1,6 +1,8 @@
 package com.tsoft.jai.function;
 
+import com.tsoft.jai.config.Config;
 import com.tsoft.jai.serdejson.SerDe;
+import com.tsoft.jai.serdejson.Value;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import tools.jackson.core.type.TypeReference;
@@ -10,11 +12,64 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.tsoft.jai.anyhow.Macros.bail;
+import static com.tsoft.jai.serdejson.SerDe.json;
+import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
+
 @Data
 @Accessors(chain = true)
 public class Functions {
 
     private List<FunctionDeclaration> declarations;
+
+    // pub fn eval_tool_calls(config: &GlobalConfig, mut calls: Vec<ToolCall>) -> Result<Vec<ToolResult>> {
+    //    let mut output = vec![];
+    //    if calls.is_empty() {
+    //        return Ok(output);
+    //    }
+    //    calls = ToolCall::dedup(calls);
+    //    if calls.is_empty() {
+    //        bail!("The request was aborted because an infinite loop of function calls was detected.")
+    //    }
+    //    let mut is_all_null = true;
+    //    for call in calls {
+    //        let mut result = call.eval(config)?;
+    //        if result.is_null() {
+    //            result = json!("DONE");
+    //        } else {
+    //            is_all_null = false;
+    //        }
+    //        output.push(ToolResult::new(call, result));
+    //    }
+    //    if is_all_null {
+    //        output = vec![];
+    //    }
+    //    Ok(output)
+    // }
+    public static List<ToolResult> evalToolCalls(Config config, List<ToolCall> calls) {
+        List<ToolResult> output = new ArrayList<>();
+        if (isEmpty(calls)) {
+            return output;
+        }
+        calls = ToolCall.dedup(calls);
+        if (isEmpty(calls)) {
+            bail("The request was aborted because an infinite loop of function calls was detected.");
+        }
+        boolean isAllNull = true;
+        for (ToolCall call : calls) {
+            Value result = call.eval(config);
+            if (result == null) {
+                result = json("DONE");
+            } else {
+                isAllNull = false;
+            }
+            output.add(new ToolResult().setCall(call).setOutput(result));
+        }
+        if (isAllNull) {
+            output = new ArrayList<>();
+        }
+        return output;
+    }
 
     // pub fn init(declarations_path: &Path) -> Result<Self> {
     //    let declarations: Vec<FunctionDeclaration> = if declarations_path.exists() {

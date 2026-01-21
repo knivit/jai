@@ -139,8 +139,12 @@ public abstract class Client {
     // }
     public ChatCompletionsOutput chatCompletions(Input input) {
         if (getConfig().isDryRun()) {
+            String content = input.echoMessages();
+            return new ChatCompletionsOutput().setText(content);
         }
-        return null;
+        ReqwestClient client = buildClient();
+        ChatCompletionsData data = input.prepareCompletionData(getModel(), false);
+        return chatCompletionsInner(client, data);
     }
 
     // async fn chat_completions_streaming(

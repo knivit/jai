@@ -17,8 +17,10 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
@@ -277,7 +279,7 @@ public class Session {
         } else {
             if (CollectionsUtils.isEmpty(messages)) {
                 if (TEMP_SESSION_NAME.equals(name) && saveSession) {
-                    Tuple<String, List<String>> rawInput = input.getRaw();
+                    Tuple<String, Set<String>> rawInput = input.getRaw();
                     String chatHistory = format("USER: {}\nASSISTANT: {}\n", rawInput, output);
                     autoname = AutoName.newFromChatHistory(chatHistory);
                 }
@@ -297,6 +299,90 @@ public class Session {
 
         dirty = true;
         updateTokens();
+    }
+
+    // pub fn echo_messages(&self, input: &Input) -> String {
+    //    let messages = self.build_messages(input);
+    //    serde_yaml::to_string(&messages).unwrap_or_else(|_| "Unable to echo message".into())
+    // }
+    public String echoMessages(Input input) {
+        List<Message> messages = buildMessages(input);
+        return SerDe.toYamlString(messages);
+    }
+
+    // pub fn build_messages(&self, input: &Input) -> Vec<Message> {
+    //    let mut messages = self.messages.clone();
+    //    if input.continue_output().is_some() {
+    //        return messages;
+    //    } else if input.regenerate() {
+    //        while let Some(last) = messages.last() {
+    //            if !last.role.is_user() {
+    //                messages.pop();
+    //            } else {
+    //                break;
+    //            }
+    //        }
+    //        return messages;
+    //    }
+    //    let mut need_add_msg = true;
+    //    let len = messages.len();
+    //    if len == 0 {
+    //        messages = input.role().build_messages(input);
+    //        need_add_msg = false;
+    //    } else if len == 1 && self.compressed_messages.len() >= 2 {
+    //        if let Some(index) = self
+    //            .compressed_messages
+    //            .iter()
+    //            .rposition(|v| v.role == MessageRole::User)
+    //        {
+    //            messages.extend(self.compressed_messages[index..].to_vec());
+    //        }
+    //    }
+    //    if need_add_msg {
+    //        messages.push(Message::new(MessageRole::User, input.message_content()));
+    //    }
+    //    messages
+    // }
+    public List<Message> buildMessages(Input input) {
+        List<Message> messages = new ArrayList<>(this.messages);
+        if (!isBlank(input.getContinueOutput())) {
+            return messages;
+        } else if (input.isRegenerate()) {
+            while (true) {
+                Message last = messages.isEmpty() ? null : messages.getLast();
+                if (last == null) {
+                    break;
+                }
+                if (!MessageRole.isUser(last.getRole())) {
+                    messages.removeLast();
+                } else {
+                    break;
+                }
+            }
+            return messages;
+        }
+
+        boolean needAddMsg = true;
+        int len = messages.size();
+        if (len == 0) {
+            messages = input.getRole().buildMessages(input);
+            needAddMsg = false;
+        } else if (len == 1 && compressedMessages.size() >= 2) {
+            int index = -1;
+            for (index = compressedMessages.size() - 1; index >= 0; index --) {
+                Message it = compressedMessages.get(index);
+                if (MessageRole.User.equals(it.getRole())) {
+                    break;
+                }
+            }
+            if (index >= 0) {
+                messages.addAll(compressedMessages.subList(index, compressedMessages.size()));
+            }
+        }
+        if (needAddMsg) {
+            messages.add(new Message().setRole(MessageRole.User).setContent(input.messageContent()));
+        }
+        return messages;
     }
 
     // fn to_role(&self) -> Role {

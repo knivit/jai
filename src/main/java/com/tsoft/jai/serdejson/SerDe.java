@@ -10,7 +10,6 @@ import tools.jackson.dataformat.yaml.YAMLMapper;
 import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import static com.tsoft.jai.utils.StringUtils.*;
 
@@ -78,7 +77,19 @@ public class SerDe {
     }
 
     public static String toYamlString(Value value) {
-        return yamlMapper.writeValueAsString(value.getData());
+        try {
+            return yamlMapper.writeValueAsString(value.getData());
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    public static String toYamlString(Object value) {
+        try {
+            return yamlMapper.writeValueAsString(value);
+        } catch (Exception ex) {
+            return null;
+        }
     }
 
     public static <T> T readFromYamlFile(File file, Class<T> clazz) {

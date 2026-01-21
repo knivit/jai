@@ -1,29 +1,34 @@
 package com.tsoft.jai.config;
 
 import com.tsoft.jai.client.Client;
-import com.tsoft.jai.client.message.ImageUrl;
-import com.tsoft.jai.client.message.MessageContent;
-import com.tsoft.jai.client.message.MessageContentPart;
-import com.tsoft.jai.client.message.MessageContentToolCalls;
+import com.tsoft.jai.client.common.ChatCompletionsData;
+import com.tsoft.jai.client.message.*;
+import com.tsoft.jai.client.model.Model;
+import com.tsoft.jai.function.FunctionDeclaration;
 import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.rag.Rag;
 import com.tsoft.jai.utils.*;
 import com.tsoft.jai.utils.command.Command;
-import com.tsoft.jai.utils.command.Shell;
+import com.tsoft.jai.utils.loader.LoadedDocument;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.client.macros.Macros.initClient;
 import static com.tsoft.jai.inquire.Inquire.println;
+import static com.tsoft.jai.utils.Crypto.base64Encode;
+import static com.tsoft.jai.utils.Crypto.sha256;
 import static com.tsoft.jai.utils.Mod.isUrl;
 import static com.tsoft.jai.utils.PathUtil.*;
-import static com.tsoft.jai.utils.StringUtils.isBlank;
-import static com.tsoft.jai.utils.StringUtils.stripSuffix;
-import static com.tsoft.jai.utils.loader.Loader.isLoaderProtocol;
+import static com.tsoft.jai.utils.Request.MEDIA_URL_EXTENSION;
+import static com.tsoft.jai.utils.Request.fetchWithLoaders;
+import static com.tsoft.jai.utils.StringUtils.*;
+import static com.tsoft.jai.utils.loader.Loader.*;
 
 @Data
 @Accessors(chain = true)
@@ -31,7 +36,7 @@ public class Input implements Cloneable {
 
     private Config config;
     private String text;
-    private Tuple<String, List<String>> raw;
+    private Tuple<String, Set<String>> raw;
     private String patchedText;
     private String lastReply;
     private String continueOutput;
@@ -73,7 +78,7 @@ public class Input implements Cloneable {
         return new Input()
             .setConfig(config)
             .setText(text)
-            .setRaw(new Tuple<>(text, new ArrayList<>()))
+            .setRaw(new Tuple<>(text, new LinkedHashSet<>()))
             .setRole(role)
             .setWithSession(withSession)
             .setWithAgent(withAgent);
@@ -154,22 +159,64 @@ public class Input implements Cloneable {
         Set<String> externalCmds = tuple.get("external_cmds");
         Set<String> protocolPaths = tuple.get("protocol_paths");
         boolean withLastReply = tuple.get("with_last_reply");
-        Object lastReply = null;
+        String lastReply = null;
         tuple = loadDocuments(loaders, localPaths, remoteUrls, externalCmds, protocolPaths);
         if (tuple == null) {
             println("Failed to load files");
             return null;
         }
-        Object documents = tuple.get("documents");
-        Object medias = tuple.get("medias");
-        Object dataUrls = tuple.get("data_urls");
+        List<Triple<String, String, String>> documents = tuple.get("documents");
+        List<String> medias = tuple.get("medias");
+        Map<String, String> dataUrls = tuple.get("data_urls");
         List<String> texts = new ArrayList<>();
         if (!isBlank(rawText)) {
             texts.add(rawText);
         }
         if (withLastReply) {
-
+            LastMessage lastMessage = config.getLastMessage();
+            if (lastMessage != null) {
+                Input input = lastMessage.getInput();
+                String output = lastMessage.getOutput();
+                if (!isBlank(output)) {
+                    lastReply = output;
+                } else if (input != null && !isBlank(input.getLastReply())) {
+                    lastReply = input.getLastReply();
+                }
+                if (!isBlank(lastReply)) {
+                    texts.add(format("\n{}", lastReply));
+                }
+            }
+            if (isBlank(lastReply) && CollectionsUtils.isEmpty(documents) && CollectionsUtils.isEmpty(medias)) {
+                bail("No last reply found");
+            }
         }
+        int documentsLen = documents.size();
+        for (Triple<String, String, String> document : documents) {
+            String kind = document.first();
+            String path = document.second();
+            String contents = document.third();
+            if (documentsLen == 1 && isBlank(rawText)) {
+                texts.add(format("\n{}", contents));
+            } else {
+                texts.add(format("\n============ {}: {} ============\n{}", kind, path, contents));
+            }
+        }
+        Triple<Role, Boolean, Boolean> triple = resolveRole(config, role);
+        role = triple.first();
+        Boolean withSession = triple.second();
+        Boolean withAgent = triple.third();
+
+        return new Input()
+            .setConfig(config)
+            .setText(String.join("\n", texts))
+            .setRaw(new Tuple<>(rawText, rawPaths))
+            .setLastReply(lastReply)
+            .setRegenerate(false)
+            .setMedias(medias)
+            .setDataUrls(dataUrls)
+            .setRole(role)
+            .setWithSession(withSession)
+            .setWithAgent(withAgent);
     }
 
     // pub async fn from_files_with_spinner(
@@ -187,7 +234,7 @@ public class Input implements Cloneable {
     //     .await
     // }
     public static Input fromFilesWithSpinner(Config config, String rawText, List<String> paths, Role role, AbortSignal abortSignal) {
-        return abortableRunWithSpinner((e) -> Input.fromFiles(config, rawText, paths, role), "Loading files", abortSignal);
+        return abortableRunWithSpinner(() -> Input.fromFiles(config, rawText, paths, role), "Loading files", abortSignal);
     }
 
     // pub async fn abortable_run_with_spinner<F, T>(
@@ -200,8 +247,8 @@ public class Input implements Cloneable {
     // {
     //    let (_, spinner_rx) = Spinner::create(message);
     //    abortable_run_with_spinner_rx(task, spinner_rx, abort_signal).await
-    public static <T, R> Input abortableRunWithSpinner(Function<T, R> task, String message, AbortSignal abortSignal) {
-        return null;
+    public static <T> T abortableRunWithSpinner(Supplier<T> task, String message, AbortSignal abortSignal) {
+        return task.get();
     }
 
     // pub fn message_content(&self) -> MessageContent {
@@ -381,7 +428,8 @@ public class Input implements Cloneable {
             "local_paths", localPaths,
             "remote_urls", remoteUrls,
             "external_cmds", externalCmds,
-            "protocol_paths", protocolPaths
+            "protocol_paths", protocolPaths,
+            "with_last_reply", withLastReply
         );
     }
 
@@ -461,9 +509,55 @@ public class Input implements Cloneable {
         Set<String> localFiles = expandGlobPaths(localPaths, true);
         for (String filePath : localFiles) {
             if (isImage(filePath)) {
-
+                String contents = readMediaToDataUrl(filePath);
+                if (isBlank(contents)) {
+                    format("Unable to read media '{}'", filePath);
+                } else {
+                    dataUrls.put(sha256(contents), filePath);
+                    medias.add(contents);
+                }
+            } else {
+                LoadedDocument document = loadFile(loaders, filePath);
+                if (document == null) {
+                    format("Unable to read file '{}'", filePath);
+                } else {
+                    files.add(new Triple<>("FILE", filePath, document.getContents()));
+                }
             }
         }
+
+        for (String fileUrl : remoteUrls) {
+            Tuple<String, String> tuple = fetchWithLoaders(loaders, fileUrl, true);
+            if (tuple == null) {
+                format("Failed to load url '{}'", fileUrl);
+            } else {
+                String contents = tuple.first();
+                String extension = tuple.second();
+                if (MEDIA_URL_EXTENSION.equals(extension)) {
+                    dataUrls.put(sha256(contents), fileUrl);
+                    medias.add(contents);
+                } else {
+                    files.add(new Triple<>("URL", fileUrl, contents));
+                }
+            }
+        }
+
+        for (String protocolPath : protocolPaths) {
+            List<LoadedDocument> documents = loadProtocolPath(loaders, protocolPath);
+            if (documents == null) {
+                format("Failed to load from '{}'", protocolPath);
+            } else {
+                files.addAll(
+                    documents.stream()
+                        .map(document -> new Triple<>("FROM", document.getPath(), document.getContents()))
+                        .toList());
+            }
+        }
+
+        return TupleN.asMap(
+            "files", files,
+            "medias", medias,
+            "data_urls", dataUrls);
     }
 
     // fn is_image(path: &str) -> bool {
@@ -490,6 +584,160 @@ public class Input implements Cloneable {
             return new Triple<>(role, false, false);
         } else {
             return new Triple<>(config.extractRole(), config.getSession() != null, config.getAgent() != null);
+        }
+    }
+
+    // fn read_media_to_data_url(image_path: &str) -> Result<String> {
+    //    let extension = get_patch_extension(image_path).unwrap_or_default();
+    //    let mime_type = match extension.as_str() {
+    //        "png" => "image/png",
+    //        "jpg" | "jpeg" => "image/jpeg",
+    //        "webp" => "image/webp",
+    //        "gif" => "image/gif",
+    //        _ => bail!("Unexpected media type"),
+    //    };
+    //    let mut file = File::open(image_path)?;
+    //    let mut buffer = Vec::new();
+    //    file.read_to_end(&mut buffer)?;
+    //
+    //    let encoded_image = base64_encode(buffer);
+    //    let data_url = format!("data:{mime_type};base64,{encoded_image}");
+    //
+    //    Ok(data_url)
+    // }
+    private static String readMediaToDataUrl(String imagePath) {
+        String extension = getPatchExtension(imagePath);
+        String mimeType = switch (extension) {
+            case "png" -> "image/png";
+            case "jpg", "jpeg" -> "image/png";
+            case "webp" -> "image/webp";
+            case "gif" -> "image/gif";
+            default -> {
+                bail("Unexpected media type");
+                yield null;
+            }
+        };
+
+        String dataUrl;
+        try {
+            byte[] buffer = Files.readAllBytes(Paths.get(imagePath));
+            String encodedImage = base64Encode(buffer);
+            dataUrl = format("data:{};base64,{}", mimeType, encodedImage);
+        } catch (Exception ex) {
+            bail("Can't read file {}: {}", imagePath, ex.getMessage());
+            dataUrl = null;
+        }
+
+        return dataUrl;
+    }
+
+    // pub fn prepare_completion_data(
+    //    &self,
+    //    model: &Model,
+    //    stream: bool,
+    // ) -> Result<ChatCompletionsData> {
+    //    let mut messages = self.build_messages()?;
+    //    patch_messages(&mut messages, model);
+    //    model.guard_max_input_tokens(&messages)?;
+    //    let (temperature, top_p) = (self.role().temperature(), self.role().top_p());
+    //    let functions = self.config.read().select_functions(self.role());
+    //    Ok(ChatCompletionsData {
+    //        messages,
+    //        temperature,
+    //        top_p,
+    //        functions,
+    //        stream,
+    //    })
+    // }
+    public ChatCompletionsData prepareCompletionData(Model model, boolean stream) {
+        List<Message> messages = buildMessages();
+        patchMessages(messages, model);
+        model.guardMaxInputTokens(messages);
+        Double temperature = role.getTemperature();
+        Double topP = role.getTopP();
+        List<FunctionDeclaration> functions = config.selectFunctions(role);
+        return new ChatCompletionsData()
+            .setMessages(messages)
+            .setTemperature(temperature)
+            .setTopP(topP)
+            .setFunctions(functions)
+            .setStream(stream);
+    }
+
+    // pub fn build_messages(&self) -> Result<Vec<Message>> {
+    //    let mut messages = if let Some(session) = self.session(&self.config.read().session) {
+    //        session.build_messages(self)
+    //    } else {
+    //        self.role().build_messages(self)
+    //    };
+    //    if let Some(tool_calls) = &self.tool_calls {
+    //        messages.push(Message::new(
+    //            MessageRole::Assistant,
+    //            MessageContent::ToolCalls(tool_calls.clone()),
+    //        ))
+    //    }
+    //    Ok(messages)
+    // }
+    public List<Message> buildMessages() {
+        List<Message> messages;
+        Session session = session(config.getSession());
+        if (session != null) {
+            messages = session.buildMessages(this);
+        } else {
+            messages = role.buildMessages(this);
+        }
+        if (toolCalls != null) {
+            messages.add(new Message()
+                .setRole(MessageRole.Assistant)
+                .setContent(new MessageContent().setToolCalls(toolCalls));
+        }
+        return messages;
+    }
+
+    // pub fn echo_messages(&self) -> String {
+    //    if let Some(session) = self.session(&self.config.read().session) {
+    //        session.echo_messages(self)
+    //    } else {
+    //        self.role().echo_messages(self)
+    //    }
+    // }
+    public String echoMessages() {
+        Session session = session(config.getSession());
+        if (session != null) {
+            return session.chatMessages(this);
+        } else {
+            return role.echoMessages(this);
+        }
+    }
+
+    // pub fn session<'a>(&self, session: &'a Option<Session>) -> Option<&'a Session> {
+    //    if self.with_session {
+    //        session.as_ref()
+    //    } else {
+    //        None
+    //    }
+    // }
+    public Session session(Session sesstion) {
+        if (withSession) {
+            return sesstion;
+        } else {
+            return null;
+        }
+    }
+
+    // pub fn echo_messages(&self) -> String {
+    //    if let Some(session) = self.session(&self.config.read().session) {
+    //        session.echo_messages(self)
+    //    } else {
+    //        self.role().echo_messages(self)
+    //    }
+    // }
+    public String echoMessages() {
+        Session session = session(config.getSession());
+        if (session != null) {
+            return session.echoMessages(this);
+        } else {
+            return role.echoMessages(this);
         }
     }
 

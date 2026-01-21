@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
+import static com.tsoft.jai.client.common.Common.callChatCompletions;
 import static com.tsoft.jai.client.macros.Macros.listModels;
 import static com.tsoft.jai.config.Config.TEMP_SESSION_NAME;
 import static com.tsoft.jai.config.Role.CODE_ROLE;
