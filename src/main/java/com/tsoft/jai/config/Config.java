@@ -6,6 +6,7 @@ import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.client.model.ModelType;
 import com.tsoft.jai.config.agent.Agent;
 import com.tsoft.jai.config.role.RoleLike;
+import com.tsoft.jai.function.FunctionDeclaration;
 import com.tsoft.jai.function.Functions;
 import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.inquire.Confirm;
@@ -24,6 +25,7 @@ import lombok.experimental.Accessors;
 import java.io.File;
 import java.nio.file.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.tsoft.jai.anyhow.Macros.anyhow;
 import static com.tsoft.jai.anyhow.Macros.bail;
@@ -1425,6 +1427,22 @@ public class Config {
         input = input.clone();
     }
 
+    // pub fn exit_session(&mut self) -> Result<()> {
+    //    if let Some(mut session) = self.session.take() {
+    //        let sessions_dir = self.sessions_dir();
+    //        session.exit(&sessions_dir, self.working_mode.is_repl())?;
+    //        self.discontinuous_last_message();
+    //    }
+    //    Ok(())
+    // }
+    public void exitSession() {
+        if (session != null) {
+            Path sessionsDir = sessionsDir();
+            session.exit(sessionsDir, WorkingMode.Repl.equals(workingMode));
+            discontinuousLastMessage();
+        }
+    }
+
     // pub fn render_options(&self) -> Result<RenderOptions> {
     //    let theme = if self.highlight {
     //        let theme_mode = if self.light_theme() { "light" } else { "dark" };
@@ -1456,12 +1474,135 @@ public class Config {
     //    );
     //    Ok(RenderOptions::new(theme, wrap, self.wrap_code, truecolor))
     // }
-    private RenderOptions renderOptions() {
+    public RenderOptions renderOptions() {
         return null;
     }
 
     private void loadEnvs(){ }
     private void loadFunctions() { }
+
+    // pub fn select_functions(&self, role: &Role) -> Option<Vec<FunctionDeclaration>> {
+    //    let mut functions = vec![];
+    //    if self.function_calling {
+    //        if let Some(use_tools) = role.use_tools() {
+    //            let mut tool_names: HashSet<String> = Default::default();
+    //            let declaration_names: HashSet<String> = self
+    //                .functions
+    //                .declarations()
+    //                .iter()
+    //                .map(|v| v.name.to_string())
+    //                .collect();
+    //            if use_tools == "all" {
+    //                tool_names.extend(declaration_names);
+    //            } else {
+    //                for item in use_tools.split(',') {
+    //                    let item = item.trim();
+    //                    if let Some(values) = self.mapping_tools.get(item) {
+    //                        tool_names.extend(
+    //                            values
+    //                                .split(',')
+    //                                .map(|v| v.to_string())
+    //                                .filter(|v| declaration_names.contains(v)),
+    //                        )
+    //                    } else if declaration_names.contains(item) {
+    //                        tool_names.insert(item.to_string());
+    //                    }
+    //                }
+    //            }
+    //            functions = self
+    //                .functions
+    //                .declarations()
+    //                .iter()
+    //                .filter_map(|v| {
+    //                    if tool_names.contains(&v.name) {
+    //                        Some(v.clone())
+    //                    } else {
+    //                        None
+    //                    }
+    //                })
+    //                .collect();
+    //        }
+    //
+    //        if let Some(agent) = &self.agent {
+    //            let mut agent_functions = agent.functions().declarations().to_vec();
+    //            let tool_names: HashSet<String> = agent_functions
+    //                .iter()
+    //                .filter_map(|v| {
+    //                    if v.agent {
+    //                        None
+    //                    } else {
+    //                        Some(v.name.to_string())
+    //                    }
+    //                })
+    //                .collect();
+    //            agent_functions.extend(
+    //                functions
+    //                    .into_iter()
+    //                    .filter(|v| !tool_names.contains(&v.name)),
+    //            );
+    //            functions = agent_functions;
+    //        }
+    //    };
+    //    if functions.is_empty() {
+    //        None
+    //    } else {
+    //        Some(functions)
+    //    }
+    // }
+    public List<FunctionDeclaration> selectFunctions(Role role) {
+        List<FunctionDeclaration> functions = new ArrayList<>();
+        if (functionCalling) {
+            String useTools = role.getUseTools();
+            if (!isBlank(useTools)) {
+                Set<String> toolNames = new HashSet<>();
+                Set<String> declarationNames = this.functions.getDeclarations().stream()
+                    .map(FunctionDeclaration::getName)
+                    .collect(Collectors.toSet());
+                if ("all".equals(useTools)) {
+                    toolNames.addAll(declarationNames);
+                } else {
+                    String[] items = useTools.split(",");
+                    for (String item : items) {
+                        item = item.trim();
+                        String values = (mappingTools == null) ? null : mappingTools.get(item);
+                        if (!isBlank(values)) {
+                            String[] parts = values.split(",");
+                            for (String part : parts) {
+                                part = part.trim();
+                                if (!declarationNames.contains(part)) {
+                                    toolNames.add(part);
+                                }
+                            }
+                        } else if (declarationNames.contains(item)) {
+                            toolNames.add(item);
+                        }
+                    }
+                }
+                functions = this.functions.getDeclarations().stream()
+                    .filter(e -> toolNames.contains(e.getName()))
+                    .toList();
+            }
+
+            if (agent != null) {
+                List<FunctionDeclaration> agentFunctions = agent.getFunctions().getDeclarations();
+                Set<String> toolNames = agentFunctions.stream()
+                    .filter(e -> !e.isAgent())
+                    .map(FunctionDeclaration::getName)
+                    .collect(Collectors.toSet());
+                agentFunctions.addAll(
+                    functions.stream()
+                        .filter(e -> !toolNames.contains(e.getName()))
+                        .toList());
+                functions = agentFunctions;
+            }
+        }
+
+        if (isEmpty(functions)) {
+            return null;
+        } else {
+            return functions;
+        }
+    }
 
     // fn setup_model(&mut self) -> Result<()> {
     //    let mut model_id = self.model_id.clone();

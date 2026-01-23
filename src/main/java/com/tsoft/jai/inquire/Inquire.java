@@ -38,10 +38,19 @@ public final class Inquire {
         terminal().flush();
     }
 
+    public static void println() {
+        terminal().writer().println();
+        terminal().flush();
+    }
+
     public static void println(String msg, Object ... args) {
         msg = format(msg, args);
         terminal().writer().println((msg == null) ? "" : msg);
         terminal().flush();
+    }
+
+    public static void enableRawMode() {
+
     }
 
     private Inquire() {

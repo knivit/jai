@@ -3,6 +3,7 @@ package com.tsoft.jai.client.stream;
 import com.tsoft.jai.function.ToolCall;
 import com.tsoft.jai.tokio.sync.mpsc.UnboundedSender;
 import com.tsoft.jai.utils.AbortSignal;
+import com.tsoft.jai.utils.Tuple;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
@@ -69,5 +70,22 @@ public class SseHandler {
     // }
     public void toolCall(ToolCall call) {
         toolCalls.add(call);
+    }
+
+    // pub fn abort(&self) -> AbortSignal {
+    //    self.abort_signal.clone()
+    // }
+    public AbortSignal abort() {
+        return abortSignal;
+    }
+
+    // pub fn take(self) -> (String, Vec<ToolCall>) {
+    //    let Self {
+    //        buffer, tool_calls, ..
+    //    } = self;
+    //    (buffer, tool_calls)
+    // }
+    public Tuple<String, List<ToolCall>> take() {
+        return new Tuple<>(buffer.toString(), toolCalls);
     }
 }

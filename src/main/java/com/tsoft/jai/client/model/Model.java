@@ -14,7 +14,6 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -55,6 +54,20 @@ public class Model {
     public Model(String clientName, String name) {
         this.clientName = clientName;
         this.data = new ModelData(name);
+    }
+
+    // pub fn no_system_message(&self) -> bool {
+    //    self.data.no_system_message
+    // }
+    public boolean noSystemMessage() {
+        return (data != null) && data.isNoSystemMessage();
+    }
+
+    // pub fn system_prompt_prefix(&self) -> Option<&str> {
+    //    self.data.system_prompt_prefix.as_deref()
+    // }
+    public String systemPromptPrefix() {
+        return (data == null) ? null : data.getSystemPromptPrefix();
     }
 
     // pub fn from_config(client_name: &str, models: &[ModelData]) -> Vec<Self> {
@@ -322,7 +335,7 @@ public class Model {
     //         (num_messages - 1) * PER_MESSAGES_TOKENS + message_tokens
     //     }
     // }
-    public Integer totalTokens(List<Message> messages) {
+    public int totalTokens(List<Message> messages) {
         if (isEmpty(messages)) {
             return 0;
         }
@@ -333,6 +346,27 @@ public class Model {
             return numMessages * PER_MESSAGES_TOKENS + messageTokens;
         } else {
             return (numMessages - 1) * PER_MESSAGES_TOKENS + messageTokens;
+        }
+    }
+
+    // pub fn guard_max_input_tokens(&self, messages: &[Message]) -> Result<()> {
+    //    let total_tokens = self.total_tokens(messages) + BASIS_TOKENS;
+    //    if let Some(max_input_tokens) = self.data.max_input_tokens {
+    //        if total_tokens >= max_input_tokens {
+    //            bail!("Exceed max_input_tokens limit")
+    //        }
+    //    }
+    //    Ok(())
+    // }
+    public void guardMaxInputTokens(List<Message> messages) {
+        int totalTokens = totalTokens(messages) + BASIS_TOKENS;
+        if (data != null) {
+            Integer maxInputTokens = data.getMaxInputTokens();
+            if (maxInputTokens != null) {
+                if (totalTokens >= maxInputTokens) {
+                    bail("Exceed max_input_tokens limit");
+                }
+            }
         }
     }
 

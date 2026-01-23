@@ -3,6 +3,7 @@ package com.tsoft.jai.client.openai;
 import com.tsoft.jai.client.Client;
 import com.tsoft.jai.client.common.ChatCompletionsData;
 import com.tsoft.jai.client.common.ChatCompletionsOutput;
+import com.tsoft.jai.client.common.RequestData;
 import com.tsoft.jai.config.ClientConfig;
 import com.tsoft.jai.function.FunctionDeclaration;
 import com.tsoft.jai.client.message.Message;
@@ -43,6 +44,34 @@ public class OpenAIClient extends Client {
     private final ClientConfig clientConfig;
     private final Model model;
 
+    // fn prepare_chat_completions(
+    //    self_: &OpenAIClient,
+    //    data: ChatCompletionsData,
+    // ) -> Result<RequestData> {
+    //    let api_key = self_.get_api_key()?;
+    //    let api_base = self_
+    //        .get_api_base()
+    //        .unwrap_or_else(|_| API_BASE.to_string());
+    //
+    //    let url = format!("{}/chat/completions", api_base.trim_end_matches('/'));
+    //
+    //    let body = openai_build_chat_completions_body(data, &self_.model);
+    //
+    //    let mut request_data = RequestData::new(url, body);
+    //
+    //    request_data.bearer_auth(api_key);
+    //    if let Some(organization_id) = &self_.config.organization_id {
+    //        request_data.header("OpenAI-Organization", organization_id);
+    //    }
+    //
+    //    Ok(request_data)
+    // }
+    @Override
+    public RequestData prepareChatCompletions(ChatCompletionsData data) {
+        String apiKey = clientConfig.getApiKey();
+        return null;
+    }
+
     // pub async fn openai_chat_completions(
     //    builder: RequestBuilder,
     //    _model: &Model,
@@ -57,7 +86,7 @@ public class OpenAIClient extends Client {
     //    debug!("non-stream-data: {data}");
     //    openai_extract_chat_completions(&data)
     // }
-    public ChatCompletionsOutput openaiChatCompletions(RequestBuilder builder, Model model) {
+    public ChatCompletionsOutput chatCompletions(RequestBuilder builder, Model model) {
         Response res = builder.send();
         StatusCode status = res.getStatus();
         Value data = res.getJson();
@@ -67,7 +96,7 @@ public class OpenAIClient extends Client {
         }
 
         log.debug("non-stream-data: {}", data);
-        return openaiExtractChatCompletions(data);
+        return extractChatCompletions(data);
     }
 
     // pub async fn openai_chat_completions_streaming(
@@ -169,7 +198,8 @@ public class OpenAIClient extends Client {
     //
     //    sse_stream(builder, handle).await
     // }
-    public void openaiChatCompletionsStreaming(RequestBuilder builder, SseHandler handler, Model model) {
+    @Override
+    public void chatCompletionsStreaming(RequestBuilder builder, SseHandler handler, Model model) {
         class Handler {
             private volatile String callId;
             private volatile String functionName;
@@ -391,7 +421,7 @@ public class OpenAIClient extends Client {
     //    }
     //    body
     // }
-    public static Value openaiBuildChatCompletionsBody(ChatCompletionsData data, Model model) {
+    public static Value buildChatCompletionsBody(ChatCompletionsData data, Model model) {
         List<Value> bodyMessages = new ArrayList<>();
 
         List<Message> messages = data.getMessages();
@@ -579,7 +609,7 @@ public class OpenAIClient extends Client {
     //    };
     //    Ok(output)
     // }
-    public ChatCompletionsOutput openaiExtractChatCompletions(Value data) {
+    public ChatCompletionsOutput extractChatCompletions(Value data) {
         String text = data.get("choices", 0, "message", "content").asStr();
 
         String reasoning = data.get("choices", 0, "message", "reasoning_content").asStr();

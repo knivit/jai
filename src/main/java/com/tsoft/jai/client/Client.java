@@ -1,5 +1,6 @@
 package com.tsoft.jai.client;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.common.*;
 import com.tsoft.jai.client.mod.RegisteredClient;
 import com.tsoft.jai.client.model.Model;
@@ -22,9 +23,15 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
+import static com.tsoft.jai.anyhow.Result.Err;
+import static com.tsoft.jai.anyhow.Result.Ok;
 import static com.tsoft.jai.client.mod.Mod.GLOBAL_CONFIG;
 import static com.tsoft.jai.client.mod.Mod.REGISTERED_CLIENTS;
+import static com.tsoft.jai.tokio.Select.branch;
+import static com.tsoft.jai.tokio.Select.select;
+import static com.tsoft.jai.utils.AbortSignal.waitAbortSignal;
 import static com.tsoft.jai.utils.StringUtils.isBlank;
+import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 public abstract class Client {
 
@@ -107,7 +114,7 @@ public abstract class Client {
     public ReqwestClient buildClient() {
         ClientBuilder builder = ReqwestClient.builder();
         ExtraConfig extra = extraConfig();
-        Integer timeout = 10;
+        int timeout = 10;
         String proxy;
         if (extra != null) {
             if (extra.getConnectTimeout() != null) {
@@ -174,8 +181,33 @@ public abstract class Client {
     //         },
     //     }
     // }
-    public void chatCompletionsStreaming() {
-
+    public Result<?> chatCompletionsStreaming(Input input, SseHandler handler) {
+        AbortSignal abortSignal = handler.getAbortSignal();
+        return select(
+            branch(supplyAsync(() -> {
+                if (config.isDryRun()) {
+                    String content = input.echoMessages();
+                    handler.text(content);
+                    return Ok();
+                }
+                ReqwestClient client = buildClient();
+                ChatCompletionsData data = input.prepareCompletionData(getModel(), true);
+                chatCompletionsStreamingInner(client, handler, data);
+                return Ok();
+            }), ret -> {
+                handler.done();
+                return switch (ret.getType()) {
+                    case Ok -> ret;
+                    case Err -> Err("Failed to call chat-completions api");
+                };
+            }),
+            branch(supplyAsync(() -> {
+                waitAbortSignal(abortSignal);
+                return Ok();
+            }), ret -> {
+                handler.done();
+                return Ok();
+            }));
     }
 
     // async fn embeddings(&self, data: &EmbeddingsData) -> Result<Vec<Vec<f32>>> {
@@ -218,14 +250,31 @@ public abstract class Client {
         return null;
     }
 
+    public abstract RequestData prepareChatCompletions(ChatCompletionsData data);
+
+    public abstract void chatCompletionsStreaming(RequestBuilder builder, SseHandler handler, Model model);
+
     // async fn chat_completions_streaming_inner(
     //     &self,
     //     client: &ReqwestClient,
     //     handler: &mut SseHandler,
     //     data: ChatCompletionsData,
     // ) -> Result<()>;
-    public void chatCompletionsStreamingInner(ReqwestClient client, SseHandler handler, ChatCompletionsData data) {
 
+    // async fn chat_completions_streaming_inner(
+    //    &self,
+    //    client: &reqwest::Client,
+    //    handler: &mut $crate::client::SseHandler,
+    //    data: $crate::client::ChatCompletionsData,
+    // ) -> Result<()> {
+    //    let request_data = $prepare_chat_completions(self, data)?;
+    //    let builder = self.request_builder(client, request_data);
+    //    $chat_completions_streaming(builder, handler, self.model()).await
+    // }
+    public void chatCompletionsStreamingInner(ReqwestClient client, SseHandler handler, ChatCompletionsData data) {
+        RequestData requestData = prepareChatCompletions(data);
+        RequestBuilder builder = requestBuilder(client, requestData);
+        chatCompletionsStreaming(builder, handler, getModel());
     }
 
     // async fn embeddings_inner(

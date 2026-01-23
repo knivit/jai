@@ -17,6 +17,7 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -505,5 +506,56 @@ public class Session {
     // }
     public boolean isEmpty() {
         return CollectionsUtils.isEmpty(messages) && CollectionsUtils.isEmpty(compressedMessages);
+    }
+
+    // pub fn exit(&mut self, session_dir: &Path, is_repl: bool) -> Result<()> {
+    //    let mut save_session = self.save_session();
+    //    if self.save_session_this_time {
+    //        save_session = Some(true);
+    //    }
+    //    if self.dirty && save_session != Some(false) {
+    //        let mut session_dir = session_dir.to_path_buf();
+    //        let mut session_name = self.name().to_string();
+    //        if save_session.is_none() {
+    //            if !is_repl {
+    //                return Ok(());
+    //            }
+    //            let ans = Confirm::new("Save session?").with_default(false).prompt()?;
+    //            if !ans {
+    //                return Ok(());
+    //            }
+    //            if session_name == TEMP_SESSION_NAME {
+    //                session_name = Text::new("Session name:")
+    //                    .with_validator(|input: &str| {
+    //                        let input = input.trim();
+    //                        if input.is_empty() {
+    //                            Ok(Validation::Invalid("This name is required".into()))
+    //                        } else if input == TEMP_SESSION_NAME {
+    //                            Ok(Validation::Invalid("This name is reserved".into()))
+    //                        } else {
+    //                            Ok(Validation::Valid)
+    //                        }
+    //                    })
+    //                    .prompt()?;
+    //            }
+    //        } else if save_session == Some(true) && session_name == TEMP_SESSION_NAME {
+    //            session_dir = session_dir.join("_");
+    //            ensure_parent_exists(&session_dir).with_context(|| {
+    //                format!("Failed to create directory '{}'", session_dir.display())
+    //            })?;
+    //
+    //            let now = chrono::Local::now();
+    //            session_name = now.format("%Y%m%dT%H%M%S").to_string();
+    //            if let Some(autoname) = self.autoname() {
+    //                session_name = format!("{session_name}-{autoname}")
+    //            }
+    //        }
+    //        let session_path = session_dir.join(format!("{session_name}.yaml"));
+    //        self.save(&session_name, &session_path, is_repl)?;
+    //    }
+    //    Ok(())
+    // }
+    public void exit(Path sessionsDir, boolean equals) {
+
     }
 }

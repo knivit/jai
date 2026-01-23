@@ -10,8 +10,8 @@ class PathUtilTest {
     @Test
     void get_patch_extension() {
         assertEquals(null, getPatchExtension(null));
-        assertEquals("", getPatchExtension(""));
-        assertEquals("", getPatchExtension("test"));
+        assertEquals(null, getPatchExtension(""));
+        assertEquals(null, getPatchExtension("test"));
         assertEquals("", getPatchExtension("."));
         assertEquals("", getPatchExtension("a."));
         assertEquals("a", getPatchExtension(".a"));

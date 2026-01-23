@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.client.macros.Macros.initClient;
+import static com.tsoft.jai.client.message.Message.patchMessages;
 import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.utils.Crypto.base64Encode;
 import static com.tsoft.jai.utils.Crypto.sha256;
@@ -423,7 +424,7 @@ public class Input implements Cloneable {
             }
         }
 
-        return TupleN.asMap(
+        return TupleN.asLinkedMap(
             "raw_paths", rawPaths,
             "local_paths", localPaths,
             "remote_urls", remoteUrls,
@@ -554,7 +555,7 @@ public class Input implements Cloneable {
             }
         }
 
-        return TupleN.asMap(
+        return TupleN.asLinkedMap(
             "files", files,
             "medias", medias,
             "data_urls", dataUrls);
@@ -567,6 +568,29 @@ public class Input implements Cloneable {
     // }
     public static boolean isImage(String path) {
         return IMAGE_EXTS.contains(getPatchExtension(path));
+    }
+
+    // pub fn resolve_data_url(data_urls: &HashMap<String, String>, data_url: String) -> String {
+    //    if data_url.starts_with("data:") {
+    //        let hash = sha256(&data_url);
+    //        if let Some(path) = data_urls.get(&hash) {
+    //            return path.to_string();
+    //        }
+    //        data_url
+    //    } else {
+    //        data_url
+    //    }
+    // }
+    public static String resolveDataUrl(Map<String, String> dataUrls, String dataUrl) {
+        if (!isBlank(dataUrl) && dataUrl.startsWith("data:")) {
+            String hash = sha256(dataUrl);
+            String path = dataUrls.get(hash);
+            if (path != null) {
+                return path;
+            }
+            return dataUrl;
+        }
+        return dataUrl;
     }
 
     // fn resolve_role(config: &Config, role: Option<Role>) -> (Role, bool, bool) {
@@ -689,25 +713,9 @@ public class Input implements Cloneable {
         if (toolCalls != null) {
             messages.add(new Message()
                 .setRole(MessageRole.Assistant)
-                .setContent(new MessageContent().setToolCalls(toolCalls));
+                .setContent(new MessageContent().setToolCalls(toolCalls)));
         }
         return messages;
-    }
-
-    // pub fn echo_messages(&self) -> String {
-    //    if let Some(session) = self.session(&self.config.read().session) {
-    //        session.echo_messages(self)
-    //    } else {
-    //        self.role().echo_messages(self)
-    //    }
-    // }
-    public String echoMessages() {
-        Session session = session(config.getSession());
-        if (session != null) {
-            return session.chatMessages(this);
-        } else {
-            return role.echoMessages(this);
-        }
     }
 
     // pub fn session<'a>(&self, session: &'a Option<Session>) -> Option<&'a Session> {
@@ -739,6 +747,49 @@ public class Input implements Cloneable {
         } else {
             return role.echoMessages(this);
         }
+    }
+
+    // pub fn text(&self) -> String {
+    //    match self.patched_text.clone() {
+    //        Some(text) => text,
+    //        None => self.text.clone(),
+    //    }
+    // }
+    public String text() {
+        if (!isBlank(patchedText)) {
+            return patchedText;
+        }
+        return text;
+    }
+
+    // pub fn render(&self) -> String {
+    //    let text = self.text();
+    //    if self.medias.is_empty() {
+    //        return text;
+    //    }
+    //    let tail_text = if text.is_empty() {
+    //        String::new()
+    //    } else {
+    //        format!(" -- {text}")
+    //    };
+    //    let files: Vec<String> = self
+    //        .medias
+    //        .iter()
+    //        .cloned()
+    //        .map(|url| resolve_data_url(&self.data_urls, url))
+    //        .collect();
+    //    format!(".file {}{}", files.join(" "), tail_text)
+    // }
+    public String render() {
+        String text = text();
+        if (CollectionsUtils.isEmpty(medias)) {
+            return text;
+        }
+        String tailText = isBlank(text) ? "" : format(" -- {}", text);
+        List<String> files = medias.stream()
+            .map(url -> resolveDataUrl(dataUrls, url))
+            .toList();
+        return format(".file {}{}", String.join(" ", files), tailText);
     }
 
     @Override

@@ -118,6 +118,13 @@ public class Role {
         return role;
     }
 
+    // pub fn is_empty_prompt(&self) -> bool {
+    //    self.prompt.is_empty()
+    // }
+    public boolean isEmptyPrompt() {
+        return isBlank(prompt);
+    }
+
     private static final String ROLES_ASSET = "assets/roles";
 
     // pub fn builtin(name: &str) -> Result<Self> {
@@ -148,6 +155,27 @@ public class Role {
             .filter(e -> e.endsWith(".md"))
             .map(e -> e.substring(0, e.length() - 3))
             .toList();
+    }
+
+    // pub fn echo_messages(&self, input: &Input) -> String {
+    //    let input_markdown = input.render();
+    //    if self.is_empty_prompt() {
+    //        input_markdown
+    //    } else if self.is_embedded_prompt() {
+    //        self.prompt.replace(INPUT_PLACEHOLDER, &input_markdown)
+    //    } else {
+    //        format!("{}\n\n{}", self.prompt, input_markdown)
+    //    }
+    // }
+    public String echoMessages(Input input) {
+        String inputMarkdown = input.render();
+        if (isEmptyPrompt()) {
+            return inputMarkdown;
+        } else if (isEmbeddedPrompt()) {
+            return prompt.replace(INPUT_PLACEHOLDER, inputMarkdown);
+        } else {
+            return format("{}\n\n{}", prompt, inputMarkdown);
+        }
     }
 
     // pub fn build_messages(&self, input: &Input) -> Vec<Message> {
