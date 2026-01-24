@@ -1,8 +1,9 @@
 package com.tsoft.jai.utils;
 
+import com.tsoft.jai.utils.base.Tuple;
 import org.junit.jupiter.api.Test;
 
-import static com.tsoft.jai.utils.StringUtils.*;
+import static com.tsoft.jai.utils.base.StringUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class StringUtilsTest {

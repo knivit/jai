@@ -11,7 +11,7 @@ import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import static com.tsoft.jai.utils.StringUtils.*;
+import static com.tsoft.jai.utils.base.StringUtils.*;
 
 @Slf4j
 public class SerDe {

@@ -1,13 +1,17 @@
 package com.tsoft.jai;
 
 import com.tsoft.jai.utils.Asset;
+import com.tsoft.jai.utils.base.ListUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static com.tsoft.jai.Main.main;
 import static com.tsoft.jai.inquire.Inquire.*;
 import static com.tsoft.jai.testutils.TestStringUtils.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class MainTest {
 
@@ -17,43 +21,54 @@ class MainTest {
     @BeforeEach
     void beforeEach() {
         System.setProperty(JAI_DUMB_TERMINAL_MODE, "ON");
-        dumbOutput.reset();
+    }
+
+    private String execute(String ... args) {
+        List<String> list = ListUtils.of("--config-file", CONFIG_FILE);
+        if (args != null) {
+            list.addAll(Arrays.asList(args));
+        }
+
+        output.reset();
+        main(list.toArray(new String[] { }));
+        return normalize(output.toString(), CONFIG_DIR, "<dir>");
     }
 
     @Test
     void main_list_models() {
-        main(new String[] { "--config-file", CONFIG_FILE, "--list-models"});
-
-        assertEquals("""
+        assertThat(execute("--list-models")).isEqualTo("""
             ollama:deepseek-v3.2:cloud
             ollama:glm-4.7:cloud
             ollama:kimi-k2:1t-cloud
             ollama:minimax-m2:cloud
             ollama:qwen3-coder:480b-cloud
-            
-            """, normalizeLineSeparators(dumbOutput.toString()));
+            """);
     }
 
     @Test
     void main_list_roles() {
-        main(new String[] { "--config-file", CONFIG_FILE, "--list-roles"});
-        
-        assertEquals("""
+        assertThat(execute("--list-roles")).isEqualTo("""
             %code%
             %create-prompt%
             %create-title%
             %explain-shell%
             %functions%
             %shell%
-            
-            """, normalizeLineSeparators(dumbOutput.toString()));
+            """);
+    }
+
+    @Test
+    void main_start_and_list_sessions() {
+        assertThat(execute("--list-sessions")).isEqualTo("\n");
+
+        assertThat(execute("--session", "test")).isEqualTo("");
+
+        assertThat(execute("--list-sessions")).isEqualTo("");
     }
 
     @Test
     void main_info() {
-        main(new String[] { "--config-file", CONFIG_FILE, "--info"});
-
-        assertEquals("""
+        assertThat(execute("--info")).isEqualTo("""
             model                   ollama:deepseek-v3.2:cloud
             temperature             null
             top_p                   null
@@ -79,8 +94,7 @@ class MainTest {
             macros_dir              <dir>/macros
             functions_dir           <dir>/functions
             messages_file           <dir>/messages.md
-            
-            """, normalize(dumbOutput.toString(), CONFIG_DIR, "<dir>"));
+            """);
     }
 
     private String normalize(String value, String ... repls) {

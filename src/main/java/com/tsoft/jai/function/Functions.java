@@ -14,7 +14,7 @@ import java.util.Map;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.serdejson.SerDe.json;
-import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 
 @Data
 @Accessors(chain = true)

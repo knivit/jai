@@ -2,6 +2,7 @@ package com.tsoft.jai.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.client.model.ModelType;
 import com.tsoft.jai.config.agent.Agent;
@@ -9,16 +10,16 @@ import com.tsoft.jai.config.role.RoleLike;
 import com.tsoft.jai.function.FunctionDeclaration;
 import com.tsoft.jai.function.Functions;
 import com.tsoft.jai.function.ToolResult;
-import com.tsoft.jai.inquire.Confirm;
+import com.tsoft.jai.inquire.prompt.Confirm;
 import com.tsoft.jai.inquire.Inquire;
-import com.tsoft.jai.inquire.Select;
+import com.tsoft.jai.inquire.prompt.Select;
 import com.tsoft.jai.rag.Rag;
 import com.tsoft.jai.render.markdown.RenderOptions;
 import com.tsoft.jai.serdejson.SerDe;
 import com.tsoft.jai.serdejson.Value;
 import com.tsoft.jai.std.Fs;
 import com.tsoft.jai.utils.AbortSignal;
-import com.tsoft.jai.utils.Tuple;
+import com.tsoft.jai.utils.base.Tuple;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -29,11 +30,15 @@ import java.util.stream.Collectors;
 
 import static com.tsoft.jai.anyhow.Macros.anyhow;
 import static com.tsoft.jai.anyhow.Macros.bail;
+import static com.tsoft.jai.anyhow.Result.isOk;
 import static com.tsoft.jai.client.macros.Macros.listModels;
+import static com.tsoft.jai.inquire.Inquire.IS_STDOUT_TERMINAL;
 import static com.tsoft.jai.inquire.Inquire.println;
-import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
-import static com.tsoft.jai.utils.NumberUtils.parseInt;
-import static com.tsoft.jai.utils.StringUtils.*;
+import static com.tsoft.jai.std.Fs.readDir;
+import static com.tsoft.jai.utils.PathUtil.listFileNames;
+import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.NumberUtils.parseInt;
+import static com.tsoft.jai.utils.base.StringUtils.*;
 import static com.tsoft.jai.utils.command.Command.editFile;
 
 @Data
@@ -194,7 +199,7 @@ public class Config {
 
         Config config;
         if (!configFile.exists()) {
-            if (Inquire.terminal() != null) {
+            if (IS_STDOUT_TERMINAL) {
                 createConfigFile(configFile);
                 config = loadFromFile(configFile);
             } else {
@@ -340,12 +345,14 @@ public class Config {
     // }
     public List<String> listRoles(boolean withBuiltin) {
         Set<String> names = new HashSet<>();
-
-        Fs.readDir(rolesDir()).stream()
-            .map(File::getName)
-            .filter(e -> e.endsWith(".md"))
-            .map(e -> e.substring(0, e.length() - 3))
-            .forEach(names::add);
+        Result<List<File>> rd = readDir(rolesDir());
+        if (isOk(rd)) {
+            rd.getValue().stream()
+                .map(File::getName)
+                .filter(e -> e.endsWith(".md"))
+                .map(e -> e.substring(0, e.length() - 3))
+                .forEach(names::add);
+        }
 
         if (withBuiltin) {
             names.addAll(Role.listBuiltinRoleNames());
@@ -477,7 +484,7 @@ public class Config {
         if (!isBlank(dir) && !isBlank(name)) {
             return sessionsDir().resolve(dir).resolve(format("{}.yaml", name)).toFile();
         }
-        return sessionsDir().resolve(format("{}.yaml", name)).toFile();
+        return sessionsDir().resolve(format("{}.yaml", sessionName)).toFile();
     }
 
     // pub fn role_file(name: &str) -> PathBuf {
@@ -533,42 +540,34 @@ public class Config {
     //    }
     // }
     public List<String> listRags() {
-        List<String> names = new ArrayList<>(
-            Fs.readDir(ragsDir()).stream()
-                .map(File::getName)
-                .filter(e -> e.endsWith(".yaml"))
-                .map(e -> e.substring(0, e.length() - 5))
-                .toList());
-        names.sort(String::compareToIgnoreCase);
-        return names;
+        Result<List<File>> res = readDir(ragsDir());
+        return switch (res.getType()) {
+            case Ok -> {
+                List<String> names = new ArrayList<>(
+                    res.getValue().stream()
+                        .map(File::getName)
+                        .filter(e -> e.endsWith(".yaml"))
+                        .map(e -> e.substring(0, e.length() - 5))
+                        .toList());
+                names.sort(String::compareToIgnoreCase);
+                yield names;
+            }
+            case Err -> Collections.emptyList();
+        };
     }
 
     // pub fn list_macros() -> Vec<String> {
     //    list_file_names(Self::macros_dir(), ".yaml")
     // }
     public List<String> listMacros() {
-        List<String> names = new ArrayList<>(
-            Fs.readDir(macrosDir()).stream()
-                .map(File::getName)
-                .filter(e -> e.endsWith(".yaml"))
-                .map(e -> e.substring(0, e.length() - 5))
-                .toList());
-        names.sort(String::compareToIgnoreCase);
-        return names;
+        return listFileNames(macrosDir(), ".yaml");
     }
 
     // pub fn list_sessions(&self) -> Vec<String> {
     //    list_file_names(self.sessions_dir(), ".yaml")
     // }
     public List<String> listSessions() {
-        List<String> names = new ArrayList<>(
-            Fs.readDir(sessionsDir()).stream()
-                .map(File::getName)
-                .filter(e -> e.endsWith(".yaml"))
-                .map(e -> e.substring(0, e.length() - 5))
-                .toList());
-        names.sort(String::compareToIgnoreCase);
-        return names;
+        return listFileNames(sessionsDir(), ".yaml");
     }
 
     //  pub async fn use_agent(
@@ -988,6 +987,51 @@ public class Config {
             bail("No RAG");
             return null;
         }
+    }
+
+    // pub fn state(&self) -> StateFlags {
+    //    let mut flags = StateFlags::empty();
+    //    if let Some(session) = &self.session {
+    //        if session.is_empty() {
+    //            flags |= StateFlags::SESSION_EMPTY;
+    //        } else {
+    //            flags |= StateFlags::SESSION;
+    //        }
+    //        if session.role_name().is_some() {
+    //            flags |= StateFlags::ROLE;
+    //        }
+    //    } else if self.role.is_some() {
+    //        flags |= StateFlags::ROLE;
+    //    }
+    //    if self.agent.is_some() {
+    //        flags |= StateFlags::AGENT;
+    //    }
+    //    if self.rag.is_some() {
+    //        flags |= StateFlags::RAG;
+    //    }
+    //    flags
+    // }
+    public int state() {
+        int flags = StateFlags.EMPTY;
+        if (session != null) {
+            if (session.isEmpty()) {
+                flags |= StateFlags.SESSION_EMPTY;
+            } else {
+                flags |= StateFlags.SESSION;
+            }
+            if (!isBlank(session.getRoleName())) {
+                flags |= StateFlags.ROLE;
+            }
+        } else if (role != null) {
+            flags |= StateFlags.ROLE;
+        }
+        if (agent != null) {
+            flags |= StateFlags.AGENT;
+        }
+        if (rag != null) {
+            flags |= StateFlags.RAG;
+        }
+        return flags;
     }
 
     // fn init_agent_shared_variables(&mut self) -> Result<()> {
@@ -1958,10 +2002,11 @@ public class Config {
         // to do
     }
 
-    private static void ensureParentExists(File configFile) {
+    public static void ensureParentExists(File configFile) {
         try {
             Files.createDirectories(Paths.get(configFile.getParent()));
         } catch (Exception ex) {
+            println("Failed to create directory '{}': {}", configFile, ex.getMessage());
             throw new IllegalStateException(ex);
         }
     }
@@ -2006,6 +2051,32 @@ public class Config {
     //    Ok(())
     // }
     public void applyPrelude() {
+        if (macroFlag || StateFlags.EMPTY == state()) {
+            return;
+        }
+        String prelude = switch (workingMode) {
+            case Repl -> replPrelude;
+            case Cmd -> cmdPrelude;
+            case Serve -> null;
+        };
+        if (isBlank(prelude)) {
+            return;
+        }
+        Tuple<String, String> tuple = splitOnce(prelude, ':');
+        if ("role".equals(tuple.first()) && !isBlank(tuple.second())) {
+            useRole(tuple.second());
+        } else if ("session".equals(tuple.first()) && !isBlank(tuple.second())) {
+            useSession(tuple.second());
+        } else if (!isBlank(tuple.first()) && !isBlank(tuple.second())) {
+            String sessionName = tuple.first();
+            String roleName = tuple.second();
+            useSession(sessionName);
+            if (session == null) {
+                useRole(roleName);
+            }
+        } else {
+            bail("Invalid prelude '{}'", prelude);
+        }
     }
 
     // pub fn print_markdown(&self, text: &str) -> Result<()> {

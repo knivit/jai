@@ -8,15 +8,19 @@ import org.jline.terminal.TerminalBuilder;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 
-import static com.tsoft.jai.utils.StringUtils.format;
+import static com.tsoft.jai.utils.base.StringUtils.format;
 
 public final class Inquire {
 
     public static final String JAI_DUMB_TERMINAL_MODE = "JAI_DUMB_TERMINAL_MODE";
+
     public static final ByteArrayInputStream terminalInput = new ByteArrayInputStream(new byte[0]);
+
     public static final ByteArrayOutputStream output = new ByteArrayOutputStream();
+    public static final PrintStream outputStream = new PrintStream(output);
     public static final ByteArrayOutputStream terminalOutput = new ByteArrayOutputStream();
 
     private static final Inquire INSTANCE = new Inquire();
@@ -24,6 +28,8 @@ public final class Inquire {
     // package-private
     private Terminal terminal;
     private final Prompter prompter;
+
+    public static final boolean IS_STDOUT_TERMINAL = INSTANCE.terminal != null;
 
     public static Terminal terminal() {
         return INSTANCE.terminal;
@@ -35,20 +41,19 @@ public final class Inquire {
 
     public static void print(String msg, Object ... args) {
         msg = format(msg, args);
-        System.ou
-        output.print((msg == null) ? "" : msg);
-        terminal().flush();
+        outputStream.print((msg == null) ? "" : msg);
+        outputStream.flush();
     }
 
     public static void println() {
-        terminal().writer().println();
-        terminal().flush();
+        outputStream.println();
+        outputStream.flush();
     }
 
     public static void println(String msg, Object ... args) {
         msg = format(msg, args);
-        terminal().writer().println((msg == null) ? "" : msg);
-        terminal().flush();
+        outputStream.println((msg == null) ? "" : msg);
+        outputStream.flush();
     }
 
     public static void enableRawMode() {

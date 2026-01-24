@@ -1,4 +1,4 @@
-package com.tsoft.jai.inquire;
+package com.tsoft.jai.inquire.prompt;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;

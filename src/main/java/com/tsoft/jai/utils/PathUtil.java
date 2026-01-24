@@ -1,15 +1,16 @@
 package com.tsoft.jai.utils;
 
+import com.tsoft.jai.anyhow.Result;
+import com.tsoft.jai.utils.base.Triple;
+
+import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 
-import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
-import static com.tsoft.jai.utils.StringUtils.isBlank;
+import static com.tsoft.jai.std.Fs.readDir;
+import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 public final class PathUtil {
 
@@ -150,6 +151,39 @@ public final class PathUtil {
     // }
     public static Triple<String, List<String>, Boolean> parseGlob(String path) {
         return null;
+    }
+
+    // pub fn list_file_names<T: AsRef<Path>>(dir: T, ext: &str) -> Vec<String> {
+    //    match std::fs::read_dir(dir.as_ref()) {
+    //        Ok(rd) => {
+    //            let mut names = vec![];
+    //            for entry in rd.flatten() {
+    //                let name = entry.file_name();
+    //                if let Some(name) = name.to_string_lossy().strip_suffix(ext) {
+    //                    names.push(name.to_string());
+    //                }
+    //            }
+    //            names.sort_unstable();
+    //            names
+    //        }
+    //        Err(_) => vec![],
+    //    }
+    // }
+    public static List<String> listFileNames(Path dir, String ext) {
+        Result<List<File>> rd = readDir(dir);
+        return switch (rd.getType()) {
+            case Ok -> {
+                List<String> names = new ArrayList<>(
+                    rd.getValue().stream()
+                        .map(File::getName)
+                        .filter(e -> e.endsWith(ext))
+                        .map(e -> e.substring(0, e.length() - ext.length()))
+                        .toList());
+                names.sort(String::compareToIgnoreCase);
+                yield names;
+            }
+            case Err -> Collections.emptyList();
+        };
     }
 
     // #[async_recursion::async_recursion]

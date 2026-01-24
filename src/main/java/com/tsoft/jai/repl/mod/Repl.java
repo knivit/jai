@@ -1,10 +1,15 @@
 package com.tsoft.jai.repl.mod;
 
+import com.tsoft.jai.config.AssertState;
 import com.tsoft.jai.config.Config;
+import com.tsoft.jai.config.StateFlags;
 import com.tsoft.jai.repl.prompt.ReplPrompt;
 import com.tsoft.jai.utils.AbortSignal;
+import com.tsoft.jai.utils.base.BuildInfo;
 import lombok.Data;
 import lombok.experimental.Accessors;
+
+import static com.tsoft.jai.inquire.Inquire.print;
 
 @Data
 @Accessors(chain = true)
@@ -80,7 +85,18 @@ public class Repl {
     //        Ok(())
     //    }
     public void run() {
-
+        if (AssertState.False(StateFlags.AGENT | StateFlags.RAG).asserts(config.state())) {
+            print("""
+                Welcome to {} {}
+                Type ".help" for additional help.
+                """, BuildInfo.getProject(), BuildInfo.getVersion());
+        }
+        while (true) {
+            if (abortSignal.abortedCtrlD()) {
+                break;
+            }
+            ...
+        }
     }
 
     // fn create_editor(config: &GlobalConfig) -> Result<Reedline> {

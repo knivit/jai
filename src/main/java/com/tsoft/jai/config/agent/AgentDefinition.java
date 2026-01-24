@@ -9,8 +9,8 @@ import lombok.experimental.Accessors;
 import java.io.File;
 import java.util.List;
 
-import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
-import static com.tsoft.jai.utils.StringUtils.isBlank;
+import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 @Data
 @Accessors(chain = true)

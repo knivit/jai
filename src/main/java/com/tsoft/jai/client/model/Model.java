@@ -9,7 +9,7 @@ import com.tsoft.jai.config.Config;
 import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.serdejson.SerDe;
 import com.tsoft.jai.serdejson.Value;
-import com.tsoft.jai.utils.Tuple;
+import com.tsoft.jai.utils.base.Tuple;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -21,10 +21,10 @@ import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.client.macros.Macros.listAllModels;
 import static com.tsoft.jai.client.macros.Macros.listClientNames;
 import static com.tsoft.jai.client.model.ModelType.canCreateFromName;
-import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.Mod.estimateTokenLength;
 import static com.tsoft.jai.utils.Mod.stripThinkTag;
-import static com.tsoft.jai.utils.StringUtils.*;
+import static com.tsoft.jai.utils.base.StringUtils.*;
 
 @Data
 @Accessors(chain = true)

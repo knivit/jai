@@ -31,9 +31,9 @@ import java.util.function.Function;
 
 import static com.tsoft.jai.client.stream.Stream.sseStream;
 import static com.tsoft.jai.serdejson.SerDe.json;
-import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.Mod.stripThinkTag;
-import static com.tsoft.jai.utils.StringUtils.isBlank;
+import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 @Slf4j
 @Getter

@@ -10,8 +10,8 @@ import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.tokio.sync.mpsc.UnboundedReceiver;
 import com.tsoft.jai.tokio.sync.mpsc.UnboundedSender;
 import com.tsoft.jai.utils.AbortSignal;
-import com.tsoft.jai.utils.Tuple;
-import com.tsoft.jai.utils.TupleN;
+import com.tsoft.jai.utils.base.Tuple;
+import com.tsoft.jai.utils.base.TupleN;
 
 import java.util.List;
 
@@ -24,7 +24,7 @@ import static com.tsoft.jai.render.Mod.renderStream;
 import static com.tsoft.jai.tokio.Join.join;
 import static com.tsoft.jai.utils.Mod.extractCodeBlock;
 import static com.tsoft.jai.utils.Mod.stripThinkTag;
-import static com.tsoft.jai.utils.StringUtils.isBlank;
+import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 public class Common {

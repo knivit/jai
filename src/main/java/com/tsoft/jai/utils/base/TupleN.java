@@ -1,6 +1,7 @@
-package com.tsoft.jai.utils;
+package com.tsoft.jai.utils.base;
 
 import java.util.*;
+import java.util.function.Supplier;
 
 public class TupleN {
 
@@ -44,10 +45,18 @@ public class TupleN {
         return tupleN;
     }
 
+    public static TupleN asMap(Object ... kvs) {
+        return createMap(HashMap::new, kvs);
+    }
+
     public static TupleN asLinkedMap(Object ... kvs) {
+        return createMap(LinkedHashMap::new, kvs);
+    }
+
+    private static TupleN createMap(Supplier<Map<String, Object>> mapSupplier, Object ... kvs) {
         Map<String, Object> map = Collections.emptyMap();
         if (kvs != null) {
-            map = new LinkedHashMap<>();
+            map = mapSupplier.get();
             for (int i = 0; i < kvs.length; i += 2) {
                 map.put(kvs[i].toString(), kvs[i + 1]);
             }

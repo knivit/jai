@@ -1,6 +1,6 @@
 package com.tsoft.jai.repl.mod;
 
-import com.tsoft.jai.utils.Tuple;
+import com.tsoft.jai.utils.base.Tuple;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

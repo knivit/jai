@@ -1,4 +1,4 @@
-package com.tsoft.jai.utils;
+package com.tsoft.jai.utils.base;
 
 import lombok.extern.slf4j.Slf4j;
 

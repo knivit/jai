@@ -5,9 +5,10 @@ import lombok.experimental.Accessors;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
-import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 
 @Data
 @Accessors(chain = true)
@@ -32,6 +33,66 @@ public class MessageContent {
 
     public static MessageContent Array(List<MessageContentPart> array) {
         return new MessageContent().setType(MessageContentEnum.Array).setArray(array);
+    }
+
+    public static MessageContent Array(MessageContent other) {
+        if (other == null) {
+            throw new IllegalArgumentException("Argument 'other' can't be null");
+        }
+
+        return switch (other.type) {
+            case Array -> new MessageContent().setType(MessageContentEnum.Array).setArray(cloneArray(other));
+            default -> throw new IllegalStateException("The operation is invalid");
+        };
+    }
+
+    public void insert(int index, MessageContentPart part) {
+        switch (type) {
+            case Array -> {
+                List<MessageContentPart> clone = cloneArray(this);
+                clone.add(index, part);
+                this.array = clone;
+            }
+            default -> throw new IllegalStateException("The operation is invalid");
+        }
+    }
+
+    public void push(MessageContentPart part) {
+        switch (type) {
+            case Array -> {
+                List<MessageContentPart> clone = cloneArray(this);
+                clone.add(part);
+                this.array = clone;
+            }
+            default -> throw new IllegalStateException("The operation is invalid");
+        }
+    }
+
+    public void append(MessageContent other) {
+        if (other == null) {
+            throw new IllegalArgumentException("Argument 'other' can't be null");
+        }
+
+        if (!Objects.equals(type, other.type)) {
+            throw new IllegalArgumentException("Argument 'other' must be the same type as 'this'");
+        }
+
+        switch (type) {
+            case Array -> {
+                List<MessageContentPart> clone = cloneArray(this);
+                clone.addAll(other.array);
+                this.array = clone;
+            }
+            default -> throw new IllegalStateException("The operation is invalid");
+        }
+    }
+
+    private static List<MessageContentPart> cloneArray(MessageContent source) {
+        List<MessageContentPart> clone = new ArrayList<>();
+        if (!isEmpty(source.array)) {
+            clone.addAll(source.array);
+        }
+        return clone;
     }
 
     public static MessageContent ToolCalls(MessageContentToolCalls toolCalls) {

@@ -4,10 +4,13 @@ import com.tsoft.jai.client.model.Model;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.util.Arrays;
 import java.util.List;
 
-import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
-import static com.tsoft.jai.utils.StringUtils.isBlank;
+import static com.tsoft.jai.client.message.MessageContent.MessageContentEnum.Array;
+import static com.tsoft.jai.client.message.MessageContent.MessageContentEnum.Text;
+import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 @Data
 @Accessors(chain = true)
@@ -90,6 +93,23 @@ public class Message {
     //    }
     // }
     public void mergeSystem(MessageContent system) {
+        if (content == null || system == null) {
+            return;
+        }
 
+        if (Text.equals(content.getType()) && Text.equals(system.getType())) {
+            content = MessageContent.Array(Arrays.asList(
+                MessageContentPart.Text(system.getText()),
+                MessageContentPart.Text(content.getText())
+            ));
+        } else if (Array.equals(content.getType()) && Text.equals(system.getType())) {
+            content.insert(0, MessageContentPart.Text(content.getText()));
+        } else if (Text.equals(content.getType()) && Array.equals(system.getType())) {
+            system.push(MessageContentPart.Text(content.getText()));
+            content = MessageContent.Array(system);
+        } else if (Array.equals(content.getType()) && Array.equals(system.getType())) {
+            system.append(content);
+            this.content = MessageContent.Array(system);
+        }
     }
 }

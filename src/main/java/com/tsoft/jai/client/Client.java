@@ -15,7 +15,7 @@ import com.tsoft.jai.reqwest.RequestBuilder;
 import com.tsoft.jai.reqwest.ReqwestClient;
 import com.tsoft.jai.serdejson.Value;
 import com.tsoft.jai.utils.AbortSignal;
-import com.tsoft.jai.utils.Tuple;
+import com.tsoft.jai.utils.base.Tuple;
 import lombok.Getter;
 
 import java.time.Duration;
@@ -30,7 +30,7 @@ import static com.tsoft.jai.client.mod.Mod.REGISTERED_CLIENTS;
 import static com.tsoft.jai.tokio.Select.branch;
 import static com.tsoft.jai.tokio.Select.select;
 import static com.tsoft.jai.utils.AbortSignal.waitAbortSignal;
-import static com.tsoft.jai.utils.StringUtils.isBlank;
+import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 public abstract class Client {

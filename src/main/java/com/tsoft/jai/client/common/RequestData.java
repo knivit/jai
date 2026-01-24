@@ -11,8 +11,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static com.tsoft.jai.serdejson.Value.jsonPatch;
-import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
-import static com.tsoft.jai.utils.StringUtils.isBlank;
+import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 @Slf4j
 @Data

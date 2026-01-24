@@ -1,5 +1,6 @@
 package com.tsoft.jai.utils;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.std.Fs;
 import lombok.extern.slf4j.Slf4j;
 
@@ -8,6 +9,9 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
+import static com.tsoft.jai.std.Fs.readDir;
+import static com.tsoft.jai.utils.base.StringUtils.format;
+
 @Slf4j
 public final class Asset {
 
@@ -15,10 +19,13 @@ public final class Asset {
 
     public static List<File> files(String assetName) {
         try {
-            return Fs.readDir(Paths.get(Asset.class.getResource("/" + assetName).toURI()));
+            Result<List<File>> res = readDir(Paths.get(Asset.class.getResource("/" + assetName).toURI()));
+            return switch (res.getType()) {
+                case Ok -> res.getValue();
+                case Err -> throw new IllegalStateException(res.getErrors());
+            };
         } catch (Exception ex) {
-            log.warn("Error listing asset files '{}'", assetName, ex);
-            return Collections.emptyList();
+            throw new IllegalArgumentException(format("Error listing asset files '{}': {}", assetName, ex.getMessage()));
         }
     }
 
@@ -26,8 +33,7 @@ public final class Asset {
         try {
             return Paths.get(Asset.class.getResource("/" + assetName).toURI()).toFile();
         } catch (Exception ex) {
-            log.warn("Error getting asset file '{}'", assetName, ex);
-            return null;
+            throw new IllegalArgumentException(format("Error getting asset file '{}': {}", assetName, ex.getMessage()));
         }
     }
 }

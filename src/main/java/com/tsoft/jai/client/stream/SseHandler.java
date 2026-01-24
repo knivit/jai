@@ -3,7 +3,7 @@ package com.tsoft.jai.client.stream;
 import com.tsoft.jai.function.ToolCall;
 import com.tsoft.jai.tokio.sync.mpsc.UnboundedSender;
 import com.tsoft.jai.utils.AbortSignal;
-import com.tsoft.jai.utils.Tuple;
+import com.tsoft.jai.utils.base.Tuple;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
@@ -11,7 +11,7 @@ import lombok.experimental.Accessors;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.tsoft.jai.utils.StringUtils.isBlank;
+import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 @Data
 @Accessors(chain = true)

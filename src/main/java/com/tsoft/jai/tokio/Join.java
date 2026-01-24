@@ -1,6 +1,6 @@
 package com.tsoft.jai.tokio;
 
-import com.tsoft.jai.utils.TupleN;
+import com.tsoft.jai.utils.base.TupleN;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

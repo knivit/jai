@@ -6,7 +6,7 @@ import com.tsoft.jai.core.macros.BuiltIn;
 import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.tokio.Time;
 import com.tsoft.jai.utils.AbortSignal;
-import com.tsoft.jai.utils.Tuple;
+import com.tsoft.jai.utils.base.Tuple;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -17,9 +17,9 @@ import static com.tsoft.jai.config.StateFlags.AGENT;
 import static com.tsoft.jai.core.macros.BuiltIn.cfg;
 import static com.tsoft.jai.inquire.Inquire.print;
 import static com.tsoft.jai.inquire.Inquire.println;
-import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
-import static com.tsoft.jai.utils.StringUtils.isBlank;
-import static com.tsoft.jai.utils.StringUtils.splitOnce;
+import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.StringUtils.isBlank;
+import static com.tsoft.jai.utils.base.StringUtils.splitOnce;
 
 public class Mod {
 

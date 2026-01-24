@@ -1,8 +1,6 @@
-package com.tsoft.jai.utils;
+package com.tsoft.jai.utils.base;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 public final class CollectionsUtils {

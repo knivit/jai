@@ -8,6 +8,10 @@ import com.tsoft.jai.function.FunctionDeclaration;
 import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.rag.Rag;
 import com.tsoft.jai.utils.*;
+import com.tsoft.jai.utils.base.CollectionsUtils;
+import com.tsoft.jai.utils.base.Triple;
+import com.tsoft.jai.utils.base.Tuple;
+import com.tsoft.jai.utils.base.TupleN;
 import com.tsoft.jai.utils.command.Command;
 import com.tsoft.jai.utils.loader.LoadedDocument;
 import lombok.Data;
@@ -28,7 +32,7 @@ import static com.tsoft.jai.utils.Mod.isUrl;
 import static com.tsoft.jai.utils.PathUtil.*;
 import static com.tsoft.jai.utils.Request.MEDIA_URL_EXTENSION;
 import static com.tsoft.jai.utils.Request.fetchWithLoaders;
-import static com.tsoft.jai.utils.StringUtils.*;
+import static com.tsoft.jai.utils.base.StringUtils.*;
 import static com.tsoft.jai.utils.loader.Loader.*;
 
 @Data

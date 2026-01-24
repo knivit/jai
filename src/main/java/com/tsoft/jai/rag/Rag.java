@@ -5,7 +5,7 @@ import com.tsoft.jai.config.Config;
 import com.tsoft.jai.serdejson.SerDe;
 import com.tsoft.jai.serdejson.Value;
 import com.tsoft.jai.utils.AbortSignal;
-import com.tsoft.jai.utils.Tuple;
+import com.tsoft.jai.utils.base.Tuple;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -13,7 +13,7 @@ import java.io.File;
 import java.util.Collections;
 import java.util.List;
 
-import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 
 @Data
 @Accessors(chain = true)

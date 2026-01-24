@@ -1,5 +1,7 @@
 package com.tsoft.jai.utils;
 
+import com.tsoft.jai.utils.base.Tuple;
+
 import java.util.Map;
 
 public class Request {

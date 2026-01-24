@@ -13,8 +13,8 @@ import lombok.RequiredArgsConstructor;
 
 import static com.tsoft.jai.client.mod.Mod.OPENAI_COMPATIBLE_PROVIDERS;
 import static com.tsoft.jai.client.openai.OpenAIClient.buildChatCompletionsBody;
-import static com.tsoft.jai.utils.StringUtils.format;
-import static com.tsoft.jai.utils.StringUtils.isBlank;
+import static com.tsoft.jai.utils.base.StringUtils.format;
+import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 @Getter
 @RequiredArgsConstructor

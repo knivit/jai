@@ -2,6 +2,7 @@ package com.tsoft.jai.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.message.Message;
 import com.tsoft.jai.client.message.MessageContent;
 import com.tsoft.jai.client.message.MessageContentToolCalls;
@@ -9,25 +10,31 @@ import com.tsoft.jai.client.message.MessageRole;
 import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.client.model.ModelType;
 import com.tsoft.jai.config.agent.Agent;
+import com.tsoft.jai.inquire.prompt.Confirm;
+import com.tsoft.jai.inquire.prompt.Text;
 import com.tsoft.jai.serdejson.SerDe;
 import com.tsoft.jai.serdejson.Value;
-import com.tsoft.jai.utils.CollectionsUtils;
-import com.tsoft.jai.utils.Tuple;
+import com.tsoft.jai.utils.base.CollectionsUtils;
+import com.tsoft.jai.utils.base.Tuple;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
+import static com.tsoft.jai.anyhow.Result.Ok;
+import static com.tsoft.jai.anyhow.Result.isErr;
 import static com.tsoft.jai.config.Config.TEMP_SESSION_NAME;
+import static com.tsoft.jai.config.Config.ensureParentExists;
+import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.serdejson.SerDe.toJson;
-import static com.tsoft.jai.utils.StringUtils.*;
+import static com.tsoft.jai.std.Fs.write;
+import static com.tsoft.jai.utils.base.StringUtils.*;
 
 @Data
 @Accessors(chain = true)
@@ -43,7 +50,7 @@ public class Session {
     //#[serde(skip_serializing_if = "Option::is_none")]
     private String useTools;
     //#[serde(skip_serializing_if = "Option::is_none")]
-    private boolean saveSession;
+    private Boolean saveSession;
     //#[serde(skip_serializing_if = "Option::is_none")]
     private Integer compressThreshold;
 
@@ -555,7 +562,102 @@ public class Session {
     //    }
     //    Ok(())
     // }
-    public void exit(Path sessionsDir, boolean equals) {
+    public Result<?> exit(Path sessionsDir, boolean isRepl) {
+        Boolean saveSession = this.saveSession;
+        if (saveSessionThisTime) {
+            saveSession = true;
+        }
+        if (dirty && !Boolean.FALSE.equals(saveSession)) {
+            String sessionName = name;
+            if (saveSession == null) {
+                if (!isRepl) {
+                    return Ok();
+                }
+                boolean ans = new Confirm("Save session?").setDefaultValue(false).prompt();
+                if (!ans) {
+                    return Ok();
+                }
+                if (TEMP_SESSION_NAME.equals(sessionName)) {
+                    sessionName = new Text("Session name:")
+                        .setValidator(input -> {
+                            input = input.trim();
+                            if (isBlank(input)) {
+                                return false;
+                            } else if (TEMP_SESSION_NAME.equals(input)) {
+                                return false;
+                            } else {
+                                return true;
+                            }
+                        }).prompt();
+                }
+            } else if (Boolean.TRUE.equals(saveSession) && TEMP_SESSION_NAME.equals(sessionName)) {
+                sessionsDir = sessionsDir.resolve("_");
+                ensureParentExists(sessionsDir.toFile());
 
+                LocalDateTime now = LocalDateTime.now();
+                sessionName = now.format(DateTimeFormatter.ofPattern("yyyy-MM-ddTHH:mm:ss"));
+                if (autoname != null) {
+                    sessionName = format("{}-{}", sessionName, autoname);
+                }
+            }
+            Path sessionPath = sessionsDir.resolve(format("{}.yaml", sessionName));
+            Result<?> res = save(sessionName, sessionPath, isRepl);
+            if (isErr(res)) {
+                return res;
+            }
+        }
+        return Ok();
+    }
+
+    // pub fn save(&mut self, session_name: &str, session_path: &Path, is_repl: bool) -> Result<()> {
+    //    ensure_parent_exists(session_path)?;
+    //
+    //    self.path = Some(session_path.display().to_string());
+    //
+    //    let content = serde_yaml::to_string(&self)
+    //        .with_context(|| format!("Failed to serde session '{}'", self.name))?;
+    //    write(session_path, content).with_context(|| {
+    //        format!(
+    //            "Failed to write session '{}' to '{}'",
+    //            self.name,
+    //            session_path.display()
+    //        )
+    //    })?;
+    //
+    //    if is_repl {
+    //        println!("✓ Saved the session to '{}'.", session_path.display());
+    //    }
+    //
+    //    if self.name() != session_name {
+    //        self.name = session_name.to_string()
+    //    }
+    //
+    //    self.dirty = false;
+    //
+    //    Ok(())
+    // }
+    public Result<?> save(String sessionName, Path sessionPath, boolean isRepl) {
+        ensureParentExists(sessionPath.toFile());
+
+        path = sessionPath.toString();
+
+        String content = SerDe.toYamlString(this);
+        Result<?> res = write(sessionPath, content)
+            .withContext(() -> format("Failed to write session '{}' to '{}'", name, sessionPath));
+        if (isErr(res)) {
+            return res;
+        }
+
+        if (isRepl) {
+            println("✓ Saved the session to '{}'.", sessionPath);
+        }
+
+        if (!Objects.equals(name, sessionName)) {
+            name = sessionName;
+        }
+
+        dirty = false;
+
+        return Ok();
     }
 }

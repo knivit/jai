@@ -10,8 +10,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.tsoft.jai.inquire.Inquire.println;
-import static com.tsoft.jai.utils.StringUtils.format;
-import static com.tsoft.jai.utils.StringUtils.isBlank;
+import static com.tsoft.jai.utils.base.StringUtils.format;
+import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 @Data
 @Accessors(chain = true)

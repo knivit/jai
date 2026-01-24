@@ -22,11 +22,12 @@
 
         <lombok.version>1.18.42</lombok.version>
         <slf4j-api.version>2.0.17</slf4j-api.version>
-        <logback.version>1.5.22</logback.version>
+        <logback.version>1.5.25</logback.version>
         <jackson.version>3.0.3</jackson.version>
         <okhttp.version>4.12.0</okhttp.version>
 
         <junit.version>5.10.3</junit.version>
+        <assertj-core.version>3.23.1</assertj-core.version>
     </properties>
 
     <dependencies>
@@ -89,6 +90,12 @@
             <artifactId>junit-jupiter</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>${assertj-core.version}</version>
         </dependency>
     </dependencies>
 

@@ -1,6 +1,6 @@
 package com.tsoft.jai.utils.loader;
 
-import com.tsoft.jai.utils.Tuple;
+import com.tsoft.jai.utils.base.Tuple;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -10,8 +10,8 @@ import java.util.Map;
 
 import static com.tsoft.jai.utils.PathUtil.getPatchExtension;
 import static com.tsoft.jai.utils.Request.DEFAULT_EXTENSION;
-import static com.tsoft.jai.utils.StringUtils.isBlank;
-import static com.tsoft.jai.utils.StringUtils.splitOnce;
+import static com.tsoft.jai.utils.base.StringUtils.isBlank;
+import static com.tsoft.jai.utils.base.StringUtils.splitOnce;
 import static com.tsoft.jai.utils.command.Command.runLoaderCommand;
 
 public final class Loader {

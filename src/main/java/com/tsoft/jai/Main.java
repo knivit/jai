@@ -11,7 +11,7 @@ import com.tsoft.jai.config.agent.Agent;
 import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.repl.mod.Repl;
 import com.tsoft.jai.utils.AbortSignal;
-import com.tsoft.jai.utils.Tuple;
+import com.tsoft.jai.utils.base.Tuple;
 import com.tsoft.jai.utils.command.Shell;
 
 import java.util.Collections;
@@ -26,8 +26,8 @@ import static com.tsoft.jai.config.Role.CODE_ROLE;
 import static com.tsoft.jai.config.Role.SHELL_ROLE;
 import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.inquire.Inquire.terminal;
-import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
-import static com.tsoft.jai.utils.StringUtils.isBlank;
+import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 import static com.tsoft.jai.utils.command.Command.SHELL;
 
 public class Main {

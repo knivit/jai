@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 
 import static com.tsoft.jai.unicodesegmentation.Word.isAscii;
 import static com.tsoft.jai.unicodesegmentation.Word.unicodeWords;
-import static com.tsoft.jai.utils.StringUtils.isBlank;
+import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 public final class Mod {
 

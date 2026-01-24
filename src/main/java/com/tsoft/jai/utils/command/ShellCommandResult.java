@@ -3,7 +3,7 @@ package com.tsoft.jai.utils.command;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import static com.tsoft.jai.utils.StringUtils.isBlank;
+import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 @Getter
 @RequiredArgsConstructor

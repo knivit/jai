@@ -504,10 +504,10 @@ public class DefaultPrompter implements Prompter {
             if (errorMessage != null) {
                 // Add error message with ">> " prefix like Inquirer.js using style resolver
                 AttributedString errorLine = new AttributedStringBuilder()
-                        .style(config.style(PrompterConfig.ERROR))
-                        .append(">> ")
-                        .append(errorMessage)
-                        .toAttributedString();
+                    .style(config.style(PrompterConfig.ERROR))
+                    .append(">> ")
+                    .append(errorMessage)
+                    .toAttributedString();
                 currentHeader.add(errorLine);
             }
 

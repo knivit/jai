@@ -2,7 +2,7 @@ package com.tsoft.jai.anyhow;
 
 import lombok.extern.slf4j.Slf4j;
 
-import static com.tsoft.jai.utils.StringUtils.format;
+import static com.tsoft.jai.utils.base.StringUtils.format;
 
 @Slf4j
 public final class Macros {

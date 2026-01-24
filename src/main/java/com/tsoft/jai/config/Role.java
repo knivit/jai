@@ -10,7 +10,7 @@ import com.tsoft.jai.config.agent.Agent;
 import com.tsoft.jai.serdejson.SerDe;
 import com.tsoft.jai.serdejson.Value;
 import com.tsoft.jai.utils.Asset;
-import com.tsoft.jai.utils.Tuple;
+import com.tsoft.jai.utils.base.Tuple;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -22,8 +22,8 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import static com.tsoft.jai.inquire.Inquire.println;
-import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
-import static com.tsoft.jai.utils.StringUtils.*;
+import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.StringUtils.*;
 import static com.tsoft.jai.utils.Variables.interpolateVariables;
 
 @Data

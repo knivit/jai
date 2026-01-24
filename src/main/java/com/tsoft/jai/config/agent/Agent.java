@@ -5,8 +5,8 @@ import com.tsoft.jai.client.model.ModelType;
 import com.tsoft.jai.config.Config;
 import com.tsoft.jai.config.Role;
 import com.tsoft.jai.function.Functions;
-import com.tsoft.jai.inquire.Confirm;
-import com.tsoft.jai.inquire.Input;
+import com.tsoft.jai.inquire.prompt.Confirm;
+import com.tsoft.jai.inquire.prompt.Input;
 import com.tsoft.jai.inquire.Inquire;
 import com.tsoft.jai.rag.Rag;
 import com.tsoft.jai.serdejson.SerDe;
@@ -26,11 +26,11 @@ import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.function.Functions.runLlmFunction;
 import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.serdejson.SerDe.toJson;
-import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.Mod.isUrl;
 import static com.tsoft.jai.utils.Mod.normalizeEnvName;
-import static com.tsoft.jai.utils.StringUtils.format;
-import static com.tsoft.jai.utils.StringUtils.isBlank;
+import static com.tsoft.jai.utils.base.StringUtils.format;
+import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 import static com.tsoft.jai.utils.Variables.interpolateVariables;
 
 @Slf4j

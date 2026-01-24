@@ -1,4 +1,4 @@
-package com.tsoft.jai.inquire;
+package com.tsoft.jai.inquire.prompt;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jline.prompt.*;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
