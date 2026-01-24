@@ -15,8 +15,9 @@ import static com.tsoft.jai.utils.StringUtils.format;
 public final class Inquire {
 
     public static final String JAI_DUMB_TERMINAL_MODE = "JAI_DUMB_TERMINAL_MODE";
-    public static final ByteArrayInputStream dumbInput = new ByteArrayInputStream(new byte[0]);
-    public static final ByteArrayOutputStream dumbOutput = new ByteArrayOutputStream();
+    public static final ByteArrayInputStream terminalInput = new ByteArrayInputStream(new byte[0]);
+    public static final ByteArrayOutputStream output = new ByteArrayOutputStream();
+    public static final ByteArrayOutputStream terminalOutput = new ByteArrayOutputStream();
 
     private static final Inquire INSTANCE = new Inquire();
 
@@ -34,7 +35,8 @@ public final class Inquire {
 
     public static void print(String msg, Object ... args) {
         msg = format(msg, args);
-        terminal().writer().print((msg == null) ? "" : msg);
+        System.ou
+        output.print((msg == null) ? "" : msg);
         terminal().flush();
     }
 
@@ -77,7 +79,7 @@ public final class Inquire {
     private void initDumbTerminal() {
         try {
             terminal = TerminalBuilder.builder()
-                .streams(dumbInput, dumbOutput)
+                .streams(terminalInput, terminalOutput)
                 .encoding(StandardCharsets.UTF_8)
                 .size(new Size(80, 1024))
                 .dumb(true)

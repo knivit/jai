@@ -21,6 +21,20 @@ class MainTest {
     }
 
     @Test
+    void main_list_models() {
+        main(new String[] { "--config-file", CONFIG_FILE, "--list-models"});
+
+        assertEquals("""
+            ollama:deepseek-v3.2:cloud
+            ollama:glm-4.7:cloud
+            ollama:kimi-k2:1t-cloud
+            ollama:minimax-m2:cloud
+            ollama:qwen3-coder:480b-cloud
+            
+            """, normalizeLineSeparators(dumbOutput.toString()));
+    }
+
+    @Test
     void main_list_roles() {
         main(new String[] { "--config-file", CONFIG_FILE, "--list-roles"});
         
