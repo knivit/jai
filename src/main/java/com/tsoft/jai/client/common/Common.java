@@ -63,22 +63,24 @@ public class Common {
     //        Err(err) => Err(err),
     //    }
     // }
-    public static Tuple<String, List<ToolResult>> callChatCompletions(Input input, boolean print, boolean exractCode, Client client, AbortSignal abortSignal) {
-        ChatCompletionsOutput ret = abortableRunWithSpinner(() -> client.chatCompletions(input), "Generating", abortSignal);
-        if (ret != null) {
-            String text = ret.getText();
-            List<ToolCall> toolCalls = ret.getToolCalls();
-            if (!isBlank(text)) {
-                if (exractCode) {
-                    text = extractCodeBlock(stripThinkTag(text));
+    public static Result<Tuple<String, List<ToolResult>>> callChatCompletions(Input input, boolean print, boolean exractCode, Client client, AbortSignal abortSignal) {
+        Result<ChatCompletionsOutput> ret = abortableRunWithSpinner(() -> client.chatCompletions(input), "Generating", abortSignal);
+        return switch (ret.getType()) {
+            case Ok -> {
+                String text = ret.getValue().getText();
+                List<ToolCall> toolCalls = ret.getValue().getToolCalls();
+                if (!isBlank(text)) {
+                    if (exractCode) {
+                        text = extractCodeBlock(stripThinkTag(text));
+                    }
+                    if (print) {
+                        client.getConfig().printMarkdown(text);
+                    }
                 }
-                if (print) {
-                    client.getConfig().printMarkdown(text);
-                }
+                yield Ok(new Tuple<>(text, evalToolCalls(client.getConfig(), toolCalls)));
             }
-            return new Tuple<>(text, evalToolCalls(client.getConfig(), toolCalls));
-        }
-        return null;
+            case Err -> Err(ret);
+        };
     }
 
     // pub async fn call_chat_completions_streaming(
@@ -116,7 +118,7 @@ public class Common {
     //        }
     //    }
     // }
-    public static Tuple<String, List<ToolResult>> callChatCompletionsStreaming(Input input, Client client, AbortSignal abortSignal) {
+    public static Result<Tuple<String, List<ToolResult>>> callChatCompletionsStreaming(Input input, Client client, AbortSignal abortSignal) {
         UnboundedSender<SseEvent> tx = new UnboundedSender<>();
         UnboundedReceiver<SseEvent> rx = new UnboundedReceiver<>();
         SseHandler handler = new SseHandler(tx, abortSignal);
@@ -128,7 +130,11 @@ public class Common {
         Result<?> renderRet = tupleN.next();
 
         if (handler.abort().aborted()) {
-            bail("Aborted.");
+            return bail("Aborted.");
+        }
+
+        if (isErr(renderRet)) {
+            return Err(renderRet);
         }
 
         Tuple<String, List<ToolCall>> tuple = handler.take();
@@ -139,13 +145,13 @@ public class Common {
                 if (!isBlank(text) && !text.endsWith("\n")) {
                     println();
                 }
-                yield new Tuple<>(text, evalToolCalls(client.getConfig(), toolCalls));
+                yield Ok(new Tuple<>(text, evalToolCalls(client.getConfig(), toolCalls)));
             }
             case Err -> {
                 if (!isBlank(text)) {
                     println();
                 }
-                yield null;
+                yield Err(sendRet);
             }
         };
     }

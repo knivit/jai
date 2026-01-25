@@ -1,5 +1,6 @@
 package com.tsoft.jai.config;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.Client;
 import com.tsoft.jai.client.common.ChatCompletionsData;
 import com.tsoft.jai.client.message.*;
@@ -23,6 +24,7 @@ import java.util.*;
 import java.util.function.Supplier;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
+import static com.tsoft.jai.anyhow.Result.Ok;
 import static com.tsoft.jai.client.macros.Macros.initClient;
 import static com.tsoft.jai.client.message.Message.patchMessages;
 import static com.tsoft.jai.inquire.Inquire.println;
@@ -155,7 +157,7 @@ public class Input implements Cloneable {
     //         with_agent,
     //     })
     // }
-    public static Input fromFiles(Config config, String rawText, List<String> paths, Role role) {
+    public static Result<Input> fromFiles(Config config, String rawText, List<String> paths, Role role) {
         Map<String, String> loaders = config.getDocumentLoaders();
         TupleN tuple = resolvePaths(loaders, paths);
         Set<String> rawPaths = tuple.get("raw_paths");
@@ -192,7 +194,7 @@ public class Input implements Cloneable {
                 }
             }
             if (isBlank(lastReply) && CollectionsUtils.isEmpty(documents) && CollectionsUtils.isEmpty(medias)) {
-                bail("No last reply found");
+                return bail("No last reply found");
             }
         }
         int documentsLen = documents.size();
@@ -211,7 +213,7 @@ public class Input implements Cloneable {
         Boolean withSession = triple.second();
         Boolean withAgent = triple.third();
 
-        return new Input()
+        return Ok(new Input()
             .setConfig(config)
             .setText(String.join("\n", texts))
             .setRaw(new Tuple<>(rawText, rawPaths))
@@ -221,7 +223,7 @@ public class Input implements Cloneable {
             .setDataUrls(dataUrls)
             .setRole(role)
             .setWithSession(withSession)
-            .setWithAgent(withAgent);
+            .setWithAgent(withAgent));
     }
 
     // pub async fn from_files_with_spinner(
@@ -238,7 +240,7 @@ public class Input implements Cloneable {
     //     )
     //     .await
     // }
-    public static Input fromFilesWithSpinner(Config config, String rawText, List<String> paths, Role role, AbortSignal abortSignal) {
+    public static Result<Input> fromFilesWithSpinner(Config config, String rawText, List<String> paths, Role role, AbortSignal abortSignal) {
         return abortableRunWithSpinner(() -> Input.fromFiles(config, rawText, paths, role), "Loading files", abortSignal);
     }
 

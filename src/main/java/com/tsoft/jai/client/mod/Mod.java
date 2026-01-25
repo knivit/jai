@@ -36,11 +36,6 @@ public final class Mod {
         new RegisteredClient("openai_compatible", "openai-compatible", ClientConfig::new, OpenAICompatibleClient::new)
     );
 
-    public static Config GLOBAL_CONFIG = new Config()
-        .setClients(REGISTERED_CLIENTS.stream()
-            .map(e -> new ClientConfig().setName(e.getName()))
-            .toList());
-
     public static final Map<String, String> OPENAI_COMPATIBLE_PROVIDERS = new HashMap<>() {{
         put("ai21", "https://api.ai21.com/studio/v1");
         put("cloudflare", "https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/ai/v1");

@@ -19,7 +19,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
-import static com.tsoft.jai.anyhow.Result.Ok;
+import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.client.common.Common.callChatCompletions;
 import static com.tsoft.jai.client.common.Common.callChatCompletionsStreaming;
 import static com.tsoft.jai.client.macros.Macros.listModels;
@@ -324,7 +324,7 @@ public class Main {
             return Ok();
         }
         if (cli.isExecute() && !isRepl) {
-            Input input = createInput(config, text, cli.getFile(), abortSignal);
+            Input input = createInput(config, text, cli.getFile(), abortSignal).getValue();
             shellExecute(config, SHELL, input, abortSignal);
             return Ok();
         }
@@ -332,7 +332,7 @@ public class Main {
         config.applyPrelude();
 
         if (!isRepl) {
-            Input input = createInput(config, text, cli.getFile(), abortSignal);
+            Input input = createInput(config, text, cli.getFile(), abortSignal).getValue();
             input.useEmbeddings(abortSignal);
             startDirective(config, input, cli.isCode(), abortSignal);
         } else {
@@ -384,19 +384,23 @@ public class Main {
     //    config.write().exit_session()?;
     //    Ok(())
     // }
-    private static void startDirective(Config config, Input input, boolean codeMode, AbortSignal abortSignal) {
+    private static Result<?> startDirective(Config config, Input input, boolean codeMode, AbortSignal abortSignal) {
         Client client = input.createClient();
-        boolean extractCode = (terminal() == null) && codeMode;
+        boolean extractCode = !IS_STDOUT_TERMINAL && codeMode;
         config.beforeChatCompletion(input);
 
-        Tuple<String, List<ToolResult>> tuple;
+        Result<Tuple<String, List<ToolResult>>> res;
         if (!input.stream() || extractCode) {
-            tuple = callChatCompletions(input, true, extractCode, client, abortSignal);
+            res = callChatCompletions(input, true, extractCode, client, abortSignal);
         } else {
-            tuple = callChatCompletionsStreaming(input, client, abortSignal);
+            res = callChatCompletionsStreaming(input, client, abortSignal);
         }
-        String output = tuple.first();
-        List<ToolResult> toolResults = tuple.second();
+        if (isErr(res)) {
+            return Err(res);
+        }
+
+        String output = res.getValue().first();
+        List<ToolResult> toolResults = res.getValue().second();
         config.afterChatCompletion(input, output, toolResults);
 
         if (!isEmpty(toolResults)) {
@@ -404,6 +408,7 @@ public class Main {
         }
 
         config.exitSession();
+        return Ok();
     }
 
     // async fn start_interactive(config: &GlobalConfig) -> Result<()> {
@@ -438,17 +443,21 @@ public class Main {
     //    }
     //    Ok(input)
     // }
-    private static Input createInput(Config config, String text, List<String> files, AbortSignal abortSignal) {
+    private static Result<Input> createInput(Config config, String text, List<String> files, AbortSignal abortSignal) {
         Input input;
         if (isEmpty(files)) {
             input = Input.fromStr(config, text, null);
         } else {
-            input = Input.fromFilesWithSpinner(config, text, files, null, abortSignal);
+            Result<Input> res = Input.fromFilesWithSpinner(config, text, files, null, abortSignal);
+            if (isErr(res)) {
+                return Err(res);
+            }
+            input = res.getValue();
         }
         if (input == null) {
-            bail("No input");
+            return bail("No input");
         }
-        return input;
+        return Ok(input);
     }
 
     // #[async_recursion::async_recursion]

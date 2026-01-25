@@ -17,6 +17,8 @@ import java.util.stream.Collectors;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.anyhow.Result.*;
+import static com.tsoft.jai.client.common.Common.callChatCompletions;
+import static com.tsoft.jai.client.common.Common.callChatCompletionsStreaming;
 import static com.tsoft.jai.config.StateFlags.AGENT;
 import static com.tsoft.jai.core.macros.BuiltIn.cfg;
 import static com.tsoft.jai.inquire.Inquire.print;
@@ -783,12 +785,17 @@ public class Mod {
 
         Client client = input.createClient();
         config.beforeChatCompletion(input);
-        Tuple<String, List<ToolResult>> tuple;
+        Result<Tuple<String, List<ToolResult>>> res;
         if (input.stream()) {
-            tuple = client.callChatCompletionsStreaming(input, client, abortSignal);
+            res = callChatCompletionsStreaming(input, client, abortSignal);
         } else {
-            tuple = client.callChatCompletions(input, true, false, client, abortSignal);
+            res = callChatCompletions(input, true, false, client, abortSignal);
         }
+        if (isErr(res)) {
+            return Err(res);
+        }
+        Tuple<String, List<ToolResult>> tuple = res.getValue();
+
         String output = tuple.first();
         List<ToolResult> toolResults = tuple.second();
         config.afterChatCompletion(input, output, toolResults);

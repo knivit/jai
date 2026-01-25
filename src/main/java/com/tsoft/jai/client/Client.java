@@ -9,13 +9,11 @@ import com.tsoft.jai.client.stream.SseHandler;
 import com.tsoft.jai.config.ClientConfig;
 import com.tsoft.jai.config.Config;
 import com.tsoft.jai.config.Input;
-import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.reqwest.ClientBuilder;
 import com.tsoft.jai.reqwest.RequestBuilder;
 import com.tsoft.jai.reqwest.ReqwestClient;
 import com.tsoft.jai.serdejson.Value;
 import com.tsoft.jai.utils.AbortSignal;
-import com.tsoft.jai.utils.base.Tuple;
 import lombok.Getter;
 
 import java.time.Duration;
@@ -26,7 +24,6 @@ import java.util.Objects;
 import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.anyhow.Result.Err;
 import static com.tsoft.jai.anyhow.Result.Ok;
-import static com.tsoft.jai.client.mod.Mod.GLOBAL_CONFIG;
 import static com.tsoft.jai.client.mod.Mod.REGISTERED_CLIENTS;
 import static com.tsoft.jai.tokio.Select.branch;
 import static com.tsoft.jai.tokio.Select.select;
@@ -81,19 +78,17 @@ public abstract class Client {
     //    }))
     // }
     public static Client init(Config config, Model model) {
-        RegisteredClient client = REGISTERED_CLIENTS.stream()
+        ClientConfig clientConfig = config.getClients().stream()
             .filter(e -> Objects.equals(e.getName(), model.getClientName()))
             .findAny()
             .orElse(null);
-        assert client != null;
 
-        ClientConfig clientConfig = GLOBAL_CONFIG.getClients().stream()
-            .filter(e -> Objects.equals(e.getName(), model.getClientName()))
+        RegisteredClient registeredClient = REGISTERED_CLIENTS.stream()
+            .filter(e -> Objects.equals(e.getType(), clientConfig.getType()))
             .findAny()
             .orElse(null);
-        assert clientConfig != null;
 
-        return client.getClientSupplier().apply(clientConfig.clone(), model);
+        return registeredClient.getClientSupplier().apply(clientConfig.clone(), model);
     }
 
     // fn build_client(&self) -> Result<ReqwestClient> {
@@ -145,14 +140,15 @@ public abstract class Client {
     //         .await
     //         .with_context(|| "Failed to call chat-completions api")
     // }
-    public ChatCompletionsOutput chatCompletions(Input input) {
+    public Result<ChatCompletionsOutput> chatCompletions(Input input) {
         if (getConfig().isDryRun()) {
             String content = input.echoMessages();
-            return new ChatCompletionsOutput().setText(content);
+            return Ok(new ChatCompletionsOutput().setText(content));
         }
         ReqwestClient client = buildClient();
         ChatCompletionsData data = input.prepareCompletionData(getModel(), false);
-        return chatCompletionsInner(client, data);
+        return chatCompletionsInner(client, data)
+            .withContext(() ->"Failed to call chat-completions api");
     }
 
     // async fn chat_completions_streaming(
@@ -227,7 +223,7 @@ public abstract class Client {
     //         .await
     //         .context("Failed to call rerank api")
     // }
-    public List<RerankResult> rerank(RerankData data) {
+    public Result<List<RerankResult>> rerank(RerankData data) {
         ReqwestClient client = buildClient();
         return rerankInner(client, data);
     }
@@ -247,8 +243,8 @@ public abstract class Client {
     //     let builder = self.request_builder(client, request_data);
     //     $chat_completions(builder, self.model()).await
     // }
-    public ChatCompletionsOutput chatCompletionsInner(ReqwestClient client, ChatCompletionsData data) {
-        return null;
+    public Result<ChatCompletionsOutput> chatCompletionsInner(ReqwestClient client, ChatCompletionsData data) {
+        return Ok();
     }
 
     public abstract RequestData prepareChatCompletions(ChatCompletionsData data);
@@ -285,9 +281,8 @@ public abstract class Client {
     // ) -> Result<EmbeddingsOutput> {
     //     bail!("The client doesn't support embeddings api")
     // }
-    public EmbeddingsOutput embeddingsInner(ReqwestClient client, EmbeddingsData data) {
-        bail("The client doesn't support embeddings api");
-        return null;
+    public Result<EmbeddingsOutput> embeddingsInner(ReqwestClient client, EmbeddingsData data) {
+        return bail("The client doesn't support embeddings api");
     }
 
     // async fn rerank_inner(
@@ -297,9 +292,8 @@ public abstract class Client {
     // ) -> Result<RerankOutput> {
     //     bail!("The client doesn't support rerank api")
     // }
-    public List<RerankResult> rerankInner(ReqwestClient client, RerankData data) {
-        bail("The client doesn't support rerank api");
-        return Collections.emptyList();
+    public Result<List<RerankResult>> rerankInner(ReqwestClient client, RerankData data) {
+        return bail("The client doesn't support rerank api");
     }
 
     // fn request_builder(
@@ -353,82 +347,5 @@ public abstract class Client {
         if (patch != null) {
             requestData.applyPatch(patch);
         }
-    }
-
-    // pub async fn call_chat_completions_streaming(
-    //    input: &Input,
-    //    client: &dyn Client,
-    //    abort_signal: AbortSignal,
-    //) -> Result<(String, Vec<ToolResult>)> {
-    //    let (tx, rx) = unbounded_channel();
-    //    let mut handler = SseHandler::new(tx, abort_signal.clone());
-    //
-    //    let (send_ret, render_ret) = tokio::join!(
-    //        client.chat_completions_streaming(input, &mut handler),
-    //        render_stream(rx, client.global_config(), abort_signal.clone()),
-    //    );
-    //
-    //    if handler.abort().aborted() {
-    //        bail!("Aborted.");
-    //    }
-    //
-    //    render_ret?;
-    //
-    //    let (text, tool_calls) = handler.take();
-    //    match send_ret {
-    //        Ok(_) => {
-    //            if !text.is_empty() && !text.ends_with('\n') {
-    //                println!();
-    //            }
-    //            Ok((text, eval_tool_calls(client.global_config(), tool_calls)?))
-    //        }
-    //        Err(err) => {
-    //            if !text.is_empty() {
-    //                println!();
-    //            }
-    //            Err(err)
-    //        }
-    //    }
-    // }
-    public Tuple<String, List<ToolResult>> callChatCompletionsStreaming(Input input, Client client, AbortSignal abortSignal) {
-        return null;
-    }
-
-    // pub async fn call_chat_completions(
-    //    input: &Input,
-    //    print: bool,
-    //    extract_code: bool,
-    //    client: &dyn Client,
-    //    abort_signal: AbortSignal,
-    // ) -> Result<(String, Vec<ToolResult>)> {
-    //    let ret = abortable_run_with_spinner(
-    //        client.chat_completions(input.clone()),
-    //        "Generating",
-    //        abort_signal,
-    //    )
-    //    .await;
-    //
-    //    match ret {
-    //        Ok(ret) => {
-    //            let ChatCompletionsOutput {
-    //                mut text,
-    //                tool_calls,
-    //                ..
-    //            } = ret;
-    //            if !text.is_empty() {
-    //                if extract_code {
-    //                    text = extract_code_block(&strip_think_tag(&text)).to_string();
-    //                }
-    //                if print {
-    //                    client.global_config().read().print_markdown(&text)?;
-    //                }
-    //            }
-    //            Ok((text, eval_tool_calls(client.global_config(), tool_calls)?))
-    //        }
-    //        Err(err) => Err(err),
-    //    }
-    // }
-    public Tuple<String, List<ToolResult>> callChatCompletions(Input input, boolean print, boolean extractCode, Client client, AbortSignal abortSignal) {
-        return null;
     }
 }

@@ -12,6 +12,7 @@ import java.util.List;
 @Accessors(chain = true)
 public class ClientConfig implements Cloneable {
 
+    private String type;
     private String name;
     private String apiKey;
     private String apiBase;

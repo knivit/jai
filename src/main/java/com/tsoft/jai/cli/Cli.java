@@ -3,13 +3,12 @@ package com.tsoft.jai.cli;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.tsoft.jai.inquire.Inquire.println;
+import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.base.StringUtils.format;
 import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
@@ -173,15 +172,13 @@ public class Cli {
         String stdinText = null;
         try {
             if (System.in.available() > 0) {
-                try (Reader in = new BufferedReader(new InputStreamReader(System.in))) {
-                    stdinText = String.join("\n", in.readAllLines());
-                }
+                stdinText = new String(System.in.readAllBytes(), StandardCharsets.UTF_8);
             }
         } catch (Exception ex) {
             throw new IllegalStateException("Error reading from a pipe", ex);
         }
 
-        if (text == null || text.isEmpty()) {
+        if (isEmpty(text)) {
             return stdinText;
         }
 

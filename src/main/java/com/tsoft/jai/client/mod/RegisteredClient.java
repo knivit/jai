@@ -16,7 +16,7 @@ import java.util.function.Supplier;
 public class RegisteredClient {
 
     private final String module;
-    private final String name;
+    private final String type;
     private final Supplier<ClientConfig> configSupplier;
     private final BiFunction<ClientConfig, Model, Client> clientSupplier;
 }
