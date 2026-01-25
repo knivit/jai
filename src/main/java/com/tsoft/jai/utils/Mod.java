@@ -1,11 +1,17 @@
 package com.tsoft.jai.utils;
 
+import com.tsoft.jai.anyhow.Error;
+import org.jline.utils.AttributedString;
+import org.jline.utils.AttributedStyle;
+
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.tsoft.jai.inquire.Inquire.NO_COLOR;
 import static com.tsoft.jai.unicodesegmentation.Word.isAscii;
 import static com.tsoft.jai.unicodesegmentation.Word.unicodeWords;
+import static com.tsoft.jai.utils.base.StringUtils.format;
 import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 public final class Mod {
@@ -82,6 +88,70 @@ public final class Mod {
             }
         }
         return (int)Math.ceil(output);
+    }
+
+    // pub fn pretty_error(err: &anyhow::Error) -> String {
+    //    let mut output = vec![];
+    //    output.push(format!("Error: {err}"));
+    //    let causes: Vec<_> = err.chain().skip(1).collect();
+    //    let causes_len = causes.len();
+    //    if causes_len > 0 {
+    //        output.push("\nCaused by:".to_string());
+    //        if causes_len == 1 {
+    //            output.push(format!("    {}", indent_text(causes[0], 4).trim()));
+    //        } else {
+    //            for (i, cause) in causes.into_iter().enumerate() {
+    //                output.push(format!("{i:5}: {}", indent_text(cause, 7).trim()));
+    //            }
+    //        }
+    //    }
+    //    output.join("\n")
+    // }
+    public static String prettyError(Error err) {
+        return format("Error: {}", err);
+    }
+
+    // pub fn error_text(input: &str) -> String {
+    //    color_text(input, nu_ansi_term::Color::Red)
+    // }
+    public static String errorText(String input) {
+        return colorText(input, AttributedStyle.RED);
+    }
+
+    // pub fn warning_text(input: &str) -> String {
+    //    color_text(input, nu_ansi_term::Color::Yellow)
+    // }
+    public static String warningText(String input) {
+        return colorText(input, AttributedStyle.YELLOW);
+    }
+
+    // pub fn color_text(input: &str, color: nu_ansi_term::Color) -> String {
+    //    if *NO_COLOR {
+    //        return input.to_string();
+    //    }
+    //    nu_ansi_term::Style::new()
+    //        .fg(color)
+    //        .paint(input)
+    //        .to_string()
+    // }
+    public static String colorText(String input, int color) {
+        if (NO_COLOR) {
+            return input;
+        }
+        return new AttributedString(input, AttributedStyle.DEFAULT.foreground(color)).toString();
+    }
+
+    // pub fn dimmed_text(input: &str) -> String {
+    //    if *NO_COLOR {
+    //        return input.to_string();
+    //    }
+    //    nu_ansi_term::Style::new().dimmed().paint(input).to_string()
+    // }
+    public static String dimmedText(String input) {
+        if (NO_COLOR) {
+            return input;
+        }
+        return new AttributedString(input, AttributedStyle.DEFAULT.faint()).toString();
     }
 
     private Mod() { }

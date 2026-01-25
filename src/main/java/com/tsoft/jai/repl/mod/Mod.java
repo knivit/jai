@@ -1,7 +1,9 @@
 package com.tsoft.jai.repl.mod;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.Client;
 import com.tsoft.jai.config.*;
+import com.tsoft.jai.config.agent.Agent;
 import com.tsoft.jai.core.macros.BuiltIn;
 import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.tokio.Time;
@@ -11,15 +13,17 @@ import com.tsoft.jai.utils.base.Tuple;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
+import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.config.StateFlags.AGENT;
 import static com.tsoft.jai.core.macros.BuiltIn.cfg;
 import static com.tsoft.jai.inquire.Inquire.print;
 import static com.tsoft.jai.inquire.Inquire.println;
+import static com.tsoft.jai.utils.Mod.dimmedText;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
-import static com.tsoft.jai.utils.base.StringUtils.isBlank;
-import static com.tsoft.jai.utils.base.StringUtils.splitOnce;
+import static com.tsoft.jai.utils.base.StringUtils.*;
 
 public class Mod {
 
@@ -178,7 +182,7 @@ public class Mod {
     //        ReplCommand::new(".exit", "Exit REPL", AssertState::pass()),
     //    ]
     // });
-    private static List<ReplCommand> REPL_COMMANDS = Arrays.asList(
+    private static final List<ReplCommand> REPL_COMMANDS = Arrays.asList(
         new ReplCommand(".help", "Show this help guide", AssertState.pass()),
         new ReplCommand(".info", "Show system info", AssertState.pass()),
         new ReplCommand(".edit config", "Modify configuration file", AssertState.False(AGENT)),
@@ -564,122 +568,174 @@ public class Mod {
     //
     //    Ok(false)
     // }
-    public boolean runReplCommand(Config config, AbortSignal abortSignal, String line) {
-        String[] captures = MULTILINE_RE.split(line);
-        if (captures.length > 0) {
-            line = captures[1];
+    public static Result<Boolean> runReplCommand(Config config, AbortSignal abortSignal, String line) {
+        Matcher matcher = MULTILINE_RE.matcher(line);
+        if (matcher.find()) {
+            line = line.substring(matcher.end()).trim();
         }
 
         Tuple<String, String> tuple = parseCommand(line);
-        String cmd = tuple.first();
-        String args = tuple.second();
-        if (".help".equals(cmd)) {
-            dumpReplHelp();
-        } else if (".info".equals(cmd)) {
-            if ("role".equals(args)) {
-                String info = config.roleInfo();
-                print("{}", info);
-            } else if ("session".equals(args)) {
-                String info = config.sessionInfo();
-                print("{}", info);
-            } else if ("rag".equals(args)) {
-                String info = config.ragInfo();
-                print("{}", info);
-            } else if ("agent".equals(args)) {
-                String info = config.agentInfo();
-                print("{}", info);
-            } else if (!isBlank(args)) {
-                unknownCommand();
-            } else {
-                String output = config.sysinfo();
-                print("{}", output);
-            }
-        } else if (".model".equals(cmd)) {
-            if (!isBlank(args)) {
-                String name = args;
-                config.setModel(name);
-            } else {
-                println("Usage: .model <name>");
-            }
-        } else if (".prompt".equals(cmd)) {
-            if (!isBlank(args)) {
-                String text = args;
-                config.usePrompt(text);
-            } else {
-                println("Usage: .prompt <text>...");
-            }
-        } else if (".role".equals(cmd)) {
-            if (!isBlank(args)) {
-                tuple = splitOnce(args, '\n', ' ');
-                String name = tuple.first();
-                String text = tuple.second();
-                if (!isBlank(name) && !isBlank(text)) {
-                    Role role = config.retrieveRole(name.trim());
-                    Input input = Input.fromStr(config, text, role);
-                    ask(config, abortSignal, input, false);
+        if (tuple != null) {
+            String cmd = tuple.first();
+            String args = tuple.second();
+            if (".help".equals(cmd)) {
+                dumpReplHelp();
+            } else if (".info".equals(cmd)) {
+                if ("role".equals(args)) {
+                    String info = config.roleInfo();
+                    print("{}", info);
+                } else if ("session".equals(args)) {
+                    String info = config.sessionInfo();
+                    print("{}", info);
+                } else if ("rag".equals(args)) {
+                    String info = config.ragInfo();
+                    print("{}", info);
+                } else if ("agent".equals(args)) {
+                    String info = config.agentInfo();
+                    print("{}", info);
+                } else if (!isBlank(args)) {
+                    unknownCommand();
                 } else {
-                    name = args;
-                    if (!config.hasRole(name)) {
-                        config.newRole(name);
-                    }
-                    config.useRole(name);
+                    String output = config.sysinfo();
+                    print("{}", output);
                 }
-            } else {
-                println("""
-                    Usage:
-                    .role <name>                    # If the role exists, switch to it; otherwise, create a new role
-                    .role <name> [text]...          # Temporarily switch to the role, send the text, and switch back
-                    """);
+            } else if (".model".equals(cmd)) {
+                if (!isBlank(args)) {
+                    String name = args;
+                    config.setModel(name);
+                } else {
+                    println("Usage: .model <name>");
+                }
+            } else if (".prompt".equals(cmd)) {
+                if (!isBlank(args)) {
+                    String text = args;
+                    config.usePrompt(text);
+                } else {
+                    println("Usage: .prompt <text>...");
+                }
+            } else if (".role".equals(cmd)) {
+                if (!isBlank(args)) {
+                    tuple = splitOnce(args, '\n', ' ');
+                    String name = tuple.first();
+                    String text = tuple.second();
+                    if (!isBlank(name) && !isBlank(text)) {
+                        Role role = config.retrieveRole(name.trim());
+                        Input input = Input.fromStr(config, text, role);
+                        ask(config, abortSignal, input, false);
+                    } else {
+                        name = args;
+                        if (!config.hasRole(name)) {
+                            config.newRole(name);
+                        }
+                        config.useRole(name);
+                    }
+                } else {
+                    println("""
+                        Usage:
+                        .role <name>                    # If the role exists, switch to it; otherwise, create a new role
+                        .role <name> [text]...          # Temporarily switch to the role, send the text, and switch back
+                        """);
+                }
+            } else if (".session".equals(cmd)) {
+                config.useSession(args);
+                Config.maybeAutonameSession(config);
+            } else if (".rag".equals(cmd)) {
+                config.useRag(args, abortSignal);
+            } else if (".agent".equals(cmd)) {
+                tuple = splitFirstArg(args);
+                String agentName = tuple.first();
+                args = tuple.second();
+                if (!isBlank(agentName) && !isBlank(args)) {
+                    Tuple<List<String>, String> tuple2 = splitArgsText(args, cfg(BuiltIn.Platform.WINDOWS));
+                    List<String> newArgs = tuple2.first();
+                    String sessionName = null;
+                    List<String> variablePairs = Collections.emptyList();
+                    String name = isEmpty(newArgs) ? null : newArgs.getFirst();
+                    if (name != null && name.contains("=")) {
+                        variablePairs = newArgs;
+                    } else if (name != null) {
+                        sessionName = name;
+                        variablePairs = newArgs.subList(1, newArgs.size());
+                    }
+                    Map<String, String> variables = new HashMap<>();
+                    for (String pair : variablePairs) {
+                        tuple = splitOnce(pair, '=');
+                        if (!isBlank(tuple.second())) {
+                            variables.put(tuple.first(), tuple.second());
+                        }
+                    }
+                    if (variables.size() != variablePairs.size()) {
+                        return bail("Some variable values are not key=value pairs");
+                    }
+                    if (!isEmpty(variables)) {
+                        config.setAgentVariables(variables);
+                    }
+                    config.useAgent(agentName, sessionName, abortSignal);
+                    config.setAgentVariables(null);
+                    return Ok(true);
+                }
+            } else if (".starter".equals(cmd)) {
+                String id = args;
+                if (!isBlank(id)) {
+                    String text = null;
+                    Agent agent = config.getAgent();
+                    if (agent != null) {
+                        List<String> conversationStarters = agent.conversationStarters();
+                        if (!isEmpty(conversationStarters)) {
+                            for (int i = 0; i < conversationStarters.size(); i++) {
+                                if (Objects.equals(Integer.toString(i + 1), id)) {
+                                    text = conversationStarters.get(i);
+                                }
+                            }
+                        }
+                    }
+                    if (!isBlank(text)) {
+                        println("{}", dimmedText(format(">> {}", text)));
+                        Input input = Input.fromStr(config, text, null);
+                        ask(config, abortSignal, input, true);
+                    } else {
+                        return bail("Invalid starter value");
+                    }
+                } else {
+                    Result<String> banner = config.agentBanner();
+                    if (isErr(banner)) {
+                        return Err(banner);
+                    }
+                    config.printMarkdown(banner.getValue());
+                }
+            } else if (".save".equals(cmd)) {
+                tuple = splitFirstArg(args);
+                String name = tuple.second();
+                if ("role".equals(tuple.first()) && !isBlank(name)) {
+                    config.saveRole(name);
+                } else if ("session".equals(tuple.first()) && !isBlank(name)) {
+                    config.saveSession(name);
+                } else {
+                    println("Usage: .save <role|session> [name]");
+                }
             }
-        } else if (".session".equals(cmd)) {
-            config.useSession(args);
-            Config.maybeAutonameSession(config);
-        } else if (".rag".equals(cmd)) {
-            config.useRag(args, abortSignal);
-        } else if (".agent".equals(cmd)) {
-            tuple = splitFirstArg(args);
-            String agentName = tuple.first();
-            args = tuple.second();
-            if (!isBlank(agentName) && !isBlank(args)) {
-                Tuple<List<String>, String> tuple2 = splitArgsText(args, cfg(BuiltIn.Platform.WINDOWS));
-                List<String> newArgs = tuple2.first();
-                String sessionName = null;
-                List<String> variablePairs = Collections.emptyList();
-                String name = isEmpty(newArgs) ? null : newArgs.getFirst();
-                if (name != null && name.contains("=")) {
-                    variablePairs = newArgs;
-                } else if (name != null) {
-                    sessionName = name;
-                    variablePairs = newArgs.subList(1, newArgs.size());
-                }
-                Map<String, String> variables = new HashMap<>();
-                for (String pair : variablePairs) {
-                    tuple = splitOnce(pair, '=');
-                    if (!isBlank(tuple.second())) {
-                        variables.put(tuple.first(), tuple.second());
-                    }
-                }
-                if (variables.size() != variablePairs.size()) {
-                    bail("Some variable values are not key=value pairs");
-                }
-                if (!isEmpty(variables)) {
-                    config.setAgentVariables(variables);
-                }
-                config.useAgent(agentName, sessionName, abortSignal);
-                config.setAgentVariables(null);
-                return true;
+        } else {
+            Input input = Input.fromStr(config, line, null);
+            Result<?> res = ask(config, abortSignal, input, true);
+            if (isErr(res)) {
+                return Err(res);
             }
         }
-        return false;
+
+        if (!config.isMacroFlag()) {
+            println();
+        }
+
+        return Ok(false);
     }
 
     // #[async_recursion::async_recursion]
-    //async fn ask(
+    // async fn ask(
     //    config: &GlobalConfig,
     //    abort_signal: AbortSignal,
     //    mut input: Input,
     //    with_embeddings: bool,
-    //) -> Result<()> {
+    // ) -> Result<()> {
     //    if input.is_empty() {
     //        return Ok(());
     //    }
@@ -714,9 +770,9 @@ public class Mod {
     //        Ok(())
     //    }
     // }
-    public void ask(Config config, AbortSignal abortSignal, Input input, boolean withEmbeddings) {
+    public static Result<?> ask(Config config, AbortSignal abortSignal, Input input, boolean withEmbeddings) {
         if (input == null || input.isEmpty()) {
-            return;
+            return Ok();
         }
         if (withEmbeddings) {
             input.useEmbeddings(abortSignal);
@@ -738,10 +794,11 @@ public class Mod {
         config.afterChatCompletion(input, output, toolResults);
 
         if (!isEmpty(toolResults)) {
-            ask(config, abortSignal, input.mergeToolResults(output, toolResults), false);
+            return ask(config, abortSignal, input.mergeToolResults(output, toolResults), false);
         } else {
             Config.maybeAutonameSession(config);
             Config.maybeCompressSession(config);
+            return Ok();
         }
     }
 
@@ -772,7 +829,7 @@ public class Mod {
     // fn unknown_command() -> Result<()> {
     //    bail!(r#"Unknown command. Type ".help" for additional help."#);
     // }
-    public void unknownCommand() {
+    private static void unknownCommand() {
         bail("Unknown command. Type \".help\" for additional help.");
     }
 
@@ -790,8 +847,18 @@ public class Mod {
     //Press Ctrl+C to cancel the response, Ctrl+D to exit the REPL."###,
     //    );
     // }
-    private void dumpReplHelp() {
+    private static void dumpReplHelp() {
+        String head = REPL_COMMANDS.stream()
+            .map(cmd -> format("{} {}", padRight(cmd.getName(), 24), cmd.getDescription()))
+            .collect(Collectors.joining("\n"));
 
+        println("""
+            {}
+            
+            Type ::: to start multi-line editing, type ::: to finish it.
+            Press Ctrl+O to open an editor for editing the input buffer.
+            Press Ctrl+C to cancel the response, Ctrl+D to exit the REPL.
+            """, head);
     }
 
     // fn split_first_arg(args: Option<&str>) -> Option<(&str, Option<&str>)> {
@@ -800,7 +867,7 @@ public class Mod {
     //        None => (v, None),
     //    })
     // }
-    private Tuple<String, String> splitFirstArg(String args) {
+    private static Tuple<String, String> splitFirstArg(String args) {
         Tuple<String, String> tuple = splitOnce(args, ' ');
         String subcmd = tuple.first();
         String subargs = tuple.second();
@@ -881,7 +948,7 @@ public class Mod {
     //
     //    (words, text)
     // }
-    public Tuple<List<String>, String> splitArgsText(String line, boolean isWin) {
+    private static Tuple<List<String>, String> splitArgsText(String line, boolean isWin) {
         return null;
     }
 }

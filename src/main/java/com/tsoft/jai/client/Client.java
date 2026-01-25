@@ -21,6 +21,7 @@ import lombok.Getter;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.anyhow.Result.Err;
@@ -81,13 +82,13 @@ public abstract class Client {
     // }
     public static Client init(Config config, Model model) {
         RegisteredClient client = REGISTERED_CLIENTS.stream()
-            .filter(e -> e.getName().equals(model.getClientName()))
+            .filter(e -> Objects.equals(e.getName(), model.getClientName()))
             .findAny()
             .orElse(null);
         assert client != null;
 
         ClientConfig clientConfig = GLOBAL_CONFIG.getClients().stream()
-            .filter(e -> e.getName().equals(model.getClientName()))
+            .filter(e -> Objects.equals(e.getName(), model.getClientName()))
             .findAny()
             .orElse(null);
         assert clientConfig != null;

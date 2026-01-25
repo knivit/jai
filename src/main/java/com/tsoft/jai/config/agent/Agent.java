@@ -299,6 +299,20 @@ public class Agent {
         return role;
     }
 
+    // pub fn banner(&self) -> String {
+    //    self.definition.banner()
+    // }
+    public String banner() {
+        return (definition == null) ? null : definition.banner();
+    }
+
+    // pub fn conversation_starters(&self) -> &[String] {
+    //    &self.definition.conversation_starters
+    // }
+    public List<String> conversationStarters() {
+        return (definition == null) ? null : definition.getConversationStarters();
+    }
+
     // pub fn interpolated_instructions(&self) -> String {
     //    let mut output = self
     //        .session_dynamic_instructions

@@ -36,6 +36,38 @@ public class AgentDefinition {
         return SerDe.readFromYamlFile(configFile, AgentDefinition.class);
     }
 
+    //     fn banner(&self) -> String {
+    //        let AgentDefinition {
+    //            name,
+    //            description,
+    //            version,
+    //            conversation_starters,
+    //            ..
+    //        } = self;
+    //        let starters = if conversation_starters.is_empty() {
+    //            String::new()
+    //        } else {
+    //            let starters = conversation_starters
+    //                .iter()
+    //                .map(|v| format!("- {v}"))
+    //                .collect::<Vec<_>>()
+    //                .join("\n");
+    //            format!(
+    //                r#"
+    //
+    //## Conversation Starters
+    //{starters}"#
+    //            )
+    //        };
+    //        format!(
+    //            r#"# {name} {version}
+    //{description}{starters}"#
+    //        )
+    //    }
+    public String banner() {
+        return null;
+    }
+
     // fn replace_tools_placeholder(&mut self, functions: &Functions) {
     //    let tools_placeholder: &str = "{{__tools__}}";
     //    if self.instructions.contains(tools_placeholder) {

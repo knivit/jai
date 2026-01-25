@@ -11,13 +11,11 @@ import com.tsoft.jai.function.FunctionDeclaration;
 import com.tsoft.jai.function.Functions;
 import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.inquire.prompt.Confirm;
-import com.tsoft.jai.inquire.Inquire;
 import com.tsoft.jai.inquire.prompt.Select;
 import com.tsoft.jai.rag.Rag;
 import com.tsoft.jai.render.markdown.RenderOptions;
 import com.tsoft.jai.serdejson.SerDe;
 import com.tsoft.jai.serdejson.Value;
-import com.tsoft.jai.std.Fs;
 import com.tsoft.jai.utils.AbortSignal;
 import com.tsoft.jai.utils.base.Tuple;
 import lombok.Data;
@@ -30,7 +28,7 @@ import java.util.stream.Collectors;
 
 import static com.tsoft.jai.anyhow.Macros.anyhow;
 import static com.tsoft.jai.anyhow.Macros.bail;
-import static com.tsoft.jai.anyhow.Result.isOk;
+import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.client.macros.Macros.listModels;
 import static com.tsoft.jai.inquire.Inquire.IS_STDOUT_TERMINAL;
 import static com.tsoft.jai.inquire.Inquire.println;
@@ -780,6 +778,46 @@ public class Config {
         return null;
     }
 
+    // pub fn save_role(&mut self, name: Option<&str>) -> Result<()> {
+    //    let mut role_name = match &self.role {
+    //        Some(role) => {
+    //            if role.has_args() {
+    //                bail!("Unable to save the role with arguments (whose name contains '#')")
+    //            }
+    //            match name {
+    //                Some(v) => v.to_string(),
+    //                None => role.name().to_string(),
+    //            }
+    //        }
+    //        None => bail!("No role"),
+    //    };
+    //    if role_name == TEMP_ROLE_NAME {
+    //        role_name = Text::new("Role name:")
+    //            .with_validator(|input: &str| {
+    //                let input = input.trim();
+    //                if input.is_empty() {
+    //                    Ok(Validation::Invalid("This name is required".into()))
+    //                } else if input == TEMP_ROLE_NAME {
+    //                    Ok(Validation::Invalid("This name is reserved".into()))
+    //                } else {
+    //                    Ok(Validation::Valid)
+    //                }
+    //            })
+    //            .prompt()?;
+    //    }
+    //    let role_path = Self::role_file(&role_name);
+    //    if let Some(role) = self.role.as_mut() {
+    //        role.save(&role_name, &role_path, self.working_mode.is_repl())?;
+    //    }
+    //
+    //    Ok(())
+    // }
+    public Result<?> saveRole(String name) {
+        String roleName;
+
+        return Ok();
+    }
+
     // pub fn use_session(&mut self, session_name: Option<&str>) -> Result<()> {
     //    if self.session.is_some() {
     //        bail!(
@@ -835,18 +873,16 @@ public class Config {
     //    self.init_agent_session_variables(new_session)?;
     //    Ok(())
     // }
-    public void useSession(String sessionName) {
+    public Result<?> useSession(String sessionName) {
         if (session != null) {
-            bail("Already in a session, please run '.exit session' first to exit the current session.");
-            return;
+            return bail("Already in a session, please run '.exit session' first to exit the current session.");
         }
 
         if (isBlank(sessionName) || TEMP_SESSION_NAME.equals(sessionName)) {
             File sessionFile = sessionFile(TEMP_SESSION_NAME);
             if (sessionFile.exists()) {
                 if (!sessionFile.delete()) {
-                    bail(format("Failed to cleanup previous '{}' session", TEMP_SESSION_NAME));
-                    return;
+                    return bail(format("Failed to cleanup previous '{}' session", TEMP_SESSION_NAME));
                 }
             }
             session = Session.create(this, TEMP_SESSION_NAME);
@@ -879,6 +915,7 @@ public class Config {
         }
 
         initAgentSessionVariables(newSession);
+        return Ok();
     }
 
     // pub fn session_info(&self) -> Result<String> {
@@ -907,6 +944,47 @@ public class Config {
             bail("No session");
         }
         return null;
+    }
+
+    // pub fn save_session(&mut self, name: Option<&str>) -> Result<()> {
+    //    let session_name = match &self.session {
+    //        Some(session) => match name {
+    //            Some(v) => v.to_string(),
+    //            None => session
+    //                .autoname()
+    //                .unwrap_or_else(|| session.name())
+    //                .to_string(),
+    //        },
+    //        None => bail!("No session"),
+    //    };
+    //    let session_path = self.session_file(&session_name);
+    //    if let Some(session) = self.session.as_mut() {
+    //        session.save(&session_name, &session_path, self.working_mode.is_repl())?;
+    //    }
+    //    Ok(())
+    // }
+    public Result<?> saveSession(String name) {
+        String sessionName;
+        if (session != null) {
+            if (!isBlank(name)) {
+                sessionName = name;
+            } else {
+                sessionName = session.autoname();
+                if (isBlank(sessionName)) {
+                    sessionName = session.getName();
+                }
+            }
+        } else {
+            return bail("No session");
+        }
+        File sessionPath = sessionFile(sessionName);
+        if (session != null) {
+            Result<?> res = session.save(sessionName, sessionPath.toPath(), WorkingMode.isRepl(workingMode));
+            if (isErr(res)) {
+                return res;
+            }
+        }
+        return Ok();
     }
 
     // pub async fn use_rag(
@@ -1414,6 +1492,21 @@ public class Config {
         }
     }
 
+    // pub fn agent_banner(&self) -> Result<String> {
+    //    if let Some(agent) = &self.agent {
+    //        Ok(agent.banner())
+    //    } else {
+    //        bail!("No agent")
+    //    }
+    // }
+    public Result<String> agentBanner() {
+        if (agent != null) {
+            return Ok(agent.banner());
+        } else {
+            return bail("No agent");
+        }
+    }
+
     // fn save_message(&mut self, input: &Input, output: &str) -> Result<()> {
     //    let mut input = input.clone();
     //    input.clear_patch();
@@ -1479,12 +1572,13 @@ public class Config {
     //    }
     //    Ok(())
     // }
-    public void exitSession() {
+    public Result<?> exitSession() {
         if (session != null) {
             Path sessionsDir = sessionsDir();
             session.exit(sessionsDir, WorkingMode.Repl.equals(workingMode));
             discontinuousLastMessage();
         }
+        return Ok();
     }
 
     // pub fn render_options(&self) -> Result<RenderOptions> {

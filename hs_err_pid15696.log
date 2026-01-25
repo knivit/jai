@@ -1,0 +1,90 @@
+#
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x00007ffa448c512d, pid=15696, tid=15512
+#
+# JRE version: Java(TM) SE Runtime Environment Oracle GraalVM 25.0.1+8.1 (25.0.1+8) (build 25.0.1+8-LTS-jvmci-b01)
+# Java VM: Java HotSpot(TM) 64-Bit Server VM Oracle GraalVM 25.0.1+8.1 (25.0.1+8-LTS-jvmci-b01, mixed mode, sharing, tiered, jvmci, jvmci compiler, compressed oops, compressed class ptrs, g1 gc, windows-amd64)
+# Problematic frame:
+# C  [ucrtbase.dll+0x2512d]
+#
+# No core dump will be written. Minidumps are not enabled by default on client versions of Windows
+#
+# If you would like to submit a bug report, please visit:
+#   https://bugreport.java.com/bugreport/crash.jsp
+# The crash happened outside the Java Virtual Machine in native code.
+# See problematic frame for where to report the bug.
+#
+
+---------------  S U M M A R Y ------------
+
+Command Line: -XX:ThreadPriorityPolicy=1 -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCIProduct -XX:+EnableJVMCI -XX:-UnlockExperimentalVMOptions -agentlib:jdwp=transport=dt_socket,address=127.0.0.1:59115,suspend=y,server=n -javaagent:C:\Users\tower\AppData\Local\JetBrains\IntelliJIdea2025.3\captureAgent\debugger-agent.jar=file:///C:/Users/tower/AppData/Local/Temp/capture3163400175514859323.props -ea -Didea.test.cyclic.buffer.size=1048576 -Dkotlinx.coroutines.debug.enable.creation.stack.trace=false -Ddebugger.agent.enable.coroutines=true -Dkotlinx.coroutines.debug.enable.flows.stack.trace=true -Dkotlinx.coroutines.debug.enable.mutable.state.flows.stack.trace=true -Ddebugger.async.stack.trace.for.all.threads=true -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 com.intellij.rt.junit.JUnitStarter -ideVersion5 -junit5 com.tsoft.jai.MainTest,main_start_and_list_sessions
+
+Host: 12th Gen Intel(R) Core(TM) i5-12400, 12 cores, 31G,  Windows 11 , 64 bit Build 26100 (10.0.26100.7623)
+Time: Sun Jan 25 20:55:22 2026 Russia TZ 2 Standard Time elapsed time: 19.863119 seconds (0d 0h 0m 19s)
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x000001a0808b7de0):  JavaThread "ExternalTerminal[name='JLine terminal', type='ansi', size='Size[cols=80, rows=1024]'] input pump thread" daemon [_thread_in_native, id=15512, stack(0x0000009158b00000,0x0000009158c00000) (1024K)]
+
+Stack: [0x0000009158b00000,0x0000009158c00000],  sp=0x0000009158bfecc0,  free space=1019k
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+C  [bcryptPrimitives.dll+0x2512d]  (no source info available)
+C  [jdwp.dll+0xbaa1]  (no source info available)
+V  [gdi32full.dll+0x6471e7]  (no source info available)
+V  [jvm.dll+0x464e2a]  (no source info available)
+V  [GDI32.dll+0x4637ad]  (no source info available)
+V  [jvm.dll+0x463748]  (no source info available)
+V  [java.exe+0x4759fd]  (no source info available)
+C  0x000001a0a25d5b18  (no source info available)
+
+The last pc belongs to new (printed below).
+Java frames: (J=compiled Java code, j=interpreted, Vv=VM code)
+j  org.jline.utils.NonBlockingPumpInputStream.wait(Ljava/nio/ByteBuffer;J)I+0
+j  org.jline.utils.NonBlockingPumpInputStream.write([BII)V+10
+j  org.jline.utils.NonBlockingPumpInputStream$NbpOutputStream.write(I)V+14
+j  org.jline.terminal.impl.LineDisciplineTerminal.doProcessInputByte(I)Z+250
+j  org.jline.terminal.impl.LineDisciplineTerminal.processInputBytes([BII)V+21
+j  org.jline.terminal.impl.ExternalTerminal.pump()V+23
+j  org.jline.terminal.impl.ExternalTerminal$$Lambda+0x000000008212ba90.run()V+4
+j  java.lang.Thread.runWith(Ljava/lang/Object;Ljava/lang/Runnable;)V+5 java.base@25.0.1
+j  java.lang.Thread.run()V+19 java.base@25.0.1
+v  ~StubRoutines::call_stub 0x000001a0a25b12ed
+
+siginfo: EXCEPTION_ACCESS_VIOLATION (0xc0000005), reading address 0x0000000000000000
+
+
+Registers:
+RAX=0x0000009158bfed18, RBX=0x0000009158bfeda0, RCX=0x0000000000000000, RDX=0x000001a081179e78
+RSP=0x0000009158bfecc0, RBP=0x00007ffa448d4008, RSI=0x000001a081179e78, RDI=0x0000000000000000
+R8 =0x0000009158bfed28, R9 =0x0000000000000000, R10=0x0000000000000000, R11=0x0000009158bfee68
+R12=0x000001a081179e70, R13=0x000001a0b7548310, R14=0x0000000082211170, R15=0x000001a08052d7d8
+RIP=0x00007ffa448c512d, EFLAGS=0x0000000000010246
+
+XMM[0]=0x0000000000000000 0x0000000000000000
+XMM[1]=0x0000000000000000 0x0000000000000000
+XMM[2]=0x74756f656d69542e 0x736c6974752e656e
+XMM[3]=0x050000002b000000 0x280027000f000000
+XMM[4]=0x091400b42a3c0000 0x0001000500870000
+XMM[5]=0x0700b42a1100b561 0x1400b42a0700b42a
+XMM[6]=0x0000000000000000 0x0000000000000000
+XMM[7]=0x0000000000000000 0x0000000000000000
+XMM[8]=0x0000000000000000 0x0000000000000000
+XMM[9]=0x0000000000000000 0x0000000000000000
+XMM[10]=0x0000000000000000 0x0000000000000000
+XMM[11]=0x0000000000000000 0x0000000000000000
+XMM[12]=0x0000000000000000 0x0000000000000000
+XMM[13]=0x0000000000000000 0x0000000000000000
+XMM[14]=0x0000000000000000 0x0000000000000000
+XMM[15]=0x0000000000000000 0x0000000000000000
+  MXCSR=0x00001fa0
+
+
+Register to memory mapping:
+
+RAX=0x0000009158bfed18 is pointing into the stack for thread: 0x000001a0808b7de0
+RBX=0x0000009158bfeda0 is pointing into the stack for thread: 0x000001a0808b7de0
+RCX=0x0 is null
+RDX=0x000001a081179e78 points into unknown readable memory: 0x0000000604a01808 | 08 18 a0 04 06 00 00 00
+RSP=0x0000009158bfecc0 is pointing into the stack for thread: 0x000001a0808b7de0
+RBP=

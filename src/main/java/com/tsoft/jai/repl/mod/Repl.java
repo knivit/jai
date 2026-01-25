@@ -1,22 +1,29 @@
 package com.tsoft.jai.repl.mod;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.config.AssertState;
 import com.tsoft.jai.config.Config;
 import com.tsoft.jai.config.StateFlags;
+import com.tsoft.jai.inquire.prompt.Editor;
 import com.tsoft.jai.repl.prompt.ReplPrompt;
 import com.tsoft.jai.utils.AbortSignal;
 import com.tsoft.jai.utils.base.BuildInfo;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import static com.tsoft.jai.inquire.Inquire.print;
+import static com.tsoft.jai.anyhow.Result.Ok;
+import static com.tsoft.jai.inquire.Inquire.*;
+import static com.tsoft.jai.render.Mod.renderError;
+import static com.tsoft.jai.repl.mod.Mod.runReplCommand;
+import static com.tsoft.jai.utils.AbortSignal.createAbortSignal;
+import static com.tsoft.jai.inquire.prompt.Editor.Signal;
 
 @Data
 @Accessors(chain = true)
 public class Repl {
 
     private Config config;
-    //private Reedline editor;
+    private Editor editor;
     private ReplPrompt prompt;
     private AbortSignal abortSignal;
 
@@ -34,7 +41,16 @@ public class Repl {
     //    })
     // }
     public static Repl init(Config config) {
-        return null;
+        Editor editor = createEditor(config);
+
+        ReplPrompt prompt = new ReplPrompt(config);
+        AbortSignal abortSignal = createAbortSignal();
+
+        return new Repl()
+            .setConfig(config)
+            .setEditor(editor)
+            .setPrompt(prompt)
+            .setAbortSignal(abortSignal);
     }
 
     //     pub async fn run(&mut self) -> Result<()> {
@@ -84,19 +100,49 @@ public class Repl {
     //        self.config.write().exit_session()?;
     //        Ok(())
     //    }
-    public void run() {
+    public Result<?> run() {
         if (AssertState.False(StateFlags.AGENT | StateFlags.RAG).asserts(config.state())) {
             print("""
                 Welcome to {} {}
                 Type ".help" for additional help.
                 """, BuildInfo.getProject(), BuildInfo.getVersion());
         }
-        while (true) {
+
+        boolean stop = false;
+        while (!stop) {
             if (abortSignal.abortedCtrlD()) {
                 break;
             }
-            ...
+            Signal sig = editor.readLine(prompt);
+            switch (sig.getType()) {
+                case Success -> {
+                    abortSignal.reset();
+                    Result<Boolean> res = runReplCommand(config, abortSignal, sig.getLine());
+                    switch (res.getType()) {
+                        case Ok -> {
+                            Boolean exit = res.getValue();
+                            if (Boolean.TRUE.equals(exit)) {
+                                stop = true;
+                            }
+                        }
+                        case Err -> {
+                            renderError(res.getErr());
+                            println();
+                        }
+                    }
+                }
+                case CtrlC -> {
+                    abortSignal.setCtrlC();
+                    println("(To exit, press Ctrl+D or enter \".exit\")\n");
+                }
+                case CtrlD -> {
+                    abortSignal.setCtrlD();
+                    stop = true;
+                }
+            }
         }
+        config.exitSession();
+        return Ok();
     }
 
     // fn create_editor(config: &GlobalConfig) -> Result<Reedline> {
@@ -129,7 +175,7 @@ public class Repl {
     //
     //    Ok(editor)
     // }
-    public void createEditor(Config config) {
-
+    public static Editor createEditor(Config config) {
+        return new Editor(terminal());
     }
 }

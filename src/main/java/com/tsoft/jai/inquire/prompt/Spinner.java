@@ -1,9 +1,13 @@
 package com.tsoft.jai.inquire.prompt;
 
+import lombok.RequiredArgsConstructor;
 import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
 
+import java.util.function.Supplier;
+
+@RequiredArgsConstructor
 public class Spinner {
+
     private final Terminal terminal;
     private volatile boolean active = false;
     private Thread spinnerThread;
@@ -17,11 +21,6 @@ public class Spinner {
      * });
      * spinner.close();
      */
-    public Spinner() throws Exception {
-        this.terminal = TerminalBuilder.builder()
-            .system(true)
-            .build();
-    }
 
     /**
      * Run a task with a spinner
@@ -30,7 +29,7 @@ public class Spinner {
      * @param <T> Task result type
      * @return Task result
      */
-    public <T> T runWithSpinner(String message, Supplier<T> task) throws Exception {
+    public <T> T runWithSpinner(String message, Supplier<T> task) {
         start(message);
         try {
             return task.get();
@@ -44,7 +43,7 @@ public class Spinner {
      * @param message The message to display with spinner
      * @param task The task to execute
      */
-    public void runWithSpinner(String message, Runnable task) throws Exception {
+    public void runWithSpinner(String message, Runnable task) {
         start(message);
         try {
             task.run();
@@ -54,7 +53,9 @@ public class Spinner {
     }
 
     private void start(String message) {
-        if (active) return;
+        if (active) {
+            return;
+        }
 
         active = true;
         spinnerThread = new Thread(() -> {

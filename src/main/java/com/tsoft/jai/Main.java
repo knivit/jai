@@ -1,5 +1,6 @@
 package com.tsoft.jai;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.cli.Cli;
 import com.tsoft.jai.client.Client;
 import com.tsoft.jai.client.model.Model;
@@ -18,14 +19,14 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
+import static com.tsoft.jai.anyhow.Result.Ok;
 import static com.tsoft.jai.client.common.Common.callChatCompletions;
 import static com.tsoft.jai.client.common.Common.callChatCompletionsStreaming;
 import static com.tsoft.jai.client.macros.Macros.listModels;
 import static com.tsoft.jai.config.Config.TEMP_SESSION_NAME;
 import static com.tsoft.jai.config.Role.CODE_ROLE;
 import static com.tsoft.jai.config.Role.SHELL_ROLE;
-import static com.tsoft.jai.inquire.Inquire.println;
-import static com.tsoft.jai.inquire.Inquire.terminal;
+import static com.tsoft.jai.inquire.Inquire.*;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 import static com.tsoft.jai.utils.command.Command.SHELL;
@@ -216,43 +217,42 @@ public class Main {
     //        }
     //    }
     // }
-    private static void run(Config config, Cli cli, String text) {
+    private static Result<?> run(Config config, Cli cli, String text) {
         AbortSignal abortSignal = new AbortSignal();
 
         if (cli.isSyncModels()) {
             // to do
-            return;
         }
 
         if (cli.isListModels()) {
             for (Model model : listModels(config, ModelType.Chat)) {
                 println("{}", model.id());
             }
-            return;
+            return Ok();
         }
 
         if (cli.isListRoles()) {
             String roles = String.join("\n", config.listRoles(true));
             println("{}", roles);
-            return;
+            return Ok();
         }
 
         if (cli.isListAgents()) {
             String agents = String.join("\n", Agent.listAgents(config));
             println("{}", agents);
-            return;
+            return Ok();
         }
 
         if (cli.isListRags()) {
             String rags = String.join("\n", config.listRags());
             println("{}", rags);
-            return;
+            return Ok();
         }
 
         if (cli.isListMacros()) {
             String macros = String.join("\n", config.listMacros());
             println("{}", macros);
-            return;
+            return Ok();
         }
 
         if (cli.isDryRun()) {
@@ -270,7 +270,7 @@ public class Main {
             }
             config.useAgent(agent, session, abortSignal);
             config.setAgentVariables(Collections.emptyMap());
-            return;
+            return Ok();
         } else {
             String prompt = cli.getPrompt();
             if (!isBlank(prompt)) {
@@ -292,7 +292,7 @@ public class Main {
         if (cli.isListSessions()) {
             String macros = String.join("\n", config.listSessions());
             println("{}", macros);
-            return;
+            return Ok();
         }
         if (!isBlank(cli.getModel())) {
             config.setModel(cli.getModel());
@@ -309,24 +309,24 @@ public class Main {
         if (cli.isInfo()) {
             String info = config.info();
             println("{}", info);
-            return;
+            return Ok();
         }
 
         boolean isRepl = WorkingMode.Repl.equals(config.getWorkingMode());
         if (cli.isRebuildRag()) {
             Config.rebuildRag(config, abortSignal);
             if (isRepl) {
-                return;
+                return Ok();
             }
         }
         if (!isBlank(cli.getMacroName())) {
             Config.macroExecute(config, cli.getMacroName(), text, abortSignal);
-            return;
+            return Ok();
         }
         if (cli.isExecute() && !isRepl) {
             Input input = createInput(config, text, cli.getFile(), abortSignal);
             shellExecute(config, SHELL, input, abortSignal);
-            return;
+            return Ok();
         }
 
         config.applyPrelude();
@@ -336,12 +336,13 @@ public class Main {
             input.useEmbeddings(abortSignal);
             startDirective(config, input, cli.isCode(), abortSignal);
         } else {
-            if (terminal() == null) {
-                bail("No TTY for REPL");
-                return;
+            if (!IS_STDOUT_TERMINAL) {
+                return bail("No TTY for REPL");
             }
             startInteractive(config);
         }
+
+        return Ok();
     }
 
     // #[async_recursion::async_recursion]

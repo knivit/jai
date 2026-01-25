@@ -1,18 +1,18 @@
 package com.tsoft.jai.utils;
 
 import com.tsoft.jai.tokio.Time;
-import lombok.Data;
-import lombok.experimental.Accessors;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-@Data
-@Accessors(chain = true)
 public class AbortSignal {
 
-    private AtomicBoolean ctrlc = new AtomicBoolean(false);
-    private AtomicBoolean ctrld = new AtomicBoolean(false);
+    private final AtomicBoolean ctrlc = new AtomicBoolean(false);
+    private final AtomicBoolean ctrld = new AtomicBoolean(false);
+
+    public static AbortSignal createAbortSignal() {
+        return new AbortSignal();
+    }
 
     // pub async fn wait_abort_signal(abort_signal: &AbortSignal) {
     //    loop {
@@ -62,5 +62,28 @@ public class AbortSignal {
     // }
     public boolean abortedCtrlD() {
         return ctrld.get();
+    }
+
+    // pub fn reset(&self) {
+    //    self.ctrlc.store(false, Ordering::SeqCst);
+    //    self.ctrld.store(false, Ordering::SeqCst);
+    // }
+    public void reset() {
+        ctrlc.set(false);
+        ctrld.set(false);
+    }
+
+    //  pub fn set_ctrlc(&self) {
+    //     self.ctrlc.store(true, Ordering::SeqCst);
+    // }
+    public void setCtrlC() {
+        ctrlc.set(true);
+    }
+
+    // pub fn set_ctrld(&self) {
+    //     self.ctrld.store(true, Ordering::SeqCst);
+    // }
+    public void setCtrlD() {
+        ctrld.set(true);
     }
 }

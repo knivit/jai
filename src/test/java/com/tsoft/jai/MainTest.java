@@ -61,6 +61,7 @@ class MainTest {
     void main_start_and_list_sessions() {
         assertThat(execute("--list-sessions")).isEqualTo("\n");
 
+        terminalInputStream.println("Hello !");
         assertThat(execute("--session", "test")).isEqualTo("");
 
         assertThat(execute("--list-sessions")).isEqualTo("");

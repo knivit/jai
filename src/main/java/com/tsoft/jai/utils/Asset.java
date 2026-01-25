@@ -1,12 +1,10 @@
 package com.tsoft.jai.utils;
 
 import com.tsoft.jai.anyhow.Result;
-import com.tsoft.jai.std.Fs;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.List;
 
 import static com.tsoft.jai.std.Fs.readDir;
@@ -22,7 +20,7 @@ public final class Asset {
             Result<List<File>> res = readDir(Paths.get(Asset.class.getResource("/" + assetName).toURI()));
             return switch (res.getType()) {
                 case Ok -> res.getValue();
-                case Err -> throw new IllegalStateException(res.getErrors());
+                case Err -> throw new IllegalStateException(res.getErr().toString());
             };
         } catch (Exception ex) {
             throw new IllegalArgumentException(format("Error listing asset files '{}': {}", assetName, ex.getMessage()));

@@ -9,4 +9,8 @@ public enum WorkingMode {
     public static boolean isCmd(WorkingMode mode) {
         return Cmd.equals(mode);
     }
+
+    public static boolean isRepl(WorkingMode mode) {
+        return Repl.equals(mode);
+    }
 }

@@ -213,6 +213,13 @@ public class Session {
         agentInstructions = rolePrompt;
     }
 
+    // pub fn autoname(&self) -> Option<&str> {
+    //    self.autoname.as_ref().and_then(|v| v.name.as_deref())
+    // }
+    public String autoname() {
+        return (autoname == null) ? null : autoname.getName();
+    }
+
     // pub fn clear_messages(&mut self) {
     //    self.messages.clear();
     //    self.compressed_messages.clear();

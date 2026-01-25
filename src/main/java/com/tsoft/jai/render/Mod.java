@@ -1,5 +1,6 @@
 package com.tsoft.jai.render;
 
+import com.tsoft.jai.anyhow.Error;
 import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.stream.SseEvent;
 import com.tsoft.jai.config.Config;
@@ -9,9 +10,12 @@ import com.tsoft.jai.tokio.sync.mpsc.UnboundedReceiver;
 import com.tsoft.jai.utils.AbortSignal;
 
 import static com.tsoft.jai.anyhow.Result.Ok;
+import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.inquire.Inquire.terminal;
 import static com.tsoft.jai.render.Stream.markdownStream;
 import static com.tsoft.jai.render.Stream.rawStream;
+import static com.tsoft.jai.utils.Mod.errorText;
+import static com.tsoft.jai.utils.Mod.prettyError;
 
 public final class Mod {
 
@@ -43,8 +47,8 @@ public final class Mod {
     // pub fn render_error(err: anyhow::Error) {
     //    eprintln!("{}", error_text(&pretty_error(&err)));
     // }
-    public static void renderError(Exception err) {
-
+    public static void renderError(Error err) {
+        println("{}", errorText(prettyError(err)));
     }
 
     private Mod() { }

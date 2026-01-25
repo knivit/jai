@@ -6,9 +6,7 @@ import org.jline.terminal.Size;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 import static com.tsoft.jai.utils.base.StringUtils.format;
@@ -17,11 +15,12 @@ public final class Inquire {
 
     public static final String JAI_DUMB_TERMINAL_MODE = "JAI_DUMB_TERMINAL_MODE";
 
-    public static final ByteArrayInputStream terminalInput = new ByteArrayInputStream(new byte[0]);
+    public static final PipedInputStream terminalInput = new PipedInputStream();
+    public static final PrintStream terminalInputStream = new PrintStream(terminalInputWriterStream(terminalInput));
 
+    public static final OutputStream terminalOutput = new ByteArrayOutputStream();
     public static final ByteArrayOutputStream output = new ByteArrayOutputStream();
     public static final PrintStream outputStream = new PrintStream(output);
-    public static final ByteArrayOutputStream terminalOutput = new ByteArrayOutputStream();
 
     private static final Inquire INSTANCE = new Inquire();
 
@@ -30,6 +29,8 @@ public final class Inquire {
     private final Prompter prompter;
 
     public static final boolean IS_STDOUT_TERMINAL = INSTANCE.terminal != null;
+
+    public static final boolean NO_COLOR = false;
 
     public static Terminal terminal() {
         return INSTANCE.terminal;
@@ -58,6 +59,14 @@ public final class Inquire {
 
     public static void enableRawMode() {
 
+    }
+
+    private static OutputStream terminalInputWriterStream(PipedInputStream in) {
+        try {
+            return new PipedOutputStream(in);
+        } catch (Exception ex) {
+            throw new IllegalStateException(ex);
+        }
     }
 
     private Inquire() {
