@@ -1,5 +1,6 @@
 package com.tsoft.jai.config.agent;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.client.model.ModelType;
 import com.tsoft.jai.config.Config;
@@ -23,6 +24,7 @@ import java.nio.file.Path;
 import java.util.*;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
+import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.function.Functions.runLlmFunction;
 import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.serdejson.SerDe.toJson;
@@ -138,11 +140,11 @@ public class Agent {
     //         model,
     //     })
     // }
-    public static Agent init(Config config, String name, AbortSignal abortSignal) {
+    public static Result<Agent> init(Config config, String name, AbortSignal abortSignal) {
         Path functionsDir = config.agentFunctionsDir(name);
         File definitionFile = functionsDir.resolve("index.yaml").toFile();
         if (!definitionFile.exists()) {
-            bail("Unknown agent '{}', name");
+            return bail("Unknown agent '{}', name");
         }
         File functionsFile = functionsDir.resolve("functions.json").toFile();
         File ragFile = config.agentRagFile(name, DEFAULT_AGENT_NAME);
@@ -166,7 +168,11 @@ public class Agent {
 
         Model model;
         if (!isBlank(agentConfig.getModelId())) {
-            model = Model.retrieveModel(config, agentConfig.getModelId(), ModelType.Chat);
+            Result<Model> res = Model.retrieveModel(config, agentConfig.getModelId(), ModelType.Chat);
+            if (isErr(res)) {
+                return Err();
+            }
+            model = res.getValue();
         } else {
             if (agentConfig.getTemperature() == null) {
                 agentConfig.setTemperature(config.getTemperature());
@@ -203,7 +209,7 @@ public class Agent {
             }
         }
 
-        return new Agent()
+        return Ok(new Agent()
             .setName(name)
             .setConfig(agentConfig)
             .setDefinition(definition)
@@ -211,7 +217,7 @@ public class Agent {
             .setSessionVariables(Collections.emptyMap())
             .setFunctions(functions)
             .setRag(rag)
-            .setModel(model);
+            .setModel(model));
     }
 
     // pub fn list_agents() -> Vec<String> {

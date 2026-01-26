@@ -17,9 +17,9 @@ import java.util.List;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.anyhow.Result.*;
-import static com.tsoft.jai.config.Input.abortableRunWithSpinner;
 import static com.tsoft.jai.function.Functions.evalToolCalls;
 import static com.tsoft.jai.inquire.Inquire.println;
+import static com.tsoft.jai.inquire.prompt.Spinner.abortableRunWithSpinner;
 import static com.tsoft.jai.render.Mod.renderStream;
 import static com.tsoft.jai.tokio.Join.join;
 import static com.tsoft.jai.utils.Mod.extractCodeBlock;

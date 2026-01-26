@@ -597,15 +597,19 @@ public class Config {
     //     }
     //     Ok(())
     // }
-    public void useAgent(String agentName, String sessionName, AbortSignal abortSignal) {
+    public Result<?> useAgent(String agentName, String sessionName, AbortSignal abortSignal) {
         if (!isFunctionCalling()) {
-            bail("Please enable function calling before using the agent.");
+            return bail("Please enable function calling before using the agent.");
         }
         if (agent != null) {
-            bail("Already in a agent, please run '.exit agent' first to exit the current agent.");
+            return bail("Already in a agent, please run '.exit agent' first to exit the current agent.");
         }
 
-        Agent agent = Agent.init(this, agentName, abortSignal);
+        Result<Agent> res = Agent.init(this, agentName, abortSignal);
+        if (isErr(res)) {
+            return Err();
+        }
+        Agent agent = res.getValue();
 
         String session = sessionName;
         if (isBlank(session)) {
@@ -621,6 +625,8 @@ public class Config {
         } else {
             initAgentSharedVariables();
         }
+
+        return Ok();
     }
 
     // pub fn current_model(&self) -> &Model {
@@ -719,8 +725,11 @@ public class Config {
     //    self.use_role_obj(role)
     // }
     public void useRole(String name) {
-        Role role = retrieveRole(name);
-        useRoleObj(role);
+        Result<Role> role = retrieveRole(name);
+        if (isErr(role)) {
+            return;
+        }
+        useRoleObj(role.getValue());
     }
 
     // pub fn use_role_obj(&mut self, role: Role) -> Result<()> {
@@ -891,7 +900,11 @@ public class Config {
             if (!sessionFile.exists()) {
                 session = Session.create(this, sessionName);
             } else {
-                session = Session.load(this, sessionName, sessionFile);
+                Result<Session> res = Session.load(this, sessionName, sessionFile);
+                if (isErr(res)) {
+                    return Err();
+                }
+                session = res.getValue();
             }
         }
 
@@ -1165,7 +1178,12 @@ public class Config {
     //    Ok(())
     // }
     public void setModel(String modelId) {
-        Model model = Model.retrieveModel(this, modelId, ModelType.Chat);
+        Result<Model> res = Model.retrieveModel(this, modelId, ModelType.Chat);
+        if (isErr(res)) {
+            return;
+        }
+
+        Model model = res.getValue();
         RoleLike roleLike = roleLikeMut();
         if (roleLike != null) {
             roleLike.setModel(model);
@@ -1262,7 +1280,7 @@ public class Config {
     //    }
     //    Ok(role)
     // }
-    public Role retrieveRole(String name) {
+    public Result<Role> retrieveRole(String name) {
         List<String> names = listRoles(false);
 
         Role role;
@@ -1277,8 +1295,11 @@ public class Config {
         if (!isBlank(role.getModelId())) {
             String modelId = role.getModelId();
             if (!Objects.equals(currentModel.id(), modelId)) {
-                Model model = Model.retrieveModel(this, modelId, ModelType.Chat);
-                role.setModel(model);
+                Result<Model> res = Model.retrieveModel(this, modelId, ModelType.Chat);
+                if (isErr(res)) {
+                    return Err();
+                }
+                role.setModel(res.getValue());
             } else {
                 role.setModel(currentModel);
             }
@@ -1291,7 +1312,7 @@ public class Config {
                 role.setTopP(topP);
             }
         }
-        return role;
+        return Ok(role);
     }
 
     // pub fn empty_session(&mut self) -> Result<()> {
@@ -1755,17 +1776,18 @@ public class Config {
     //    self.model_id = model_id;
     //    Ok(())
     // }
-    private void setupModel() {
+    private Result<?> setupModel() {
         String modelId = this.modelId;
         if (isBlank(modelId)) {
             List<Model> models = listModels(this, ModelType.Chat);
             if (isEmpty(models)) {
-                bail("No available model");
+                return bail("No available model");
             }
             modelId = models.getFirst().id();
         }
         setModel(modelId);
         this.modelId = modelId;
+        return Ok();
     }
 
     private void setupDocumentLoaders() { }

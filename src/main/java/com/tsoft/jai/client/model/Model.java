@@ -1,6 +1,7 @@
 package com.tsoft.jai.client.model;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.message.Message;
 import com.tsoft.jai.client.message.MessageContent;
 import com.tsoft.jai.client.message.MessageContentPart;
@@ -18,6 +19,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
+import static com.tsoft.jai.anyhow.Result.Ok;
 import static com.tsoft.jai.client.macros.Macros.listAllModels;
 import static com.tsoft.jai.client.macros.Macros.listClientNames;
 import static com.tsoft.jai.client.model.ModelType.canCreateFromName;
@@ -129,7 +131,7 @@ public class Model {
     //    };
     //    bail!("Unknown {model_type} model '{model_id}'")
     // }
-    public static Model retrieveModel(Config config, String modelId, ModelType modelType) {
+    public static Result<Model> retrieveModel(Config config, String modelId, ModelType modelType) {
         List<Model> models = listAllModels(config);
         Tuple<String, String> tuple = splitOnce(modelId, ':');
         String clientName = isBlank(tuple.first()) ? modelId : tuple.first();
@@ -142,9 +144,9 @@ public class Model {
                 .orElse(null);
             if (model != null) {
                 if (Objects.equals(model.getModelType(), modelType)) {
-                    return model;
+                    return Ok(model);
                 } else {
-                    bail("Model '{}' is not a {} model", modelId, modelType);
+                    return bail("Model '{}' is not a {} model", modelId, modelType);
                 }
             }
 
@@ -152,19 +154,18 @@ public class Model {
             if (clientNames.stream().anyMatch(e -> e.equals(clientName)) && canCreateFromName(modelType)) {
                 Model newModel = new Model(clientName, modelName);
                 newModel.data.setModelType(modelType.name());
-                return newModel;
+                return Ok(newModel);
             }
         } else {
             Optional<Model> found = models.stream()
                 .filter(e -> Objects.equals(e.getClientName(), clientName) && Objects.equals(e.getModelType(), modelType))
                 .findAny();
             if (found.isPresent()) {
-                return found.get();
+                return Ok(found.get());
             }
         }
 
-        bail("Unknown {} model '{}'", modelType, modelId);
-        return null;
+        return bail("Unknown {} model '{}'", modelType, modelId);
     }
 
     // pub fn id(&self) -> String {

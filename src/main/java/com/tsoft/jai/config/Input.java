@@ -21,13 +21,13 @@ import lombok.experimental.Accessors;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.Supplier;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.anyhow.Result.Ok;
 import static com.tsoft.jai.client.macros.Macros.initClient;
 import static com.tsoft.jai.client.message.Message.patchMessages;
 import static com.tsoft.jai.inquire.Inquire.println;
+import static com.tsoft.jai.inquire.prompt.Spinner.abortableRunWithSpinner;
 import static com.tsoft.jai.utils.Crypto.base64Encode;
 import static com.tsoft.jai.utils.Crypto.sha256;
 import static com.tsoft.jai.utils.Mod.isUrl;
@@ -242,20 +242,6 @@ public class Input implements Cloneable {
     // }
     public static Result<Input> fromFilesWithSpinner(Config config, String rawText, List<String> paths, Role role, AbortSignal abortSignal) {
         return abortableRunWithSpinner(() -> Input.fromFiles(config, rawText, paths, role), "Loading files", abortSignal);
-    }
-
-    // pub async fn abortable_run_with_spinner<F, T>(
-    //    task: F,
-    //    message: &str,
-    //    abort_signal: AbortSignal,
-    // ) -> Result<T>
-    // where
-    //    F: Future<Output = Result<T>>,
-    // {
-    //    let (_, spinner_rx) = Spinner::create(message);
-    //    abortable_run_with_spinner_rx(task, spinner_rx, abort_signal).await
-    public static <T> T abortableRunWithSpinner(Supplier<T> task, String message, AbortSignal abortSignal) {
-        return task.get();
     }
 
     // pub fn message_content(&self) -> MessageContent {

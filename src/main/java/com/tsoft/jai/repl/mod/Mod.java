@@ -621,7 +621,11 @@ public class Mod {
                     String name = tuple.first();
                     String text = tuple.second();
                     if (!isBlank(name) && !isBlank(text)) {
-                        Role role = config.retrieveRole(name.trim());
+                        Result<Role> res = config.retrieveRole(name.trim());
+                        if (isErr(res)) {
+                            return Err();
+                        }
+                        Role role = res.getValue();
                         Input input = Input.fromStr(config, text, role);
                         ask(config, abortSignal, input, false);
                     } else {

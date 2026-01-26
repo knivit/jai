@@ -27,8 +27,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
-import static com.tsoft.jai.anyhow.Result.Ok;
-import static com.tsoft.jai.anyhow.Result.isErr;
+import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.config.Config.TEMP_SESSION_NAME;
 import static com.tsoft.jai.config.Config.ensureParentExists;
 import static com.tsoft.jai.inquire.Inquire.println;
@@ -147,10 +146,14 @@ public class Session {
     //
     //    Ok(session)
     // }
-    public static Session load(Config config, String name, File path) {
+    public static Result<Session> load(Config config, String name, File path) {
         Session session = SerDe.readFromYamlFile(path, Session.class);
 
-        session.setModel(Model.retrieveModel(config, session.modelId, ModelType.Chat));
+        Result<Model> res = Model.retrieveModel(config, session.modelId, ModelType.Chat);
+        if (isErr(res)) {
+            return Err();
+        }
+        session.setModel(res.getValue());
 
         Tuple<String, String> tuple = splitOnce(name, '/');
         String autoname = tuple.second();
@@ -166,15 +169,16 @@ public class Session {
         }
 
         if (!isBlank(session.roleName)) {
-            Role role = config.retrieveRole(session.roleName);
-            if (role != null) {
-                session.rolePrompt = role.getPrompt();
+            Result<Role> role = config.retrieveRole(session.roleName);
+            if (isErr(role)) {
+                return Err();
             }
+            session.rolePrompt = role.getValue().getPrompt();
         }
 
         session.updateTokens();
 
-        return session;
+        return Ok(session);
     }
 
     // pub fn set_role(&mut self, role: Role) {
