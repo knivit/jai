@@ -1,5 +1,6 @@
 package com.tsoft.jai.rag;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.config.Config;
 import com.tsoft.jai.serdejson.SerDe;
@@ -10,10 +11,11 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 
 import java.io.File;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
+import static com.tsoft.jai.anyhow.Result.Ok;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.StringUtils.format;
 
 @Data
 @Accessors(chain = true)
@@ -151,6 +153,74 @@ public class Rag {
             .put("files", files);
         String output = SerDe.toYamlString(value);
         return output;
+    }
+
+    // pub async fn search(
+    //    &self,
+    //    text: &str,
+    //    top_k: usize,
+    //    rerank_model: Option<&str>,
+    //    abort_signal: AbortSignal,
+    // ) -> Result<(String, Vec<DocumentId>)> {
+    //    let ret = abortable_run_with_spinner(
+    //        self.hybird_search(text, top_k, rerank_model),
+    //        "Searching",
+    //        abort_signal,
+    //    )
+    //    .await;
+    //    let (ids, documents): (Vec<_>, Vec<_>) = ret?.into_iter().unzip();
+    //    let embeddings = documents.join("\n\n");
+    //    Ok((embeddings, ids))
+    // }
+    public Result<Tuple<String, List<DocumentId>>> search(String text, Integer topK, String rerankModel, AbortSignal abortSignal) {
+        return Ok(new Tuple<>(null, null));
+    }
+
+    // pub fn set_last_sources(&self, ids: &[DocumentId]) {
+    //    let mut sources: IndexMap<String, Vec<String>> = IndexMap::new();
+    //    for id in ids {
+    //        let (file_index, _) = id.split();
+    //        if let Some(file) = self.data.files.get(&file_index) {
+    //            sources
+    //                .entry(file.path.clone())
+    //                .or_default()
+    //                .push(format!("{id:?}"));
+    //        }
+    //    }
+    //    let sources = if sources.is_empty() {
+    //        None
+    //    } else {
+    //        Some(
+    //            sources
+    //                .into_iter()
+    //                .map(|(path, ids)| format!("{path} ({})", ids.join(",")))
+    //                .collect::<Vec<_>>()
+    //                .join("\n"),
+    //        )
+    //    };
+    //    *self.last_sources.write() = sources;
+    // }
+    public void setLastSources(List<DocumentId> ids) {
+        Map<String, List<String>> sources = new LinkedHashMap<>();
+        for (DocumentId id : ids) {
+            Tuple<Integer, Integer> tuple = id.split();
+            int fileIndex = tuple.first();
+            RagFile file = data.getFiles().get(fileIndex);
+            if (file != null) {
+                sources
+                    .computeIfAbsent(file.getPath(), (e) -> new ArrayList<>())
+                    .add(format("{}", id.toStr()));
+            }
+        }
+        String lastSources;
+        if (isEmpty(sources)) {
+            lastSources = null;
+        } else {
+            lastSources = String.join("\n", sources.entrySet().stream()
+                .map(e -> format("{} ({})", e.getKey(), String.join(",", e.getValue())))
+                .toList());
+        }
+        this.lastSources = lastSources;
     }
 
     // pub fn get_config(&self) -> (Option<String>, usize) {

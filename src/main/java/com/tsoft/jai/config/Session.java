@@ -151,7 +151,7 @@ public class Session {
 
         Result<Model> res = Model.retrieveModel(config, session.modelId, ModelType.Chat);
         if (isErr(res)) {
-            return Err();
+            return Err(res);
         }
         session.setModel(res.getValue());
 
@@ -171,7 +171,7 @@ public class Session {
         if (!isBlank(session.roleName)) {
             Result<Role> role = config.retrieveRole(session.roleName);
             if (isErr(role)) {
-                return Err();
+                return Err(role);
             }
             session.rolePrompt = role.getValue().getPrompt();
         }

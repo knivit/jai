@@ -10,8 +10,7 @@ import com.tsoft.jai.tokio.sync.mpsc.UnboundedReceiver;
 import com.tsoft.jai.utils.AbortSignal;
 
 import static com.tsoft.jai.anyhow.Result.Ok;
-import static com.tsoft.jai.inquire.Inquire.println;
-import static com.tsoft.jai.inquire.Inquire.terminal;
+import static com.tsoft.jai.inquire.Inquire.*;
 import static com.tsoft.jai.render.Stream.markdownStream;
 import static com.tsoft.jai.render.Stream.rawStream;
 import static com.tsoft.jai.utils.Mod.errorText;
@@ -34,7 +33,7 @@ public final class Mod {
     //    ret.map_err(|err| err.context("Failed to reader stream"))
     // }
     public static Result<?> renderStream(UnboundedReceiver<SseEvent> rx, Config config, AbortSignal abortSignal) {
-        if (terminal() != null && config.isHighlight()) {
+        if (IS_STDOUT_TERMINAL && config.isHighlight()) {
             RenderOptions renderOptions = config.renderOptions();
             MarkdownRender render = MarkdownRender.init(renderOptions);
             markdownStream(rx, render, abortSignal);

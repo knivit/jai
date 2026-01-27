@@ -5,6 +5,8 @@ import lombok.experimental.Accessors;
 
 import java.util.function.Supplier;
 
+import static com.tsoft.jai.utils.base.StringUtils.format;
+
 @Data
 @Accessors(chain = true)
 public class Result<T> {
@@ -42,6 +44,10 @@ public class Result<T> {
         return new Result<T>(ResultType.Err).setErr(new Error(error));
     }
 
+    public static <T> Result<T> Err(String error, Object ... args) {
+        return new Result<T>(ResultType.Err).setErr(new Error(format(error, args)));
+    }
+
     public static <T> Result<T> Err(Result<?> err) {
         if (err != null && ResultType.Err.equals(err.type)) {
             return new Result<T>(ResultType.Err).setErr(err.err);
@@ -57,15 +63,23 @@ public class Result<T> {
         return (result != null) && (ResultType.Err.equals(result.type));
     }
 
+    // Wrap the error value with additional context
+    public Result<T> context(String context) {
+        if (ResultType.Err.equals(type)) {
+            if (err == null) {
+                err = new Error(context);
+            } else {
+                err.add(context);
+            }
+        }
+        return this;
+    }
+
     // Wrap the error value with additional context that is evaluated lazily only once an error does occur
     public Result<T> withContext(Supplier<String> supplier) {
         if (ResultType.Err.equals(type)) {
-            String error = supplier.get();
-            if (err == null) {
-                err = new Error(error);
-            } else {
-                err.add(error);
-            }
+            String context = supplier.get();
+            return context(context);
         }
         return this;
     }

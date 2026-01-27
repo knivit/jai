@@ -329,7 +329,10 @@ public class Main {
             return Ok();
         }
 
-        config.applyPrelude();
+        Result<?> res = config.applyPrelude();
+        if (isErr(res)) {
+            return res;
+        }
 
         if (!isRepl) {
             Input input = createInput(config, text, cli.getFile(), abortSignal).getValue();
@@ -385,7 +388,12 @@ public class Main {
     //    Ok(())
     // }
     private static Result<?> startDirective(Config config, Input input, boolean codeMode, AbortSignal abortSignal) {
-        Client client = input.createClient();
+        Result<Client> clientRes = input.createClient();
+        if (isErr(clientRes)) {
+            return clientRes;
+        }
+        Client client = clientRes.getValue();
+
         boolean extractCode = !IS_STDOUT_TERMINAL && codeMode;
         config.beforeChatCompletion(input);
 

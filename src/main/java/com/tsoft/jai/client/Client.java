@@ -82,11 +82,17 @@ public abstract class Client {
             .filter(e -> Objects.equals(e.getName(), model.getClientName()))
             .findAny()
             .orElse(null);
+        if (clientConfig == null) {
+            return null;
+        }
 
         RegisteredClient registeredClient = REGISTERED_CLIENTS.stream()
             .filter(e -> Objects.equals(e.getType(), clientConfig.getType()))
             .findAny()
             .orElse(null);
+        if (registeredClient == null) {
+            return null;
+        }
 
         return registeredClient.getClientSupplier().apply(clientConfig.clone(), model);
     }
@@ -182,7 +188,7 @@ public abstract class Client {
         AbortSignal abortSignal = handler.getAbortSignal();
         return select(
             branch(supplyAsync(() -> {
-                if (config.isDryRun()) {
+                if (config.isDryRun()) {  NPE
                     String content = input.echoMessages();
                     handler.text(content);
                     return Ok();
@@ -213,7 +219,9 @@ public abstract class Client {
     //         .await
     //         .context("Failed to call embeddings api")
     // }
-    public List<List<Float>> embeddings() {
+    public List<List<Float>> embeddings(EmbeddingsData data) {
+        ReqwestClient client = buildClient();
+        embeddingsInner(client, data).context("Failed to call embeddings api");
         return Collections.emptyList();
     }
 

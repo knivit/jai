@@ -23,7 +23,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
-import static com.tsoft.jai.anyhow.Result.Ok;
+import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.client.macros.Macros.initClient;
 import static com.tsoft.jai.client.message.Message.patchMessages;
 import static com.tsoft.jai.inquire.Inquire.println;
@@ -289,15 +289,20 @@ public class Input implements Cloneable {
     //    }
     //    Ok(())
     // }
-    public void useEmbeddings(AbortSignal abortSignal) {
+    public Result<?> useEmbeddings(AbortSignal abortSignal) {
         if (isBlank(text)) {
-            return;
+            return Ok();
         }
         Rag rag = config.getRag();
         if (rag != null) {
-            patchedText = Config.searchRag(config, rag, text, abortSignal);
+            Result<String> res = Config.searchRag(config, rag, text, abortSignal);
+            if (isErr(res)) {
+                return Err(res);
+            }
+            patchedText = res.getValue();
             ragName = rag.getName();
         }
+        return Ok();
     }
 
     // pub fn merge_tool_results(mut self, output: String, tool_results: Vec<ToolResult>) -> Self {
@@ -321,7 +326,7 @@ public class Input implements Cloneable {
     // pub fn create_client(&self) -> Result<Box<dyn Client>> {
     //    init_client(&self.config, Some(self.role().model().clone()))
     // }
-    public Client createClient() {
+    public Result<Client> createClient() {
         return initClient(config, role.getModel());
     }
 

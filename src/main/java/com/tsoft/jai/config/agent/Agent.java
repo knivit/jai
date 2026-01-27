@@ -170,7 +170,7 @@ public class Agent {
         if (!isBlank(agentConfig.getModelId())) {
             Result<Model> res = Model.retrieveModel(config, agentConfig.getModelId(), ModelType.Chat);
             if (isErr(res)) {
-                return Err();
+                return Err(res);
             }
             model = res.getValue();
         } else {

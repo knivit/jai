@@ -383,9 +383,15 @@ public class Role {
     // }
     public void batchSet(Model model, Double temperature, Double topP, String useTools) {
         this.model = model;
-        this.temperature = temperature;
-        this.topP = topP;
-        this.useTools = useTools;
+        if (temperature != null) {
+            this.temperature = temperature;
+        }
+        if (topP != null) {
+            this.topP = topP;
+        }
+        if (!isBlank(useTools)) {
+            this.useTools = useTools;
+        }
     }
 
     // pub fn export(&self) -> String {

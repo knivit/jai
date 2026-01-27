@@ -623,7 +623,7 @@ public class Mod {
                     if (!isBlank(name) && !isBlank(text)) {
                         Result<Role> res = config.retrieveRole(name.trim());
                         if (isErr(res)) {
-                            return Err();
+                            return Err(res);
                         }
                         Role role = res.getValue();
                         Input input = Input.fromStr(config, text, role);
@@ -787,7 +787,12 @@ public class Mod {
             Time.sleep(100);
         }
 
-        Client client = input.createClient();
+        Result<Client> clientRes = input.createClient();
+        if (isErr(clientRes)) {
+            return Err(clientRes);
+        }
+        Client client = clientRes.getValue();
+
         config.beforeChatCompletion(input);
         Result<Tuple<String, List<ToolResult>>> res;
         if (input.stream()) {

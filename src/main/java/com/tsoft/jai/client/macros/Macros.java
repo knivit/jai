@@ -1,5 +1,6 @@
 package com.tsoft.jai.client.macros;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.Client;
 import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.client.model.ModelType;
@@ -8,6 +9,9 @@ import com.tsoft.jai.config.Config;
 
 import java.util.Collections;
 import java.util.List;
+
+import static com.tsoft.jai.anyhow.Result.Err;
+import static com.tsoft.jai.anyhow.Result.Ok;
 
 public class Macros {
 
@@ -94,10 +98,14 @@ public class Macros {
     //        anyhow::anyhow!("Invalid model '{}'", model.id())
     //    })
     // }
-    public static Client initClient(Config config, Model model) {
+    public static Result<Client> initClient(Config config, Model model) {
         if (model == null) {
             model = config.getModel();
         }
-        return Client.init(config, model);
+        Client client = Client.init(config, model);
+        if (client == null) {
+            return Err("Invalid model '{}'", model.id());
+        }
+        return Ok(client);
     }
 }

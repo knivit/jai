@@ -12,6 +12,7 @@ import com.tsoft.jai.function.Functions;
 import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.inquire.prompt.Confirm;
 import com.tsoft.jai.inquire.prompt.Select;
+import com.tsoft.jai.rag.DocumentId;
 import com.tsoft.jai.rag.Rag;
 import com.tsoft.jai.render.markdown.RenderOptions;
 import com.tsoft.jai.serdejson.SerDe;
@@ -30,6 +31,8 @@ import static com.tsoft.jai.anyhow.Macros.anyhow;
 import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.client.macros.Macros.listModels;
+import static com.tsoft.jai.config.Mod.RAG_TEMPLATE;
+import static com.tsoft.jai.core.Option.unwrapOr;
 import static com.tsoft.jai.inquire.Inquire.IS_STDOUT_TERMINAL;
 import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.std.Fs.readDir;
@@ -250,8 +253,19 @@ public class Config {
     //     rag.set_last_sources(&ids);
     //     Ok(text)
     // }
-    public static String searchRag(Config config, Rag rag, String text, AbortSignal abortSignal) {
-        return null;
+    public static Result<String> searchRag(Config config, Rag rag, String text, AbortSignal abortSignal) {
+        Tuple<String, Integer> tuple = rag.getConfig();
+        String rerankerModel = tuple.first();
+        Integer topK = tuple.second();
+        Result<Tuple<String, List<DocumentId>>> res = rag.search(text, topK, rerankerModel, abortSignal);
+        if (isErr(res)) {
+            return Err(res);
+        }
+        String embeddings = res.getValue().first();
+        List<DocumentId> ids = res.getValue().second();
+        text = config.ragTemplate(embeddings, text);
+        rag.setLastSources(ids);
+        return Ok(text);
     }
 
     // pub fn maybe_autoname_session(config: GlobalConfig) {
@@ -607,7 +621,7 @@ public class Config {
 
         Result<Agent> res = Agent.init(this, agentName, abortSignal);
         if (isErr(res)) {
-            return Err();
+            return Err(res);
         }
         Agent agent = res.getValue();
 
@@ -724,12 +738,12 @@ public class Config {
     //    let role = self.retrieve_role(name)?;
     //    self.use_role_obj(role)
     // }
-    public void useRole(String name) {
+    public Result<?> useRole(String name) {
         Result<Role> role = retrieveRole(name);
         if (isErr(role)) {
-            return;
+            return Err(role);
         }
-        useRoleObj(role.getValue());
+        return useRoleObj(role.getValue());
     }
 
     // pub fn use_role_obj(&mut self, role: Role) -> Result<()> {
@@ -744,10 +758,9 @@ public class Config {
     //    }
     //    Ok(())
     // }
-    private void useRoleObj(Role role) {
+    private Result<?> useRoleObj(Role role) {
         if (agent != null) {
-            bail("Cannot perform this operation because you are using a agent");
-            return;
+            return bail("Cannot perform this operation because you are using a agent");
         }
         if (session != null) {
             session.guardEmpty();
@@ -755,6 +768,7 @@ public class Config {
         } else {
             this.role = role;
         }
+        return Ok();
     }
 
     // pub fn role_info(&self) -> Result<String> {
@@ -902,7 +916,7 @@ public class Config {
             } else {
                 Result<Session> res = Session.load(this, sessionName, sessionFile);
                 if (isErr(res)) {
-                    return Err();
+                    return Err(res);
                 }
                 session = res.getValue();
             }
@@ -1064,6 +1078,25 @@ public class Config {
         this.rag = rag;
     }
 
+    // pub fn rag_template(&self, embeddings: &str, text: &str) -> String {
+    //    if embeddings.is_empty() {
+    //        return text.to_string();
+    //    }
+    //    self.rag_template
+    //        .as_deref()
+    //        .unwrap_or(RAG_TEMPLATE)
+    //        .replace("__CONTEXT__", embeddings)
+    //        .replace("__INPUT__", text)
+    // }
+    public String ragTemplate(String embeddings, String text) {
+        if (isBlank(embeddings)) {
+            return text;
+        }
+        return unwrapOr(ragTemplate, RAG_TEMPLATE)
+            .replace("__CONTEXT__", embeddings)
+            .replace("__INPUT__", text);
+    }
+
     // pub fn rag_info(&self) -> Result<String> {
     //    if let Some(rag) = &self.rag {
     //        rag.export()
@@ -1177,12 +1210,11 @@ public class Config {
     //    }
     //    Ok(())
     // }
-    public void setModel(String modelId) {
+    public Result<?> setModel(String modelId) {
         Result<Model> res = Model.retrieveModel(this, modelId, ModelType.Chat);
         if (isErr(res)) {
-            return;
+            return res;
         }
-
         Model model = res.getValue();
         RoleLike roleLike = roleLikeMut();
         if (roleLike != null) {
@@ -1190,6 +1222,7 @@ public class Config {
         } else{
             this.model = model;
         }
+        return Ok();
     }
 
     // fn init_agent_session_variables(&mut self, new_session: bool) -> Result<()> {
@@ -1229,8 +1262,8 @@ public class Config {
     //    }
     //    Ok(())
     // }
-    private void initAgentSessionVariables(boolean newSession) {
-
+    private Result<?> initAgentSessionVariables(boolean newSession) {
+        return Ok();
     }
 
     // pub fn agent_info(&self) -> Result<String> {
@@ -1297,7 +1330,7 @@ public class Config {
             if (!Objects.equals(currentModel.id(), modelId)) {
                 Result<Model> res = Model.retrieveModel(this, modelId, ModelType.Chat);
                 if (isErr(res)) {
-                    return Err();
+                    return Err(res);
                 }
                 role.setModel(res.getValue());
             } else {
@@ -2166,9 +2199,9 @@ public class Config {
     //    }
     //    Ok(())
     // }
-    public void applyPrelude() {
+    public Result<?> applyPrelude() {
         if (macroFlag || StateFlags.EMPTY == state()) {
-            return;
+            return Ok();
         }
         String prelude = switch (workingMode) {
             case Repl -> replPrelude;
@@ -2176,7 +2209,7 @@ public class Config {
             case Serve -> null;
         };
         if (isBlank(prelude)) {
-            return;
+            return Ok();
         }
         Tuple<String, String> tuple = splitOnce(prelude, ':');
         if ("role".equals(tuple.first()) && !isBlank(tuple.second())) {
@@ -2191,8 +2224,9 @@ public class Config {
                 useRole(roleName);
             }
         } else {
-            bail("Invalid prelude '{}'", prelude);
+            return bail("Invalid prelude '{}'", prelude);
         }
+        return Ok();
     }
 
     // pub fn print_markdown(&self, text: &str) -> Result<()> {
