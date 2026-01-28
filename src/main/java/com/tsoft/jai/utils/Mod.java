@@ -1,6 +1,8 @@
 package com.tsoft.jai.utils;
 
 import com.tsoft.jai.anyhow.Error;
+import com.tsoft.jai.anyhow.Result;
+import com.tsoft.jai.reqwest.ClientBuilder;
 import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStyle;
 
@@ -8,6 +10,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.tsoft.jai.anyhow.Result.Ok;
 import static com.tsoft.jai.inquire.Inquire.NO_COLOR;
 import static com.tsoft.jai.unicodesegmentation.Word.isAscii;
 import static com.tsoft.jai.unicodesegmentation.Word.unicodeWords;
@@ -152,6 +155,25 @@ public final class Mod {
             return input;
         }
         return new AttributedString(input, AttributedStyle.DEFAULT.faint()).toString();
+    }
+
+    // pub fn set_proxy(
+    //    mut builder: reqwest::ClientBuilder,
+    //    proxy: &str,
+    // ) -> Result<reqwest::ClientBuilder> {
+    //    builder = builder.no_proxy();
+    //    if !proxy.is_empty() && proxy != "-" {
+    //        builder = builder
+    //            .proxy(reqwest::Proxy::all(proxy).with_context(|| format!("Invalid proxy `{proxy}`"))?);
+    //    };
+    //    Ok(builder)
+    // }
+    public static Result<ClientBuilder> setProxy(ClientBuilder builder, String proxy) {
+        builder = builder.noProxy();
+        if (!isBlank(proxy) && !"-".equals(proxy)) {
+            //
+        }
+        return Ok(builder);
     }
 
     private Mod() { }

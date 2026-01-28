@@ -6,10 +6,11 @@ import com.tsoft.jai.client.common.RequestData;
 import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.client.stream.SseHandler;
 import com.tsoft.jai.config.ClientConfig;
+import com.tsoft.jai.config.Config;
 import com.tsoft.jai.reqwest.RequestBuilder;
 import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.utils.base.Triple;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 import static com.tsoft.jai.client.mod.Mod.OPENAI_COMPATIBLE_PROVIDERS;
 import static com.tsoft.jai.client.openai.OpenAIClient.buildChatCompletionsBody;
@@ -17,12 +18,18 @@ import static com.tsoft.jai.utils.base.StringUtils.format;
 import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 @Getter
-@RequiredArgsConstructor
 public class OpenAICompatibleClient extends Client {
 
     private final String name = "openai-compatible";
     private final ClientConfig clientConfig;
+    private final Config config;
     private final Model model;
+
+    public OpenAICompatibleClient(Triple<ClientConfig, Config, Model> triple) {
+        this.clientConfig = triple.first();
+        this.config = triple.second();
+        this.model = triple.third();
+    }
 
     // fn prepare_chat_completions(
     //     self_: &OpenAICompatibleClient,
@@ -163,7 +170,7 @@ public class OpenAICompatibleClient extends Client {
     // }
     @Override
     public void chatCompletionsStreaming(RequestBuilder builder, SseHandler handler, Model model) {
-        // identical to OpenAiClient.chatCompletionsStreaming ?
+        identical to OpenAiClient.chatCompletionsStreaming ?
     }
 
     // fn get_api_base_ext(self_: &OpenAICompatibleClient) -> Result<String> {

@@ -359,16 +359,17 @@ public class Model {
     //    }
     //    Ok(())
     // }
-    public void guardMaxInputTokens(List<Message> messages) {
+    public Result<?> guardMaxInputTokens(List<Message> messages) {
         int totalTokens = totalTokens(messages) + BASIS_TOKENS;
         if (data != null) {
             Integer maxInputTokens = data.getMaxInputTokens();
             if (maxInputTokens != null) {
                 if (totalTokens >= maxInputTokens) {
-                    bail("Exceed max_input_tokens limit");
+                    return bail("Exceed max_input_tokens limit");
                 }
             }
         }
+        return Ok();
     }
 
     // pub fn no_stream(&self) -> bool {

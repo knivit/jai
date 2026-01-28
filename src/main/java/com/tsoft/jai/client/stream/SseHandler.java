@@ -1,5 +1,6 @@
 package com.tsoft.jai.client.stream;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.function.ToolCall;
 import com.tsoft.jai.tokio.sync.mpsc.UnboundedSender;
 import com.tsoft.jai.utils.AbortSignal;
@@ -11,6 +12,8 @@ import lombok.experimental.Accessors;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.tsoft.jai.anyhow.Result.Ok;
+import static com.tsoft.jai.anyhow.Result.isErr;
 import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 @Data
@@ -41,12 +44,21 @@ public class SseHandler {
     //    }
     //    Ok(())
     // }
-    public void text(String text) {
+    public Result<?> text(String text) {
         if (isBlank(text)) {
-            return;
+            return Ok();
         }
         buffer.append(text);
-        sender.send(SseEvent.Text(text));
+        Result<?> ret = sender
+            .send(SseEvent.Text(text))
+            .withContext(() -> "Failed to send SseEvent:Text");
+        if (isErr(ret)) {
+            if (abortSignal.aborted()) {
+                return Ok();
+            }
+            return ret;
+        }
+        return Ok();
     }
 
     // pub fn done(&mut self) {

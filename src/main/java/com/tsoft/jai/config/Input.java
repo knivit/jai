@@ -670,19 +670,22 @@ public class Input implements Cloneable {
     //        stream,
     //    })
     // }
-    public ChatCompletionsData prepareCompletionData(Model model, boolean stream) {
+    public Result<ChatCompletionsData> prepareCompletionData(Model model, boolean stream) {
         List<Message> messages = buildMessages();
         patchMessages(messages, model);
-        model.guardMaxInputTokens(messages);
+        Result<?> res = model.guardMaxInputTokens(messages);
+        if (isErr(res)) {
+            return Err(res);
+        }
         Double temperature = role.getTemperature();
         Double topP = role.getTopP();
         List<FunctionDeclaration> functions = config.selectFunctions(role);
-        return new ChatCompletionsData()
+        return Ok(new ChatCompletionsData()
             .setMessages(messages)
             .setTemperature(temperature)
             .setTopP(topP)
             .setFunctions(functions)
-            .setStream(stream);
+            .setStream(stream));
     }
 
     // pub fn build_messages(&self) -> Result<Vec<Message>> {
@@ -722,9 +725,9 @@ public class Input implements Cloneable {
     //        None
     //    }
     // }
-    public Session session(Session sesstion) {
+    public Session session(Session session) {
         if (withSession) {
-            return sesstion;
+            return session;
         } else {
             return null;
         }

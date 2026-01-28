@@ -5,6 +5,7 @@ import com.tsoft.jai.client.common.ChatCompletionsData;
 import com.tsoft.jai.client.common.ChatCompletionsOutput;
 import com.tsoft.jai.client.common.RequestData;
 import com.tsoft.jai.config.ClientConfig;
+import com.tsoft.jai.config.Config;
 import com.tsoft.jai.function.FunctionDeclaration;
 import com.tsoft.jai.client.message.Message;
 import com.tsoft.jai.client.message.MessageContent;
@@ -20,8 +21,8 @@ import com.tsoft.jai.reqwest.Response;
 import com.tsoft.jai.reqwest.StatusCode;
 import com.tsoft.jai.serdejson.SerDe;
 import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.utils.base.Triple;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -37,12 +38,18 @@ import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 @Slf4j
 @Getter
-@RequiredArgsConstructor
 public class OpenAIClient extends Client {
 
     private final String name = "openai";
     private final ClientConfig clientConfig;
+    private final Config config;
     private final Model model;
+
+    public OpenAIClient(Triple<ClientConfig, Config, Model> triple) {
+        this.clientConfig = triple.first();
+        this.config = triple.second();
+        this.model = triple.third();
+    }
 
     // fn prepare_chat_completions(
     //    self_: &OpenAIClient,

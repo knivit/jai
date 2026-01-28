@@ -56,15 +56,15 @@ public class Session {
     //#[serde(skip_serializing_if = "Option::is_none")]
     private String roleName;
     //#[serde(default, skip_serializing_if = "IndexMap::is_empty")]
-    private Map<String, String> agentVariables;
+    private Map<String, String> agentVariables = new LinkedHashMap<>();
     //#[serde(default, skip_serializing_if = "String::is_empty")]
     private String agentInstructions;
 
     //#[serde(default, skip_serializing_if = "Vec::is_empty")]
-    private List<Message> compressedMessages;
-    private List<Message> messages;
+    private List<Message> compressedMessages = new ArrayList<>();
+    private List<Message> messages = new ArrayList<>();
     //#[serde(default, skip_serializing_if = "HashMap::is_empty")]
-    private Map<String, String> dataUrls;
+    private Map<String, String> dataUrls = new HashMap<>();
 
     //#[serde(skip)]
     @JsonIgnore

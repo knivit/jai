@@ -2,7 +2,7 @@ model: ollama:deepseek-v3.2:cloud
 clients:
   - type: openai-compatible
     name: ollama
-    api_base: http://localhost:11434/v1
+    apiBase: http://localhost:11434/v1
     models:
       - name: "deepseek-v3.2:cloud"
       - name: "glm-4.7:cloud"

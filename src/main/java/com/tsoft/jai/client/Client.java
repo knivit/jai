@@ -14,7 +14,7 @@ import com.tsoft.jai.reqwest.RequestBuilder;
 import com.tsoft.jai.reqwest.ReqwestClient;
 import com.tsoft.jai.serdejson.Value;
 import com.tsoft.jai.utils.AbortSignal;
-import lombok.Getter;
+import com.tsoft.jai.utils.base.Triple;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -22,27 +22,26 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
-import static com.tsoft.jai.anyhow.Result.Err;
-import static com.tsoft.jai.anyhow.Result.Ok;
+import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.client.mod.Mod.REGISTERED_CLIENTS;
 import static com.tsoft.jai.tokio.Select.branch;
 import static com.tsoft.jai.tokio.Select.select;
 import static com.tsoft.jai.utils.AbortSignal.waitAbortSignal;
+import static com.tsoft.jai.utils.Mod.setProxy;
 import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 public abstract class Client {
 
-    public abstract ClientConfig getClientConfig();
-
     // fn name(&self) -> &str;
     public abstract String getName();
 
+    public abstract ClientConfig getClientConfig();
+
+    public abstract Config getConfig();
+
     // fn model(&self) -> &Model;
     public abstract Model getModel();
-
-    @Getter
-    private Config config;
 
     // fn extra_config(&self) -> Option<&ExtraConfig>;
     //
@@ -94,7 +93,8 @@ public abstract class Client {
             return null;
         }
 
-        return registeredClient.getClientSupplier().apply(clientConfig.clone(), model);
+        Triple<ClientConfig, Config, Model> triple = new Triple<>(clientConfig.clone(), config, model);
+        return registeredClient.getClientSupplier().apply(triple);
     }
 
     // fn build_client(&self) -> Result<ReqwestClient> {
@@ -113,26 +113,29 @@ public abstract class Client {
     //        .with_context(|| "Failed to build client")?;
     //    Ok(client)
     // }
-    public ReqwestClient buildClient() {
+    public Result<ReqwestClient> buildClient() {
         ClientBuilder builder = ReqwestClient.builder();
         ExtraConfig extra = extraConfig();
         int timeout = 10;
-        String proxy;
-        if (extra != null) {
-            if (extra.getConnectTimeout() != null) {
-                timeout = extra.getConnectTimeout();
+        if (extra != null && extra.getConnectTimeout() != null) {
+            timeout = extra.getConnectTimeout();
+        }
+        if (extra != null && !isBlank(extra.getProxy())) {
+            Result<ClientBuilder> res = setProxy(builder, extra.getProxy());
+            if (isErr(res)) {
+                return Err(res);
             }
-            if (!isBlank(extra.getProxy())) {
-                //
-            }
+            builder = res.getValue();
         }
         String userAgent = getConfig().getUserAgent();
         if (!isBlank(userAgent)) {
-            //
+            builder = builder.userAgent(userAgent);
         }
-        return builder
+        Result<ReqwestClient> client = builder
             .connectTimeout(Duration.ofSeconds(timeout))
-            .build();
+            .build()
+            .withContext(() -> "Failed to build client");
+        return client;
     }
 
     // async fn chat_completions(&self, input: Input) -> Result<ChatCompletionsOutput> {
@@ -151,9 +154,16 @@ public abstract class Client {
             String content = input.echoMessages();
             return Ok(new ChatCompletionsOutput().setText(content));
         }
-        ReqwestClient client = buildClient();
-        ChatCompletionsData data = input.prepareCompletionData(getModel(), false);
-        return chatCompletionsInner(client, data)
+        Result<ReqwestClient> res = buildClient();
+        if (isErr(res)) {
+            return Err(res);
+        }
+        ReqwestClient client = res.getValue();
+        Result<ChatCompletionsData> data = input.prepareCompletionData(getModel(), false);
+        if (isErr(data)) {
+            return Err(data);
+        }
+        return chatCompletionsInner(client, data.getValue())
             .withContext(() ->"Failed to call chat-completions api");
     }
 
@@ -188,14 +198,23 @@ public abstract class Client {
         AbortSignal abortSignal = handler.getAbortSignal();
         return select(
             branch(supplyAsync(() -> {
-                if (config.isDryRun()) {  NPE
+                if (getConfig().isDryRun()) {
                     String content = input.echoMessages();
-                    handler.text(content);
+                    Result<?> res = handler.text(content);
+                    if (isErr(res)) {
+                        return res;
+                    }
                     return Ok();
                 }
-                ReqwestClient client = buildClient();
-                ChatCompletionsData data = input.prepareCompletionData(getModel(), true);
-                chatCompletionsStreamingInner(client, handler, data);
+                Result<ReqwestClient> client = buildClient();
+                if (isErr(client)) {
+                    return client;
+                }
+                Result<ChatCompletionsData> data = input.prepareCompletionData(getModel(), true);
+                if (isErr(data)) {
+                    return data;
+                }
+                chatCompletionsStreamingInner(client.getValue(), handler, data.getValue());
                 return Ok();
             }), ret -> {
                 handler.done();
@@ -219,10 +238,14 @@ public abstract class Client {
     //         .await
     //         .context("Failed to call embeddings api")
     // }
-    public List<List<Float>> embeddings(EmbeddingsData data) {
-        ReqwestClient client = buildClient();
-        embeddingsInner(client, data).context("Failed to call embeddings api");
-        return Collections.emptyList();
+    public Result<List<List<Float>>> embeddings(EmbeddingsData data) {
+        Result<ReqwestClient> client = buildClient();
+        if (isErr(client)) {
+            return Err(client);
+        }
+        embeddingsInner(client.getValue(), data)
+            .context("Failed to call embeddings api");
+        return Ok(Collections.emptyList());
     }
 
     // async fn rerank(&self, data: &RerankData) -> Result<RerankOutput> {
@@ -232,8 +255,12 @@ public abstract class Client {
     //         .context("Failed to call rerank api")
     // }
     public Result<List<RerankResult>> rerank(RerankData data) {
-        ReqwestClient client = buildClient();
-        return rerankInner(client, data);
+        Result<ReqwestClient> client = buildClient();
+        if (isErr(client)) {
+            return Err(client);
+        }
+        return rerankInner(client.getValue(), data)
+            .context("Failed to call rerank api");
     }
 
     // async fn chat_completions_inner(
