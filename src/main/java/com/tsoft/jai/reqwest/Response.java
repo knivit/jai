@@ -13,8 +13,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Accessors(chain = true)
 public class Response {
 
-    private StatusCode status;
-    private Object value;
+    private final StatusCode status;
+    private final String value;
 
     private final AtomicBoolean jsonValueInitialized = new AtomicBoolean();
     private volatile Value jsonValue;
@@ -29,16 +29,12 @@ public class Response {
                 return jsonValue;
             }
 
-            jsonValueInitialized.set(true);
-
             if (value != null) {
-                Value val = SerDe.parseJson(value.toString());
-                if (val != null) {
-                    return val;
-                }
+                jsonValue = SerDe.parseJson(value);
             }
 
-            return null;
+            jsonValueInitialized.set(true);
+            return jsonValue;
         }
     }
 }

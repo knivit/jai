@@ -282,9 +282,9 @@ public abstract class Client {
         return Ok();
     }
 
-    public abstract RequestData prepareChatCompletions(ChatCompletionsData data);
+    public abstract Result<RequestData> prepareChatCompletions(ChatCompletionsData data);
 
-    public abstract void chatCompletionsStreaming(RequestBuilder builder, SseHandler handler, Model model);
+    public abstract Result<?> chatCompletionsStreaming(RequestBuilder builder, SseHandler handler, Model model);
 
     // async fn chat_completions_streaming_inner(
     //     &self,
@@ -303,10 +303,14 @@ public abstract class Client {
     //    let builder = self.request_builder(client, request_data);
     //    $chat_completions_streaming(builder, handler, self.model()).await
     // }
-    public void chatCompletionsStreamingInner(ReqwestClient client, SseHandler handler, ChatCompletionsData data) {
-        RequestData requestData = prepareChatCompletions(data);
+    public Result<?> chatCompletionsStreamingInner(ReqwestClient client, SseHandler handler, ChatCompletionsData data) {
+        Result<RequestData> res = prepareChatCompletions(data);
+        if (isErr(res)) {
+            return res;
+        }
+        RequestData requestData = res.getValue();
         RequestBuilder builder = requestBuilder(client, requestData);
-        chatCompletionsStreaming(builder, handler, getModel());
+        return chatCompletionsStreaming(builder, handler, getModel());
     }
 
     // async fn embeddings_inner(

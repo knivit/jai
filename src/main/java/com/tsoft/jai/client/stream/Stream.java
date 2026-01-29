@@ -1,6 +1,9 @@
 package com.tsoft.jai.client.stream;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.reqwest.RequestBuilder;
+
+import static com.tsoft.jai.anyhow.Result.Ok;
 
 public class Stream {
 
@@ -54,7 +57,11 @@ public class Stream {
     //    }
     //    Ok(())
     // }
-    public static <T> void sseStream(RequestBuilder builder, T handler) {
-
+    public static Result<?> sseStream(RequestBuilder builder, StreamHandler handler) {
+        String chunk;
+        while (!(chunk = builder.next()).equals("[DONE]")) {
+            System.out.println("Received: " + chunk);
+        }
+        return Ok();
     }
 }

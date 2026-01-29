@@ -1,9 +1,11 @@
 package com.tsoft.jai.client.openai;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.Client;
 import com.tsoft.jai.client.common.ChatCompletionsData;
 import com.tsoft.jai.client.common.ChatCompletionsOutput;
 import com.tsoft.jai.client.common.RequestData;
+import com.tsoft.jai.client.stream.StreamHandler;
 import com.tsoft.jai.config.ClientConfig;
 import com.tsoft.jai.config.Config;
 import com.tsoft.jai.function.FunctionDeclaration;
@@ -28,12 +30,14 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
+import static com.tsoft.jai.anyhow.Macros.bail;
+import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.client.stream.Stream.sseStream;
 import static com.tsoft.jai.serdejson.SerDe.json;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.Mod.stripThinkTag;
+import static com.tsoft.jai.utils.base.StringUtils.format;
 import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 @Slf4j
@@ -74,7 +78,7 @@ public class OpenAIClient extends Client {
     //    Ok(request_data)
     // }
     @Override
-    public RequestData prepareChatCompletions(ChatCompletionsData data) {
+    public Result<RequestData> prepareChatCompletions(ChatCompletionsData data) {
         String apiKey = clientConfig.getApiKey();
         return null;
     }
@@ -93,10 +97,13 @@ public class OpenAIClient extends Client {
     //    debug!("non-stream-data: {data}");
     //    openai_extract_chat_completions(&data)
     // }
-    public ChatCompletionsOutput chatCompletions(RequestBuilder builder, Model model) {
-        Response res = builder.send();
-        StatusCode status = res.getStatus();
-        Value data = res.getJson();
+    public Result<ChatCompletionsOutput> chatCompletions(RequestBuilder builder, Model model) {
+        Result<Response> res = builder.send();
+        if (isErr(res)) {
+            return Err(res);
+        }
+        StatusCode status = res.getValue().getStatus();
+        Value data = res.getValue().getJson();
         if (!status.isSuccess()) {
             log.error("Invalid response, status = {}, data: {}", status, data);
             throw new IllegalStateException("Error");
@@ -206,15 +213,19 @@ public class OpenAIClient extends Client {
     //    sse_stream(builder, handle).await
     // }
     @Override
-    public void chatCompletionsStreaming(RequestBuilder builder, SseHandler handler, Model model) {
-        class Handler {
+    public Result<?> chatCompletionsStreaming(RequestBuilder builder, SseHandler handler, Model model) {
+        return openaiChatCompletionsStreaming(builder, handler, model);
+    }
+
+    public static Result<?> openaiChatCompletionsStreaming(RequestBuilder builder, SseHandler handler, Model model) {
+        class Handler implements StreamHandler {
             private volatile String callId;
             private volatile String functionName;
             private volatile String functionArguments;
             private volatile String functionId;
             private volatile Integer reasoningState = 0;
 
-            public final Function<SseMessage, Boolean> handle = message -> {
+            public Result<Boolean> handle(SseMessage message) {
                 if ("[DONE]".equals(message.getData())) {
                     if (functionArguments != null) {
                         if (functionArguments == null) {
@@ -226,13 +237,13 @@ public class OpenAIClient extends Client {
                             .setArguments(arguments)
                             .setId(normalizeFunctionId(functionId)));
                     }
-                    return true;
+                    return Ok(true);
                 }
 
                 Value data = SerDe.parseJson(message.getData());
                 log.debug("stream-data: {}", data);
                 if (data == null) {
-                    return false;
+                    return Ok(false);
                 }
 
                 String text = data.get("choices", 0, "delta", "content").asStr();
@@ -302,11 +313,11 @@ public class OpenAIClient extends Client {
                         functionId = id;
                     }
                 }
-                return false;
+                return Ok(false);
             };
         }
 
-        sseStream(builder, new Handler());
+        return sseStream(builder, new Handler());
     }
 
     // pub fn openai_build_chat_completions_body(data: ChatCompletionsData, model: &Model) -> Value {
@@ -616,7 +627,7 @@ public class OpenAIClient extends Client {
     //    };
     //    Ok(output)
     // }
-    public ChatCompletionsOutput extractChatCompletions(Value data) {
+    public Result<ChatCompletionsOutput> extractChatCompletions(Value data) {
         String text = data.get("choices", 0, "message", "content").asStr();
 
         String reasoning = data.get("choices", 0, "message", "reasoning_content").asStr();
@@ -641,19 +652,20 @@ public class OpenAIClient extends Client {
         }
 
         if ((text == null || text.isEmpty()) && toolCalls.isEmpty()) {
-            throw new IllegalStateException("Invalid response data: " + data);
+            return bail("Invalid response data: {}", data);
         }
 
         if (!isBlank(reasoning)) {
-            text = "<think>\n%s\n</think>\n\n%s".formatted(reasoning.trim(), text);
+            text = format("<think>\n{}\n</think>\n\n{}", reasoning.trim(), text);
         }
 
-        return new ChatCompletionsOutput()
+        ChatCompletionsOutput output = new ChatCompletionsOutput()
             .setText(text)
             .setToolCalls(toolCalls)
             .setId(data.get("id").asStr())
             .setInputTokens(data.get("usage", "prompt_tokens").asInt())
             .setOutputTokens(data.get("usage", "completion_tokens").asInt());
+        return Ok(output);
     }
 
     // fn normalize_function_id(value: &str) -> Option<String> {
