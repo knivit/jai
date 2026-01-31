@@ -9,20 +9,25 @@ import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 @Getter
-public class Error {
+public class Error<T> {
 
     private final List<String> errors = new ArrayList<>();
     private final Exception backtrace;
+    private final T errValue;
 
     public Error(String error) {
-        this(error, null);
+        this(error, null, null);
     }
 
     public Error(Exception exception) {
-        this(exception.getMessage(), exception);
+        this(exception.getMessage(), exception, null);
     }
 
-    public Error(String error, Exception exception) {
+    public Error(T errValue) {
+        this(null, null, errValue);
+    }
+
+    public Error(String error, Exception exception, T errValue) {
         if (exception != null) {
             errors.add(exception.getMessage());
         }
@@ -30,9 +35,10 @@ public class Error {
             errors.add(error);
         }
         backtrace = exception;
+        this.errValue = errValue;
     }
 
-    public Error add(String error) {
+    public Error<?> add(String error) {
         if (!isBlank(error)) {
             errors.add(error);
         }

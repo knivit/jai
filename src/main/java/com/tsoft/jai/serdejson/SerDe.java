@@ -1,5 +1,6 @@
 package com.tsoft.jai.serdejson;
 
+import com.tsoft.jai.anyhow.Result;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
@@ -11,6 +12,8 @@ import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import static com.tsoft.jai.anyhow.Result.Err;
+import static com.tsoft.jai.anyhow.Result.Ok;
 import static com.tsoft.jai.utils.base.StringUtils.*;
 
 @Slf4j
@@ -19,17 +22,17 @@ public class SerDe {
     private static final JsonMapper jsonMapper = new JsonMapper();
     private static final YAMLMapper yamlMapper = new YAMLMapper();
 
-    public static Value parseJson(String text) {
+    public static Result<Value> parseJson(String text) {
         return parse(text, jsonMapper);
     }
 
-    public static Value parseYaml(String text) {
+    public static Result<Value> parseYaml(String text) {
         return parse(text, yamlMapper);
     }
 
-    private static Value parse(String text, ObjectMapper mapper) {
+    private static Result<Value> parse(String text, ObjectMapper mapper) {
         if (isBlank(text)) {
-            return new Value();
+            return Ok(new Value());
         }
 
         try {
@@ -37,18 +40,18 @@ public class SerDe {
 
             if (ch == '{') {
                 LinkedHashMap<String, Object> map = mapper.readValue(text, new TypeReference<>() {});
-                return new Value(map);
+                return Ok(new Value(map));
             }
 
             if (ch == '[') {
                 List<LinkedHashMap<String, Object>> map = mapper.readValue(text, new TypeReference<>() {});
-                return new Value(map);
+                return Ok(new Value(map));
             }
-        } catch (JacksonException ex) {
-            log.warn("Error parsing text: {}", text, ex);
-        }
 
-        return null;
+            return Err("Not a JSON.");
+        } catch (JacksonException ex) {
+            return Err(ex);
+        }
     }
 
     public static Value json(Object ... values) {
@@ -64,9 +67,9 @@ public class SerDe {
         return value;
     }
 
-    public static Value toJson(Object value) {
+    public static Result<Value> toJson(Object value) {
         if (value == null) {
-            return new Value();
+            return Ok(new Value());
         }
         String json = toJsonString(value);
         return parseJson(json);

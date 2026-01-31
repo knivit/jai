@@ -408,20 +408,21 @@ public class Agent {
     //    let data = serde_yaml::to_string(&value)?;
     //    Ok(data)
     // }
-    public String export(Config config) {
+    public Result<String> export(Config config) {
         Value value = new Value();
         value.put("name", name);
         Map<String, String> vars = variables();
         if (!isEmpty(vars)) {
             value.put("variables", vars);
         }
-        value.put("config", toJson(this.config).asMap());
-        value.put("definition", toJson(definition).asMap());
+        value.put("config", toJson(this.config).getValue().asMap());
+        value.put("definition", toJson(definition).getValue().asMap());
         value.put("functions_dir", config.agentFunctionsDir(name));
         value.put("data_dir", config.agentDataDir(name));
         value.put("config_file", config.agentConfigFile(name));
 
-        return SerDe.toYamlString(value);
+        String data = SerDe.toYamlString(value);
+        return Ok(data);
     }
 
     // pub fn variable_envs(&self) -> HashMap<String, String> {

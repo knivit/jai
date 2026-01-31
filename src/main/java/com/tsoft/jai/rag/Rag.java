@@ -135,7 +135,7 @@ public class Rag {
     //        .with_context(|| format!("Unable to show info about rag '{}'", self.name))?;
     //    Ok(output)
     // }
-    public String export() {
+    public Result<String> export() {
         List<Value> files = data.getFiles().values().stream()
             .map(e -> new Value()
                 .put("path", e.getPath())
@@ -152,7 +152,7 @@ public class Rag {
             .put("document_paths", data.getDocumentPaths())
             .put("files", files);
         String output = SerDe.toYamlString(value);
-        return output;
+        return Ok(output);
     }
 
     // pub async fn search(

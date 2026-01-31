@@ -1,6 +1,8 @@
 package com.tsoft.jai.serdejson;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.reqwest.Response;
+import com.tsoft.jai.reqwest.StatusCode;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -9,7 +11,7 @@ class SerDeTest {
 
     @Test
     void parse() {
-        Response res = new Response().setValue("""
+        Response res = new Response(StatusCode.HTTP_OK).setValue("""
             {
               "int": 1,
               "char": "a",
@@ -28,8 +30,9 @@ class SerDeTest {
             }
             """);
 
-        Value value = res.getJson();
+        Result<Value> resValue = res.getJson();
 
+        Value value = resValue.getValue();
         assertEquals(1, value.get("int").asInt());
         assertEquals("a", value.get("char").asStr());
         assertEquals("v1", value.get("object", "f1").asStr());

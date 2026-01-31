@@ -42,7 +42,7 @@ public class ReqwestClient {
 
     public ReqwestClient build() {
         httpClient = httpClientBuilder
-            .version(HttpClient.Version.HTTP_1_1)
+            // may be http/2 also .version(HttpClient.Version.HTTP_1_1)
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
         return this;

@@ -35,7 +35,7 @@ public final class StringUtils {
 
     public static String format(String text, Object ... args) {
         if (text == null || args == null) {
-            return text;
+            return null;
         }
 
         for (int i = 0; i < args.length; i ++) {

@@ -7,6 +7,7 @@ import com.tsoft.jai.client.stream.SseHandler;
 import com.tsoft.jai.config.Input;
 import com.tsoft.jai.function.ToolCall;
 import com.tsoft.jai.function.ToolResult;
+import com.tsoft.jai.serdejson.Value;
 import com.tsoft.jai.tokio.sync.mpsc.UnboundedReceiver;
 import com.tsoft.jai.tokio.sync.mpsc.UnboundedSender;
 import com.tsoft.jai.utils.AbortSignal;
@@ -154,5 +155,50 @@ public class Common {
                 yield Err(sendRet);
             }
         };
+    }
+
+    // pub fn catch_error(data: &Value, status: u16) -> Result<()> {
+    //    if (200..300).contains(&status) {
+    //        return Ok(());
+    //    }
+    //    debug!("Invalid response, status: {status}, data: {data}");
+    //    if let Some(error) = data["error"].as_object() {
+    //        if let (Some(typ), Some(message)) = (
+    //            json_str_from_map(error, "type"),
+    //            json_str_from_map(error, "message"),
+    //        ) {
+    //            bail!("{message} (type: {typ})");
+    //        } else if let (Some(typ), Some(message)) = (
+    //            json_str_from_map(error, "code"),
+    //            json_str_from_map(error, "message"),
+    //        ) {
+    //            bail!("{message} (code: {typ})");
+    //        }
+    //    } else if let Some(error) = data["errors"][0].as_object() {
+    //        if let (Some(code), Some(message)) = (
+    //            error.get("code").and_then(|v| v.as_u64()),
+    //            json_str_from_map(error, "message"),
+    //        ) {
+    //            bail!("{message} (status: {code})")
+    //        }
+    //    } else if let Some(error) = data[0]["error"].as_object() {
+    //        if let (Some(status), Some(message)) = (
+    //            json_str_from_map(error, "status"),
+    //            json_str_from_map(error, "message"),
+    //        ) {
+    //            bail!("{message} (status: {status})")
+    //        }
+    //    } else if let (Some(detail), Some(status)) = (data["detail"].as_str(), data["status"].as_i64())
+    //    {
+    //        bail!("{detail} (status: {status})");
+    //    } else if let Some(error) = data["error"].as_str() {
+    //        bail!("{error}");
+    //    } else if let Some(message) = data["message"].as_str() {
+    //        bail!("{message}");
+    //    }
+    //    bail!("Invalid response data: {data} (status: {status})");
+    // }
+    public static <T> Result<T> catchError(Value data, int status) {
+        return bail("Invalid response data: {} (status: {})", data, status);
     }
 }

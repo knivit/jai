@@ -8,8 +8,8 @@ import static com.tsoft.jai.utils.base.StringUtils.format;
 @Slf4j
 public final class Macros {
 
-    public static void anyhow(String msg) {
-        bail(msg);
+    public static <T> Result<T> anyhow(String msg, Object ... args) {
+        return bail(msg, args);
     }
 
     public static <T> Result<T> bail(String msg, Object ... args) {

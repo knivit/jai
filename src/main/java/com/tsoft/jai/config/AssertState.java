@@ -1,10 +1,15 @@
 package com.tsoft.jai.config;
 
-import lombok.Data;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 
-@Data
+@Getter
+@Setter(AccessLevel.PRIVATE)
 @Accessors(chain = true)
+@RequiredArgsConstructor
 public class AssertState {
 
     public enum AssertStateEnum {
@@ -14,26 +19,26 @@ public class AssertState {
         Equal
     }
 
-    private AssertStateEnum type;
+    private final AssertStateEnum type;
 
     private int stateFlags;
     private int trueFlags;
     private int falseFlags;
 
     public static AssertState True(int stateFlags) {
-        return new AssertState().setType(AssertStateEnum.True).setStateFlags(stateFlags);
+        return new AssertState(AssertStateEnum.True).setStateFlags(stateFlags);
     }
 
     public static AssertState False(int stateFlags) {
-        return new AssertState().setType(AssertStateEnum.False).setStateFlags(stateFlags);
+        return new AssertState(AssertStateEnum.False).setStateFlags(stateFlags);
     }
 
     public static AssertState TrueFalse(int trueFlags, int falseFlags){
-        return new AssertState().setType(AssertStateEnum.TrueFalse).setTrueFlags(trueFlags).setFalseFlags(falseFlags);
+        return new AssertState(AssertStateEnum.TrueFalse).setTrueFlags(trueFlags).setFalseFlags(falseFlags);
     }
 
     public static AssertState Equal(int stateFlags) {
-        return new AssertState().setType(AssertStateEnum.Equal).setStateFlags(stateFlags);
+        return new AssertState(AssertStateEnum.Equal).setStateFlags(stateFlags);
     }
 
     // pub fn pass() -> Self {

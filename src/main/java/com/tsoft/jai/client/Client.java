@@ -214,14 +214,10 @@ public abstract class Client {
                 if (isErr(data)) {
                     return data;
                 }
-                chatCompletionsStreamingInner(client.getValue(), handler, data.getValue());
-                return Ok();
+                return chatCompletionsStreamingInner(client.getValue(), handler, data.getValue());
             }), ret -> {
                 handler.done();
-                return switch (ret.getType()) {
-                    case Ok -> ret;
-                    case Err -> Err("Failed to call chat-completions api");
-                };
+                return ret.withContext(() -> "Failed to call chat-completions api");
             }),
             branch(supplyAsync(() -> {
                 waitAbortSignal(abortSignal);

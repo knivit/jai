@@ -590,16 +590,25 @@ public class Mod {
                     String info = config.sessionInfo();
                     print("{}", info);
                 } else if ("rag".equals(args)) {
-                    String info = config.ragInfo();
-                    print("{}", info);
+                    Result<String> info = config.ragInfo();
+                    if (isErr(info)) {
+                        return Err(info);
+                    }
+                    print("{}", info.getValue());
                 } else if ("agent".equals(args)) {
-                    String info = config.agentInfo();
-                    print("{}", info);
+                    Result<String> info = config.agentInfo();
+                    if (isErr(info)) {
+                        return Err(info);
+                    }
+                    print("{}", info.getValue());
                 } else if (!isBlank(args)) {
                     unknownCommand();
                 } else {
-                    String output = config.sysinfo();
-                    print("{}", output);
+                    Result<String> output = config.sysinfo();
+                    if (isErr(output)) {
+                        return Err(output);
+                    }
+                    print("{}", output.getValue());
                 }
             } else if (".model".equals(cmd)) {
                 if (!isBlank(args)) {

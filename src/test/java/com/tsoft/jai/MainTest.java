@@ -1,37 +1,48 @@
 package com.tsoft.jai;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.utils.Asset;
 import com.tsoft.jai.utils.base.ListUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
 import static com.tsoft.jai.Main.main;
+import static com.tsoft.jai.anyhow.Result.isErr;
 import static com.tsoft.jai.inquire.Inquire.*;
 import static com.tsoft.jai.testutils.TestStringUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class MainTest {
 
-    static final String CONFIG_DIR = Asset.file("configs/config1").toString();
-    static final String CONFIG_FILE = Asset.file("configs/config1/config.yaml").toString();
+    static final Result<File> CONFIG_DIR = Asset.file("configs/config1");
+    static final Result<File> CONFIG_FILE = Asset.file("configs/config1/config.yaml");
 
     @BeforeEach
     void beforeEach() {
-        System.setProperty(JAI_DUMB_TERMINAL_MODE, "ON");
+        System.setProperty(JUNIT_TERMINAL_MODE, "ON");
     }
 
     private String execute(String ... args) {
-        List<String> list = ListUtils.of("--config-file", CONFIG_FILE);
+        if (isErr(CONFIG_FILE)) {
+            throw new IllegalStateException(CONFIG_FILE.getErr().toString());
+        }
+        if (isErr(CONFIG_DIR)) {
+            throw new IllegalStateException(CONFIG_DIR.getErr().toString());
+        }
+
+        String configFileName = CONFIG_FILE.getValue().toString();
+        List<String> list = ListUtils.of("--config-file", configFileName);
         if (args != null) {
             list.addAll(Arrays.asList(args));
         }
 
         output.reset();
         main(list.toArray(new String[] { }));
-        return normalize(output.toString(), CONFIG_DIR, "<dir>");
+        return normalize(output.toString(), CONFIG_DIR.getValue().toString(), "<dir>");
     }
 
     @Test

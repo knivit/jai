@@ -1,10 +1,14 @@
 package com.tsoft.jai.client.message;
 
-import lombok.Data;
+import lombok.*;
 import lombok.experimental.Accessors;
 
-@Data
+import static com.tsoft.jai.utils.base.StringUtils.format;
+
+@Getter
+@Setter(AccessLevel.PRIVATE)
 @Accessors(chain = true)
+@RequiredArgsConstructor
 public class MessageContentPart {
 
     public enum MessageContentPartEnum {
@@ -12,16 +16,25 @@ public class MessageContentPart {
         ImageUrl
     }
 
-    private MessageContentPartEnum type;
+    private final MessageContentPartEnum type;
 
+    @Setter
     private String text;
     private ImageUrl imageUrl;
 
     public static MessageContentPart Text(String text) {
-        return new MessageContentPart().setType(MessageContentPartEnum.Text).setText(text);
+        return new MessageContentPart(MessageContentPartEnum.Text).setText(text);
     }
 
     public static MessageContentPart ImageUrl(ImageUrl imageUrl) {
-        return new MessageContentPart().setType(MessageContentPartEnum.ImageUrl).setImageUrl(imageUrl);
+        return new MessageContentPart(MessageContentPartEnum.ImageUrl).setImageUrl(imageUrl);
+    }
+
+    @Override
+    public String toString() {
+        return switch (type) {
+            case Text -> format("{} (text={})", MessageContentPartEnum.Text, text);
+            case ImageUrl -> format("{} (imageUrl={})", MessageContentPartEnum.ImageUrl, imageUrl);
+        };
     }
 }

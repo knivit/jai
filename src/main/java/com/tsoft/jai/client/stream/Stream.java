@@ -1,9 +1,17 @@
 package com.tsoft.jai.client.stream;
 
 import com.tsoft.jai.anyhow.Result;
+import com.tsoft.jai.reqwest.Event;
+import com.tsoft.jai.reqwest.EventSource;
+import com.tsoft.jai.reqwest.EventSourceError;
 import com.tsoft.jai.reqwest.RequestBuilder;
+import com.tsoft.jai.serdejson.SerDe;
+import com.tsoft.jai.serdejson.Value;
 
+import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.anyhow.Result.Ok;
+import static com.tsoft.jai.anyhow.Result.isErr;
+import static com.tsoft.jai.client.common.Common.catchError;
 
 public class Stream {
 
@@ -58,10 +66,53 @@ public class Stream {
     //    Ok(())
     // }
     public static Result<?> sseStream(RequestBuilder builder, StreamHandler handler) {
-        String chunk;
-        while (!(chunk = builder.next()).equals("[DONE]")) {
-            System.out.println("Received: " + chunk);
+        EventSource es = builder.eventSource();
+
+        Result<Event> res;
+        boolean stop = false;
+        while (!stop && (res = es.next()) != null) {
+            switch (res.getType()) {
+                case Ok: {
+                    Event event = res.getValue();
+                    switch (event.getType()) {
+                        case Open -> {}
+                        case Message -> {
+                            SseMessage message = new SseMessage()
+                                .setEvent(event.getMessage().getEvent())
+                                .setData(event.getMessage().getData());
+                            if (isErr(handler.handle(message))) {
+                                stop = true;
+                            }
+                        }
+                    }
+                }
+                case Err: {
+                    EventSourceError err = (EventSourceError) res.getErr().getErrValue();
+                    switch (err.getType()) {
+                        case StreamEnded -> {}
+                        case InvalidStatusCode -> {
+                            String text = err.getText();
+                            Result<Value> data = SerDe.parseJson(text);
+                            if (isErr(data)) {
+                                return bail("Invalid response data: {} (status: {})", text, err.getStatus());
+                            } else {
+                                return catchError(data.getValue(), err.getStatus());
+                            }
+                        }
+                        case InvalidContentType -> {
+                            String text = err.getText();
+                            String headerValue = err.getHeaderValue();
+                            return bail("Invalid response event-stream. content-type: {}, data: {}", headerValue, text);
+                        }
+                        default -> {
+                            return bail("{}", err);
+                        }
+                    }
+                    es.close();
+                }
+            }
         }
+
         return Ok();
     }
 }

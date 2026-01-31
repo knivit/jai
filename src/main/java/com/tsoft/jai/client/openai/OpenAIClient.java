@@ -33,6 +33,7 @@ import java.util.Map;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.anyhow.Result.*;
+import static com.tsoft.jai.client.common.Common.catchError;
 import static com.tsoft.jai.client.stream.Stream.sseStream;
 import static com.tsoft.jai.serdejson.SerDe.json;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
@@ -103,10 +104,13 @@ public class OpenAIClient extends Client {
             return Err(res);
         }
         StatusCode status = res.getValue().getStatus();
-        Value data = res.getValue().getJson();
+        Result<Value> resData = res.getValue().getJson();
+        if (isErr(resData)) {
+            return Err(resData);
+        }
+        Value data = resData.getValue();
         if (!status.isSuccess()) {
-            log.error("Invalid response, status = {}, data: {}", status, data);
-            throw new IllegalStateException("Error");
+            return catchError(data, status.asInt());
         }
 
         log.debug("non-stream-data: {}", data);
@@ -231,16 +235,24 @@ public class OpenAIClient extends Client {
                         if (functionArguments == null) {
                             functionArguments = "{}";
                         }
-                        Value arguments = SerDe.parseJson(functionArguments);
+                        Result<Value> arguments = SerDe.parseJson(functionArguments).withContext(() ->
+                            format("Tool call '{}' have non-JSON arguments '{}'", functionName, functionArguments));
+                        if (isErr(arguments)) {
+                            return Err(arguments);
+                        }
                         handler.toolCall(new ToolCall()
                             .setName(functionName)
-                            .setArguments(arguments)
+                            .setArguments(arguments.getValue())
                             .setId(normalizeFunctionId(functionId)));
                     }
                     return Ok(true);
                 }
 
-                Value data = SerDe.parseJson(message.getData());
+                Result<Value> res = SerDe.parseJson(message.getData());
+                if (isErr(res)) {
+                    return Err(res);
+                }
+                Value data = res.getValue();
                 log.debug("stream-data: {}", data);
                 if (data == null) {
                     return Ok(false);
@@ -281,10 +293,14 @@ public class OpenAIClient extends Client {
                             if (functionArguments == null) {
                                 functionArguments = "{}";
                             }
-                            Value arguments = SerDe.parseJson(functionArguments);
+                            Result<Value> arguments = SerDe.parseJson(functionArguments).withContext(() ->
+                                format("Tool call '{}' have non-JSON arguments '{function_arguments}'", functionName, functionArguments));
+                            if (isErr(arguments)) {
+                                return Err(arguments);
+                            }
                             handler.toolCall(new ToolCall()
                                 .setName(functionName)
-                                .setArguments(arguments)
+                                .setArguments(arguments.getValue())
                                 .setId(normalizeFunctionId(functionId)));
                         }
                         functionName = null;
@@ -641,11 +657,16 @@ public class OpenAIClient extends Client {
             for (Value call : calls) {
                 String name = call.get("function", "name").asStr();
                 String arguments = call.get("function", "arguments").asStr();
+                Result<Value> res = SerDe.parseJson(arguments).withContext(() ->
+                    format("Tool call '{}' have non-JSON arguments '{}'", name, arguments));
+                if (isErr(res)) {
+                    return Err(res);
+                }
                 String id = call.get("id").asStr();
                 if (name != null && arguments != null && id != null) {
                     toolCalls.add(new ToolCall()
                         .setName(name)
-                        .setArguments(arguments)
+                        .setArguments(res.getValue())
                         .setId(id));
                 }
             }

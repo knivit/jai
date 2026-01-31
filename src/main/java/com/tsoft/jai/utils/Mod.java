@@ -110,7 +110,7 @@ public final class Mod {
     //    }
     //    output.join("\n")
     // }
-    public static String prettyError(Error err) {
+    public static String prettyError(Error<?> err) {
         return format("Error: {}", err);
     }
 

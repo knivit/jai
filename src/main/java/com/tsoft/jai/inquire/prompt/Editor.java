@@ -1,8 +1,7 @@
 package com.tsoft.jai.inquire.prompt;
 
 import com.tsoft.jai.repl.prompt.ReplPrompt;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import lombok.experimental.Accessors;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
@@ -13,7 +12,8 @@ import org.jline.terminal.Terminal;
 @RequiredArgsConstructor
 public class Editor {
 
-    @Data
+    @Getter
+    @Setter(AccessLevel.PRIVATE)
     @Accessors(chain = true)
     @RequiredArgsConstructor
     public static class Signal {

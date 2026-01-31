@@ -713,7 +713,7 @@ public class Input implements Cloneable {
         if (toolCalls != null) {
             messages.add(new Message()
                 .setRole(MessageRole.Assistant)
-                .setContent(new MessageContent().setToolCalls(toolCalls)));
+                .setContent(MessageContent.ToolCalls(toolCalls)));
         }
         return messages;
     }

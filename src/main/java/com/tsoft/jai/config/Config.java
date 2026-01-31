@@ -20,6 +20,7 @@ import com.tsoft.jai.serdejson.Value;
 import com.tsoft.jai.utils.AbortSignal;
 import com.tsoft.jai.utils.base.Tuple;
 import lombok.Data;
+import lombok.ToString;
 import lombok.experimental.Accessors;
 
 import java.io.File;
@@ -117,6 +118,7 @@ public class Config {
     private WorkingMode workingMode = WorkingMode.Cmd;
     //#[serde(skip)]
     @JsonIgnore
+    @ToString.Exclude                   // a recursion through the Input field
     private LastMessage lastMessage;
 
     //#[serde(skip)]
@@ -1104,12 +1106,11 @@ public class Config {
     //        bail!("No RAG")
     //    }
     // }
-    public String ragInfo() {
+    public Result<String> ragInfo() {
         if (rag != null) {
             return rag.export();
         } else {
-            bail("No RAG");
-            return null;
+            return bail("No RAG");
         }
     }
 
@@ -1273,12 +1274,11 @@ public class Config {
     //        bail!("No agent")
     //    }
     // }
-    public String agentInfo() {
+    public Result<String> agentInfo() {
         if (agent != null) {
             return agent.export(this);
         } else {
-            bail("No agent");
-            return null;
+            return bail("No agent");
         }
     }
 
@@ -1322,7 +1322,11 @@ public class Config {
             String content = readFile(path);
             role = Role.create(name, content);
         } else {
-            role = Role.builtin(name);
+            Result<Role> res = Role.builtin(name);
+            if (isErr(res)) {
+                return Err(res);
+            }
+            role = res.getValue();
         }
         Model currentModel = currentModel();
         if (!isBlank(role.getModelId())) {
@@ -1360,16 +1364,17 @@ public class Config {
     //    self.discontinuous_last_message();
     //    Ok(())
     // }
-    public void emptySession() {
+    public Result<?> emptySession() {
         if (session != null) {
             if (agent != null) {
                 session.syncAgent(agent);
             }
             session.clearMessages();
         } else {
-            bail("No session");
+            return bail("No session");
         }
         discontinuousLastMessage();
+        return Ok();
     }
 
     // pub fn info(&self) -> Result<String> {
@@ -1396,21 +1401,29 @@ public class Config {
     //        self.sysinfo()
     //    }
     // }
-    public String info() {
+    public Result<String> info() {
         if (agent != null) {
-            String output = agent.export(this);
+            Result<String> res = agent.export(this);
+            if (isErr(res)) {
+                return Err(res);
+            }
+            String output = res.getValue();
             if (session != null) {
-                String info = String.join("\n", Arrays.stream(session.export().split("\n"))
+                Result<String> resSession = session.export();
+                if (isErr(resSession)) {
+                    return Err(resSession);
+                }
+                String info = String.join("\n", Arrays.stream(resSession.getValue().split("\n"))
                     .map(e -> format("  {}", e))
                     .toList());
-                return format("{}session:\n{}", output, info);
+                return Ok(format("{}session:\n{}", output, info));
             } else {
-                return output;
+                return Ok(output);
             }
         } else if (session != null) {
             return session.export();
         } else if (role != null) {
-            return role.export();
+            return Ok(role.export());
         } else if (rag != null) {
             return rag.export();
         } else {
@@ -1884,7 +1897,7 @@ public class Config {
     //        .join("");
     //    Ok(output)
     // }
-    public String sysinfo() {
+    public Result<String> sysinfo() {
         String wrap = isBlank(this.wrap) ? "no" : this.wrap;
 
         String ragRerankerModel = this.ragRerankerModel;
@@ -1928,7 +1941,7 @@ public class Config {
         String output = String.join("\n", items.stream()
             .map(e -> format("{}{}", padRight(e.first(), 24), e.second()))
             .toList());
-        return output;
+        return Ok(output);
     }
 
     // fn format_option_value<T>(value: &Option<T>) -> String

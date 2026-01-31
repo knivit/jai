@@ -17,7 +17,7 @@ import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 public class ToolCall {
 
     private String name;
-    private Object arguments;
+    private Value arguments;
     private String id;
 
     // pub fn dedup(calls: Vec<Self>) -> Vec<Self> {

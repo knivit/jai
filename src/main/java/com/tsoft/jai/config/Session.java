@@ -282,7 +282,7 @@ public class Session {
     //    self.update_tokens();
     //    Ok(())
     // }
-    public void addMessage(Input input, String output) {
+    public Result<?> addMessage(Input input, String output) {
         if (!isBlank(input.getContinueOutput())) {
             if (!CollectionsUtils.isEmpty(messages)) {
                 Message message = messages.getLast();
@@ -318,6 +318,7 @@ public class Session {
 
         dirty = true;
         updateTokens();
+        return Ok();
     }
 
     // pub fn echo_messages(&self, input: &Input) -> String {
@@ -459,7 +460,7 @@ public class Session {
     //        .with_context(|| format!("Unable to show info about session '{}'", &self.name))?;
     //    Ok(output)
     // }
-    public String export() {
+    public Result<String> export() {
         Value data = new Value();
         data.put("path", path);
         data.put("model", model.id());
@@ -484,9 +485,9 @@ public class Session {
         if (percent != 0.0f) {
             data.put("total/max", format("{}%", percent));
         }
-        data.put("messages", toJson(messages).asMap());
+        data.put("messages", toJson(messages).getValue().asMap());
 
-        return SerDe.toYamlString(data);
+        return Ok(SerDe.toYamlString(data));
     }
 
     // pub fn tokens_usage(&self) -> (usize, f32) {

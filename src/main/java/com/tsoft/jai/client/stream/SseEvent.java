@@ -1,10 +1,12 @@
 package com.tsoft.jai.client.stream;
 
-import lombok.Data;
+import lombok.*;
 import lombok.experimental.Accessors;
 
-@Data
+@Getter
+@Setter(AccessLevel.PRIVATE)
 @Accessors(chain = true)
+@RequiredArgsConstructor
 public class SseEvent {
 
     public enum SseEventEnum {
@@ -12,15 +14,14 @@ public class SseEvent {
         Done
     }
 
-    private SseEventEnum type;
-
+    private final SseEventEnum type;
     private String text;
 
     public static SseEvent Text(String text) {
-        return new SseEvent().setType(SseEventEnum.Text).setText(text);
+        return new SseEvent(SseEventEnum.Text).setText(text);
     }
 
     public static SseEvent Done() {
-        return new SseEvent().setType(SseEventEnum.Done);
+        return new SseEvent(SseEventEnum.Done);
     }
 }

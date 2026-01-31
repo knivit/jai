@@ -1,6 +1,6 @@
 package com.tsoft.jai.client.message;
 
-import lombok.Data;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.util.ArrayList;
@@ -9,9 +9,12 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.StringUtils.format;
 
-@Data
+@Getter
+@Setter(AccessLevel.PRIVATE)
 @Accessors(chain = true)
+@RequiredArgsConstructor
 public class MessageContent {
 
     public enum MessageContentEnum {
@@ -20,19 +23,21 @@ public class MessageContent {
         ToolCalls
     }
 
-    private MessageContentEnum type;
+    private final MessageContentEnum type;
 
+    @Setter
     private String text;
     private List<MessageContentPart> array;
+
     // Note: This type is primarily for convenience and does not exist in OpenAI's API.
     private MessageContentToolCalls toolCalls;
 
     public static MessageContent Text(String text) {
-        return new MessageContent().setType(MessageContentEnum.Text).setText(text);
+        return new MessageContent(MessageContentEnum.Text).setText(text);
     }
 
     public static MessageContent Array(List<MessageContentPart> array) {
-        return new MessageContent().setType(MessageContentEnum.Array).setArray(array);
+        return new MessageContent(MessageContentEnum.Array).setArray(array);
     }
 
     public static MessageContent Array(MessageContent other) {
@@ -41,7 +46,7 @@ public class MessageContent {
         }
 
         return switch (other.type) {
-            case Array -> new MessageContent().setType(MessageContentEnum.Array).setArray(cloneArray(other));
+            case Array -> new MessageContent(MessageContentEnum.Array).setArray(cloneArray(other));
             default -> throw new IllegalStateException("The operation is invalid");
         };
     }
@@ -96,7 +101,7 @@ public class MessageContent {
     }
 
     public static MessageContent ToolCalls(MessageContentToolCalls toolCalls) {
-        return new MessageContent().setType(MessageContentEnum.ToolCalls).setToolCalls(toolCalls);
+        return new MessageContent(MessageContentEnum.ToolCalls).setToolCalls(toolCalls);
     }
 
     // pub fn merge_prompt(&mut self, replace_fn: impl Fn(&str) -> String) {
@@ -129,5 +134,14 @@ public class MessageContent {
                 }
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        return switch (type) {
+            case Text -> format("{} (text={})", MessageContentEnum.Text, text);
+            case Array -> format("{} (array={})", MessageContentEnum.Array, array);
+            case ToolCalls -> format("{} (toolCalls={})", MessageContentEnum.ToolCalls, toolCalls);
+        };
     }
 }

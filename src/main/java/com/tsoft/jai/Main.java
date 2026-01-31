@@ -307,8 +307,11 @@ public class Main {
             //config.setSaveSessionThisTime();
         }
         if (cli.isInfo()) {
-            String info = config.info();
-            println("{}", info);
+            Result<String> info = config.info();
+            if (isErr(info)) {
+                return Err(info);
+            }
+            println("{}", info.getValue());
             return Ok();
         }
 

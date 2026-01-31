@@ -2,6 +2,7 @@ package com.tsoft.jai.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.message.Message;
 import com.tsoft.jai.client.message.MessageContent;
 import com.tsoft.jai.client.message.MessageRole;
@@ -21,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import static com.tsoft.jai.inquire.Inquire.println;
+import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.base.StringUtils.*;
 import static com.tsoft.jai.utils.Variables.interpolateVariables;
@@ -103,8 +104,9 @@ public class Role {
         prompt = interpolateVariables(prompt);
         Role role = new Role().setName(name).setPrompt(prompt);
         if (!isBlank(metadata)) {
-            Value value = SerDe.parseYaml(metadata);
-            if (value != null) {
+            Result<Value> res = SerDe.parseYaml(metadata);
+            if (isOk(res)) {
+                Value value = res.getValue();
                 for (Map.Entry<String, String> entry : value.asMap().entrySet()){
                     switch (entry.getKey()) {
                         case "model" -> role.modelId = entry.getValue();
@@ -133,15 +135,15 @@ public class Role {
     //    let content = unsafe { std::str::from_utf8_unchecked(&content.data) };
     //    Ok(Role::new(name, content))
     // }
-    public static Role builtin(String name) {
-        File file = Asset.file(format("{}/{}.md", ROLES_ASSET, name));
-        String content = null;
-        if (file == null) {
-            println("Unknown role '{}'", name);
-        } else {
-            content = readFile(file);
+    public static Result<Role> builtin(String name) {
+        Result<File> res = Asset.file(format("{}/{}.md", ROLES_ASSET, name))
+            .withContext(() -> format("Unknown role `{}`", name));
+        if (isErr(res)) {
+            return Err(res);
         }
-        return Role.create(name, content);
+        File file = res.getValue();
+        String content = readFile(file);
+        return Ok(Role.create(name, content));
     }
 
     // pub fn list_builtin_role_names() -> Vec<String> {

@@ -7,6 +7,8 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.List;
 
+import static com.tsoft.jai.anyhow.Result.Err;
+import static com.tsoft.jai.anyhow.Result.Ok;
 import static com.tsoft.jai.std.Fs.readDir;
 import static com.tsoft.jai.utils.base.StringUtils.format;
 
@@ -27,11 +29,12 @@ public final class Asset {
         }
     }
 
-    public static File file(String assetName) {
+    public static Result<File> file(String assetName) {
         try {
-            return Paths.get(Asset.class.getResource("/" + assetName).toURI()).toFile();
+            File file = Paths.get(Asset.class.getResource("/" + assetName).toURI()).toFile();
+            return Ok(file);
         } catch (Exception ex) {
-            throw new IllegalArgumentException(format("Error getting asset file '{}': {}", assetName, ex.getMessage()));
+            return Err(format("Error getting asset file '{}': {}", assetName, ex.getMessage()));
         }
     }
 }

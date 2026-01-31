@@ -13,14 +13,14 @@ import static com.tsoft.jai.utils.base.StringUtils.format;
 
 public final class Inquire {
 
-    public static final String JAI_DUMB_TERMINAL_MODE = "JAI_DUMB_TERMINAL_MODE";
+    public static final String JUNIT_TERMINAL_MODE = "JUNIT_TERMINAL_MODE";
 
-    public static final PipedInputStream terminalInput = new PipedInputStream();
+    private static final PipedInputStream terminalInput = new PipedInputStream();
     public static final PrintStream terminalInputStream = new PrintStream(terminalInputWriterStream(terminalInput));
 
-    public static final OutputStream terminalOutput = new ByteArrayOutputStream();
+    private static final OutputStream terminalOutput = new ByteArrayOutputStream();
     public static final ByteArrayOutputStream output = new ByteArrayOutputStream();
-    public static final PrintStream outputStream = new PrintStream(output);
+    private static final PrintWriter junitWriter = new PrintWriter(output);
 
     private static final Inquire INSTANCE = new Inquire();
 
@@ -42,19 +42,44 @@ public final class Inquire {
 
     public static void print(String msg, Object ... args) {
         msg = format(msg, args);
-        outputStream.print((msg == null) ? "" : msg);
-        outputStream.flush();
-    }
+        if (msg == null) {
+            return;
+        }
 
-    public static void println() {
-        outputStream.println();
-        outputStream.flush();
+        PrintWriter writer = isJUnitTerminalMode() ? junitWriter : terminal().writer();
+        writer.print(msg);
+        writer.flush();
+
+        // Additionally to a console in JUnit mode
+        if (isJUnitTerminalMode()) {
+            System.out.print(msg);
+            System.out.flush();
+        }
     }
 
     public static void println(String msg, Object ... args) {
         msg = format(msg, args);
-        outputStream.println((msg == null) ? "" : msg);
-        outputStream.flush();
+
+        PrintWriter writer = isJUnitTerminalMode() ? junitWriter : terminal().writer();
+        if (msg != null) {
+            writer.println(msg);
+        } else {
+            writer.println();
+        }
+        writer.flush();
+
+        // Additionally to a console in JUnit mode
+        if (isJUnitTerminalMode()) {
+            if (msg != null) {
+                System.out.println(msg);
+            } else {
+                System.out.println();
+            }
+        }
+    }
+
+    public static void println() {
+        println(null);
     }
 
     public static void enableRawMode() {
@@ -70,8 +95,8 @@ public final class Inquire {
     }
 
     private Inquire() {
-        if ("ON".equals(System.getProperty(JAI_DUMB_TERMINAL_MODE))) {
-            initDumbTerminal();
+        if (isJUnitTerminalMode()) {
+            initJUnitTerminal();
         } else {
             initTerminal();
         }
@@ -90,7 +115,7 @@ public final class Inquire {
         }
     }
 
-    private void initDumbTerminal() {
+    private void initJUnitTerminal() {
         try {
             terminal = TerminalBuilder.builder()
                 .streams(terminalInput, terminalOutput)
@@ -101,5 +126,9 @@ public final class Inquire {
         } catch (Exception ex) {
             throw new IllegalStateException(ex);
         }
+    }
+
+    private static boolean isJUnitTerminalMode() {
+        return "ON".equals(System.getProperty(JUNIT_TERMINAL_MODE));
     }
 }
