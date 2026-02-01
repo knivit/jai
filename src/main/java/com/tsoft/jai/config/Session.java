@@ -615,7 +615,7 @@ public class Session {
             Path sessionPath = sessionsDir.resolve(format("{}.yaml", sessionName));
             Result<?> res = save(sessionName, sessionPath, isRepl);
             if (isErr(res)) {
-                return res;
+                return Err(res);
             }
         }
         return Ok();
@@ -657,7 +657,7 @@ public class Session {
         Result<?> res = write(sessionPath, content)
             .withContext(() -> format("Failed to write session '{}' to '{}'", name, sessionPath));
         if (isErr(res)) {
-            return res;
+            return Err(res);
         }
 
         if (isRepl) {

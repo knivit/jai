@@ -334,7 +334,7 @@ public class Main {
 
         Result<?> res = config.applyPrelude();
         if (isErr(res)) {
-            return res;
+            return Err(res);
         }
 
         if (!isRepl) {
@@ -393,7 +393,7 @@ public class Main {
     private static Result<?> startDirective(Config config, Input input, boolean codeMode, AbortSignal abortSignal) {
         Result<Client> clientRes = input.createClient();
         if (isErr(clientRes)) {
-            return clientRes;
+            return Err(clientRes);
         }
         Client client = clientRes.getValue();
 

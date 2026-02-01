@@ -24,7 +24,7 @@ public class Confirm {
     private boolean defaultValue;
 
     public boolean prompt() {
-        PromptBuilder builder = prompter().newBuilder()
+        PromptBuilder builder = prompter.newBuilder()
             .createConfirmPrompt()
             .name("confirm")
             .message(message)
@@ -32,7 +32,7 @@ public class Confirm {
             .addPrompt();
 
         try {
-            Map<String, ? extends PromptResult<? extends Prompt>> results = prompter().prompt(new ArrayList<>(), builder.build());
+            Map<String, ? extends PromptResult<? extends Prompt>> results = prompter.prompt(new ArrayList<>(), builder.build());
             ConfirmResult confirm = (ConfirmResult) results.get("confirm");
             return confirm.isConfirmed();
         } catch (Exception ex) {

@@ -22,7 +22,7 @@ public class Select {
     private final List<String> values;
 
     public String prompt() {
-        ListBuilder listBuilder = prompter().newBuilder()
+        ListBuilder listBuilder = prompter.newBuilder()
             .createListPrompt()
             .name("select")
             .message(message);
@@ -34,7 +34,7 @@ public class Select {
         PromptBuilder builder = listBuilder.addPrompt();
 
         try {
-            Map<String, ? extends PromptResult<? extends Prompt>> results = prompter().prompt(new ArrayList<>(), builder.build());
+            Map<String, ? extends PromptResult<? extends Prompt>> results = prompter.prompt(new ArrayList<>(), builder.build());
             return results.get("select").getResult();
         } catch (Exception ex) {
             log.warn("Prompt error", ex);

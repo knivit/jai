@@ -176,6 +176,6 @@ public class Repl {
     //    Ok(editor)
     // }
     public static Editor createEditor(Config config) {
-        return new Editor(terminal());
+        return new Editor(terminal);
     }
 }

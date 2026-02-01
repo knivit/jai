@@ -302,7 +302,7 @@ public abstract class Client {
     public Result<?> chatCompletionsStreamingInner(ReqwestClient client, SseHandler handler, ChatCompletionsData data) {
         Result<RequestData> res = prepareChatCompletions(data);
         if (isErr(res)) {
-            return res;
+            return Err(res);
         }
         RequestData requestData = res.getValue();
         RequestBuilder builder = requestBuilder(client, requestData);

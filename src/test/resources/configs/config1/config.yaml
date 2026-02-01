@@ -1,9 +1,10 @@
-model: ollama:deepseek-v3.2:cloud
+model: ollama:lfm2.5-thinking
 clients:
   - type: openai-compatible
     name: ollama
     apiBase: http://localhost:11434/v1
     models:
+      - name: "lfm2.5-thinking"
       - name: "deepseek-v3.2:cloud"
       - name: "glm-4.7:cloud"
       - name: "kimi-k2:1t-cloud"

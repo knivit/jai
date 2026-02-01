@@ -189,7 +189,7 @@ public class Agent {
         } else {
             if (!isEmpty(definition.getDocuments()) && !config.isInfoFlag()) {
                 boolean ans = false;
-                if (Inquire.prompter() != null) {
+                if (Inquire.prompter != null) {
                     ans = new Confirm("The agent has the documents, init RAG?")
                         .setDefaultValue(true)
                         .prompt();
@@ -534,7 +534,7 @@ public class Agent {
                 if (noInteraction) {
                     continue;
                 }
-                if (Inquire.prompter() != null) {
+                if (Inquire.prompter != null) {
                     if (!printed) {
                         println("⚙ Init agent variables...");
                         printed = true;

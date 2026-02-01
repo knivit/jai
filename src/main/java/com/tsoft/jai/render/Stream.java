@@ -31,7 +31,7 @@ public class Stream {
     // }
     public static void markdownStream(UnboundedReceiver<SseEvent> rx, MarkdownRender render, AbortSignal abortSignal) {
         enableRawMode();
-        PrintWriter stdout = terminal().writer();
+        PrintWriter stdout = terminal.writer();
 
     }
 

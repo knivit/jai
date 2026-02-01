@@ -23,7 +23,7 @@ public class Input {
     private Function<String, Boolean> validator;
 
     public String prompt() {
-        PromptBuilder promptBuilder = prompter().newBuilder()
+        PromptBuilder promptBuilder = prompter.newBuilder()
             .createInputPrompt()
             .name("input")
             .message(message)
@@ -32,7 +32,7 @@ public class Input {
             .addPrompt();
 
         try {
-            Map<String, ? extends PromptResult<? extends Prompt>> results = prompter().prompt(new ArrayList<>(), promptBuilder.build());
+            Map<String, ? extends PromptResult<? extends Prompt>> results = prompter.prompt(new ArrayList<>(), promptBuilder.build());
             return results.get("input").getResult();
         } catch (Exception ex) {
             log.warn("Prompt error", ex);

@@ -5,9 +5,10 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
-import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.UserInterruptException;
 import org.jline.terminal.Terminal;
+
+import static com.tsoft.jai.inquire.Inquire.lineReaderBuilder;
 
 @RequiredArgsConstructor
 public class Editor {
@@ -43,10 +44,7 @@ public class Editor {
     private final Terminal terminal;
 
     public Signal readLine(ReplPrompt prompt) {
-        LineReader lineReader = LineReaderBuilder.builder()
-            .terminal(terminal)
-            .variable(LineReader.EDITING_MODE, "emacs")
-            .build();
+        LineReader lineReader = lineReaderBuilder.build();
 
         try {
             String line = lineReader.readLine();

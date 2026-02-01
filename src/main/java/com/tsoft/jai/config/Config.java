@@ -1010,7 +1010,7 @@ public class Config {
         if (session != null) {
             Result<?> res = session.save(sessionName, sessionPath.toPath(), WorkingMode.isRepl(workingMode));
             if (isErr(res)) {
-                return res;
+                return Err(res);
             }
         }
         return Ok();
@@ -1214,7 +1214,7 @@ public class Config {
     public Result<?> setModel(String modelId) {
         Result<Model> res = Model.retrieveModel(this, modelId, ModelType.Chat);
         if (isErr(res)) {
-            return res;
+            return Err(res);
         }
         Model model = res.getValue();
         RoleLike roleLike = roleLikeMut();

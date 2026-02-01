@@ -1,18 +1,21 @@
 package com.tsoft.jai;
 
 import com.tsoft.jai.anyhow.Result;
+import com.tsoft.jai.inquire.TestInquire;
 import com.tsoft.jai.utils.Asset;
 import com.tsoft.jai.utils.base.ListUtils;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static com.tsoft.jai.Main.main;
 import static com.tsoft.jai.anyhow.Result.isErr;
-import static com.tsoft.jai.inquire.Inquire.*;
+import static com.tsoft.jai.inquire.TestInquire.*;
 import static com.tsoft.jai.testutils.TestStringUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -21,33 +24,36 @@ class MainTest {
     static final Result<File> CONFIG_DIR = Asset.file("configs/config1");
     static final Result<File> CONFIG_FILE = Asset.file("configs/config1/config.yaml");
 
-    @BeforeEach
-    void beforeEach() {
-        System.setProperty(JUNIT_TERMINAL_MODE, "ON");
+    @BeforeAll
+    static void beforeAll() {
+        TestInquire.init();
     }
 
     private String execute(String ... args) {
-        if (isErr(CONFIG_FILE)) {
-            throw new IllegalStateException(CONFIG_FILE.getErr().toString());
-        }
-        if (isErr(CONFIG_DIR)) {
-            throw new IllegalStateException(CONFIG_DIR.getErr().toString());
-        }
+        return execute(args, null);
+    }
 
+    private String execute(String[] args, Supplier<String> inputs) {
+        TestInquire.newSession(inputs);
+
+        // Add a config file reference
         String configFileName = CONFIG_FILE.getValue().toString();
         List<String> list = ListUtils.of("--config-file", configFileName);
         if (args != null) {
             list.addAll(Arrays.asList(args));
         }
 
-        output.reset();
+        // Start
         main(list.toArray(new String[] { }));
-        return normalize(output.toString(), CONFIG_DIR.getValue().toString(), "<dir>");
+
+        // Return the gathered output
+        return normalize(TestInquire.getOutput(), CONFIG_DIR.getValue().toString(), "<dir>");
     }
 
     @Test
     void main_list_models() {
         assertThat(execute("--list-models")).isEqualTo("""
+            ollama:lfm2.5-thinking
             ollama:deepseek-v3.2:cloud
             ollama:glm-4.7:cloud
             ollama:kimi-k2:1t-cloud
@@ -72,8 +78,8 @@ class MainTest {
     void main_start_and_list_sessions() {
         assertThat(execute("--list-sessions")).isEqualTo("\n");
 
-        terminalInputStream.println("Hello !");
-        assertThat(execute("--session", "test")).isEqualTo("");
+        assertThat(execute(new String[] { "--session", "test" },
+            () -> "Hello !")).isEqualTo("");
 
         assertThat(execute("--list-sessions")).isEqualTo("");
     }
@@ -81,7 +87,7 @@ class MainTest {
     @Test
     void main_info() {
         assertThat(execute("--info")).isEqualTo("""
-            model                   ollama:deepseek-v3.2:cloud
+            model                   ollama:lfm2.5-thinking
             temperature             null
             top_p                   null
             use_tools               null

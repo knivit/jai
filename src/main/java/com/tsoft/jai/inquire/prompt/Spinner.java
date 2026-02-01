@@ -88,7 +88,7 @@ public class Spinner {
                         return ret;
                     }),
                     branch(supplyAsync(() -> {
-                        BindingReader bindingReader = new BindingReader(terminal().reader());
+                        BindingReader bindingReader = new BindingReader(terminal.reader());
                         try {
                             while (true) {
                                 int ch = bindingReader.readCharacter();
@@ -155,25 +155,25 @@ public class Spinner {
         String[] frames = {"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"};
 
         try {
-            terminal().writer().write("\033[?25l"); // Hide cursor
-            terminal().flush();
+            terminal.writer().write("\033[?25l"); // Hide cursor
+            terminal.flush();
 
             int frameIndex = 0;
             while (active && !abortSignal.aborted()) {
                 String frame = frames[frameIndex % frames.length];
 
                 // Move cursor to beginning of line and clear
-                terminal().writer().write("\r\033[K");
-                terminal().writer().write(frame + " " + message);
-                terminal().flush();
+                terminal.writer().write("\r\033[K");
+                terminal.writer().write(frame + " " + message);
+                terminal.flush();
 
                 frameIndex++;
                 Thread.sleep(25);
             }
 
             // Clear line
-            terminal().writer().write("\r\033[K");
-            terminal().flush();
+            terminal.writer().write("\r\033[K");
+            terminal.flush();
         } catch (Exception e) {
             // Ignore on shutdown
         }
@@ -181,8 +181,8 @@ public class Spinner {
 
     private void stopSpinner() {
         if (active) {
-            terminal().writer().write("\033[?25h"); // Show cursor
-            terminal().flush();
+            terminal.writer().write("\033[?25h"); // Show cursor
+            terminal.flush();
         }
         active = false;
     }
