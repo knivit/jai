@@ -7,12 +7,11 @@ import org.jline.reader.impl.LineReaderImpl;
 import org.jline.terminal.Terminal;
 
 import java.io.IOException;
-import java.util.function.Supplier;
 
 public class TestLineReader extends LineReaderImpl {
 
     @Setter
-    private Supplier<String> inputs;
+    private String input;
 
     public TestLineReader(Terminal terminal) throws IOException {
         super(terminal);
@@ -20,6 +19,6 @@ public class TestLineReader extends LineReaderImpl {
 
     @Override
     public String readLine() throws UserInterruptException, EndOfFileException {
-        return inputs.get();
+        return input;
     }
 }

@@ -6,7 +6,6 @@ import org.jline.terminal.TerminalBuilder;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.function.Supplier;
 
 public class TestInquire {
 
@@ -19,10 +18,14 @@ public class TestInquire {
         Inquire.terminal = createJUnitTerminal();
     }
 
-    public static void newSession(Supplier<String> inputs) {
+    public static void newSession() {
+        newSession(null);
+    }
+
+    public static void newSession(String input) {
         // input
         Inquire.prompter = PrompterFactory.create(Inquire.terminal);
-        Inquire.lineReaderBuilder = new TestLineReaderFactory(Inquire.terminal, inputs);
+        Inquire.lineReaderBuilder = new TestLineReaderFactory(Inquire.terminal, input);
 
         // output
         Inquire.writer = new TestWriter(output);

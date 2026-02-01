@@ -85,6 +85,7 @@ public class Stream {
                             }
                         }
                     }
+                    break;
                 }
                 case Err: {
                     EventSourceError err = (EventSourceError) res.getErr().getErrValue();
@@ -109,6 +110,7 @@ public class Stream {
                         }
                     }
                     es.close();
+                    break;
                 }
             }
         }

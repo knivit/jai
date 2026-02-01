@@ -32,6 +32,7 @@ import static com.tsoft.jai.config.Config.TEMP_SESSION_NAME;
 import static com.tsoft.jai.config.Config.ensureParentExists;
 import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.serdejson.SerDe.toJson;
+import static com.tsoft.jai.serdejson.Value.asMap;
 import static com.tsoft.jai.std.Fs.write;
 import static com.tsoft.jai.utils.base.StringUtils.*;
 
@@ -485,7 +486,7 @@ public class Session {
         if (percent != 0.0f) {
             data.put("total/max", format("{}%", percent));
         }
-        data.put("messages", toJson(messages).getValue().asMap());
+        data.put("messages", asMap(toJson(messages).getValue()));
 
         return Ok(SerDe.toYamlString(data));
     }

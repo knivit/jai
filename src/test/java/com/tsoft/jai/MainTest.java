@@ -2,20 +2,18 @@ package com.tsoft.jai;
 
 import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.inquire.TestInquire;
+import com.tsoft.jai.reqwest.TestHttpClient;
 import com.tsoft.jai.utils.Asset;
 import com.tsoft.jai.utils.base.ListUtils;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Supplier;
 
 import static com.tsoft.jai.Main.main;
-import static com.tsoft.jai.anyhow.Result.isErr;
-import static com.tsoft.jai.inquire.TestInquire.*;
+import static com.tsoft.jai.reqwest.TestHttpClient.*;
 import static com.tsoft.jai.testutils.TestStringUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,12 +28,6 @@ class MainTest {
     }
 
     private String execute(String ... args) {
-        return execute(args, null);
-    }
-
-    private String execute(String[] args, Supplier<String> inputs) {
-        TestInquire.newSession(inputs);
-
         // Add a config file reference
         String configFileName = CONFIG_FILE.getValue().toString();
         List<String> list = ListUtils.of("--config-file", configFileName);
@@ -52,6 +44,8 @@ class MainTest {
 
     @Test
     void main_list_models() {
+        TestInquire.newSession();
+
         assertThat(execute("--list-models")).isEqualTo("""
             ollama:lfm2.5-thinking
             ollama:deepseek-v3.2:cloud
@@ -64,6 +58,8 @@ class MainTest {
 
     @Test
     void main_list_roles() {
+        TestInquire.newSession();
+
         assertThat(execute("--list-roles")).isEqualTo("""
             %code%
             %create-prompt%
@@ -76,10 +72,56 @@ class MainTest {
 
     @Test
     void main_start_and_list_sessions() {
+        TestInquire.newSession();
         assertThat(execute("--list-sessions")).isEqualTo("\n");
 
-        assertThat(execute(new String[] { "--session", "test" },
-            () -> "Hello !")).isEqualTo("");
+        TestInquire.newSession("Hello !");
+        TestHttpClient.newSession(
+            """
+            {
+              "id": "chatcmpl-582",
+              "object": "chat.completion.chunk",
+              "created": 1769971085,
+              "model": "lfm2.5-thinking",
+              "system_fingerprint": "fp_ollama",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "role": "assistant",
+                    "content": "",
+                    "reasoning": "Okay"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+            """,
+            """
+            {
+              "id": "chatcmpl-582",
+              "object": "chat.completion.chunk",
+              "created": 1769971090,
+              "model": "lfm2.5-thinking",
+              "system_fingerprint": "fp_ollama",
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "role": "assistant",
+                    "content": "I don't know"
+                  },
+                  "finish_reason": null
+                }
+              ]
+            }
+            """,
+            """
+            [DONE]
+            """
+        );
+        assertThat(execute("--session", "test")).isEqualTo("");
+        assertThat(getHttpRequest()).isEqualTo("");
 
         assertThat(execute("--list-sessions")).isEqualTo("");
     }

@@ -33,13 +33,13 @@ class SerDeTest {
         Result<Value> resValue = res.getJson();
 
         Value value = resValue.getValue();
-        assertEquals(1, value.get("int").asInt());
-        assertEquals("a", value.get("char").asStr());
-        assertEquals("v1", value.get("object", "f1").asStr());
-        assertEquals("v2", value.get("object", "f2").asStr());
-        assertEquals(1, value.get("listObjects", 0, "f1").asInt());
-        assertEquals("1", value.get("listObjects", 0, "f2").asStr());
-        assertEquals(2, value.get("listObjects", 1, "f1").asInt());
-        assertEquals("2", value.get("listObjects", 1, "f2").asStr());
+        assertEquals(1, value.asInt("int"));
+        assertEquals("a", value.asStr("char"));
+        assertEquals("v1", value.asStr("object", "f1"));
+        assertEquals("v2", value.asStr("object", "f2"));
+        assertEquals(1, value.asInt("listObjects", 0, "f1"));
+        assertEquals("1", value.asStr("listObjects", 0, "f2"));
+        assertEquals(2, value.asInt("listObjects", 1, "f1"));
+        assertEquals("2", value.asStr("listObjects", 1, "f2"));
     }
 }

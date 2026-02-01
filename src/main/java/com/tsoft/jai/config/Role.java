@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import static com.tsoft.jai.anyhow.Result.*;
+import static com.tsoft.jai.serdejson.Value.asMap;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.base.StringUtils.*;
 import static com.tsoft.jai.utils.Variables.interpolateVariables;
@@ -107,7 +108,7 @@ public class Role {
             Result<Value> res = SerDe.parseYaml(metadata);
             if (isOk(res)) {
                 Value value = res.getValue();
-                for (Map.Entry<String, String> entry : value.asMap().entrySet()){
+                for (Map.Entry<String, String> entry : asMap(value).entrySet()) {
                     switch (entry.getKey()) {
                         case "model" -> role.modelId = entry.getValue();
                         case "temperature" -> role.temperature = Double.parseDouble(entry.getValue());

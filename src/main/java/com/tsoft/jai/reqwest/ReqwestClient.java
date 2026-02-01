@@ -1,7 +1,5 @@
 package com.tsoft.jai.reqwest;
 
-import lombok.Getter;
-
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -9,10 +7,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-@Getter
 public class ReqwestClient {
 
-    private final HttpClient.Builder httpClientBuilder = HttpClient.newBuilder();
+    public static HttpClient.Builder httpClientBuilder = HttpClient.newBuilder();
+
     private final Map<String, List<String>> headerMap = new LinkedHashMap<>();
 
     private HttpClient httpClient;
@@ -42,7 +40,6 @@ public class ReqwestClient {
 
     public ReqwestClient build() {
         httpClient = httpClientBuilder
-            // may be http/2 also .version(HttpClient.Version.HTTP_1_1)
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
         return this;

@@ -18,10 +18,25 @@ import static com.tsoft.jai.anyhow.Result.Ok;
 
 public class EventSource implements HttpResponse.BodySubscriber<Void> {
 
+    public interface EventChannelFactory {
+
+        BlockingQueue<String> build();
+    }
+
+    private static class EventChannelFactoryImpl implements EventChannelFactory {
+
+        @Override
+        public BlockingQueue<String> build() {
+            return new ArrayBlockingQueue<>(100_000);
+        }
+    }
+
+    public static EventChannelFactory eventChannelFactory = new EventChannelFactoryImpl();
+
     private static final String DONE_MARKER = UUID.randomUUID().toString();
     private static final String ERROR_MARKER = UUID.randomUUID().toString();
 
-    private final BlockingQueue<String> channel = new ArrayBlockingQueue<>(100_000);
+    public final BlockingQueue<String> channel = eventChannelFactory.build();
     private final AtomicReference<EventSourceError> error = new AtomicReference<>();
     private volatile boolean completed = false;
 
@@ -50,7 +65,7 @@ public class EventSource implements HttpResponse.BodySubscriber<Void> {
                 return Err(error.get());
             }
 
-            MessageEvent message = new MessageEvent().setData(data);
+            MessageEvent message = new MessageEvent().setData(data.trim());
             return Ok(Event.Message(message));
         } catch (Exception ex) {
             Thread.currentThread().interrupt();

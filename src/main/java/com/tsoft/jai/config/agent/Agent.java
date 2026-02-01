@@ -28,6 +28,7 @@ import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.function.Functions.runLlmFunction;
 import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.serdejson.SerDe.toJson;
+import static com.tsoft.jai.serdejson.Value.asMap;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.Mod.isUrl;
 import static com.tsoft.jai.utils.Mod.normalizeEnvName;
@@ -415,8 +416,8 @@ public class Agent {
         if (!isEmpty(vars)) {
             value.put("variables", vars);
         }
-        value.put("config", toJson(this.config).getValue().asMap());
-        value.put("definition", toJson(definition).getValue().asMap());
+        value.put("config", asMap(toJson(this.config).getValue()));
+        value.put("definition", asMap(toJson(definition).getValue()));
         value.put("functions_dir", config.agentFunctionsDir(name));
         value.put("data_dir", config.agentDataDir(name));
         value.put("config_file", config.agentConfigFile(name));

@@ -36,6 +36,7 @@ import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.client.common.Common.catchError;
 import static com.tsoft.jai.client.stream.Stream.sseStream;
 import static com.tsoft.jai.serdejson.SerDe.json;
+import static com.tsoft.jai.serdejson.Value.isMap;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.Mod.stripThinkTag;
 import static com.tsoft.jai.utils.base.StringUtils.format;
@@ -258,7 +259,7 @@ public class OpenAIClient extends Client {
                     return Ok(false);
                 }
 
-                String text = data.get("choices", 0, "delta", "content").asStr();
+                String text = data.asStr("choices", 0, "delta", "content");
                 if (!isBlank(text)) {
                     if (reasoningState == 1) {
                         handler.text("\n</think>\n\n");
@@ -266,9 +267,9 @@ public class OpenAIClient extends Client {
                     }
                     handler.text(text);
                 } else {
-                    text = data.get("choices", 0, "delta", "reasoning_content").asStr();
+                    text = data.asStr("choices", 0, "delta", "reasoning_content");
                     if (text == null) {
-                        text = data.get("choices", 0, "delta", "reasoning").asStr();
+                        text = data.asStr("choices", 0, "delta", "reasoning");
                     }
                     if (!isBlank(text)) {
                         if (reasoningState == 0) {
@@ -280,8 +281,8 @@ public class OpenAIClient extends Client {
                 }
 
                 Value function = data.get("choices", 0, "delta", "tool_calls", 0, "function");
-                Integer index = data.get("choices", 0, "delta", "tool_calls", 0, "index").asInt();
-                String id = data.get("choices", 0, "delta", "tool_calls", 0, "id").asStr();
+                Integer index = data.asInt("choices", 0, "delta", "tool_calls", 0, "index");
+                String id = data.asStr("choices", 0, "delta", "tool_calls", 0, "id");
                 if (function != null && !isBlank(id)) {
                     if (reasoningState == 1) {
                         handler.text("\n</think>\n\n");
@@ -309,7 +310,7 @@ public class OpenAIClient extends Client {
                         callId = maybeCallId;
                     }
 
-                    String name = function.get("name").asStr();
+                    String name = function.asStr("name");
                     if (name != null) {
                         if (name.startsWith(functionName)) {
                             functionName = name;
@@ -319,7 +320,7 @@ public class OpenAIClient extends Client {
                         }
                     }
 
-                    String arguments = function.get("arguments").asStr();
+                    String arguments = function.asStr("arguments");
                     if (arguments != null) {
                         String buf = (functionArguments == null) ? arguments : functionArguments + arguments;
                         functionArguments = buf;
@@ -556,9 +557,9 @@ public class OpenAIClient extends Client {
             Object maxTokens = null;
             Value patch = model.getPatch();
             if (patch != null) {
-                Object bodyPatch = patch.get("body");
-                if (bodyPatch instanceof Map<?, ?> map) {
-                    maxTokens = map.get("max_tokens");
+                Value bodyPatch = patch.get("body");
+                if (isMap(bodyPatch)) {
+                    maxTokens = bodyPatch.asMap("max_tokens");
                 }
             }
 
@@ -644,25 +645,25 @@ public class OpenAIClient extends Client {
     //    Ok(output)
     // }
     public Result<ChatCompletionsOutput> extractChatCompletions(Value data) {
-        String text = data.get("choices", 0, "message", "content").asStr();
+        String text = data.asStr("choices", 0, "message", "content");
 
-        String reasoning = data.get("choices", 0, "message", "reasoning_content").asStr();
+        String reasoning = data.asStr("choices", 0, "message", "reasoning_content");
         if (reasoning == null) {
-            reasoning = data.get("choices", 0, "message", "reasoning").asStr();
+            reasoning = data.asStr("choices", 0, "message", "reasoning");
         }
 
         List<ToolCall> toolCalls = new ArrayList<>();
-        List<Value> calls = data.get("choices", 0, "message", "tool_calls").asList();
+        List<Value> calls = data.asList("choices", 0, "message", "tool_calls");
         if (!isEmpty(calls)) {
             for (Value call : calls) {
-                String name = call.get("function", "name").asStr();
-                String arguments = call.get("function", "arguments").asStr();
+                String name = call.asStr("function", "name");
+                String arguments = call.asStr("function", "arguments");
                 Result<Value> res = SerDe.parseJson(arguments).withContext(() ->
                     format("Tool call '{}' have non-JSON arguments '{}'", name, arguments));
                 if (isErr(res)) {
                     return Err(res);
                 }
-                String id = call.get("id").asStr();
+                String id = call.asStr("id");
                 if (name != null && arguments != null && id != null) {
                     toolCalls.add(new ToolCall()
                         .setName(name)
@@ -683,9 +684,9 @@ public class OpenAIClient extends Client {
         ChatCompletionsOutput output = new ChatCompletionsOutput()
             .setText(text)
             .setToolCalls(toolCalls)
-            .setId(data.get("id").asStr())
-            .setInputTokens(data.get("usage", "prompt_tokens").asInt())
-            .setOutputTokens(data.get("usage", "completion_tokens").asInt());
+            .setId(data.asStr("id"))
+            .setInputTokens(data.asInt("usage", "prompt_tokens"))
+            .setOutputTokens(data.asInt("usage", "completion_tokens"));
         return Ok(output);
     }
 

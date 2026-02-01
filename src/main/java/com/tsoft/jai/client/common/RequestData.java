@@ -95,7 +95,7 @@ public class RequestData {
     //    }
     // }
     public void applyPatch(Value patch) {
-        String patchUrl = patch.get("url").asStr();
+        String patchUrl = patch.asStr("url");
         if (!isBlank(patchUrl)) {
             url = patchUrl;
         }
@@ -103,7 +103,7 @@ public class RequestData {
         if (patchBody != null) {
             body = jsonPatch(body, patchBody);
         }
-        Map<String, String> patchHeaders = patch.get("headers").asMap();
+        Map<String, String> patchHeaders = patch.asMap("headers");
         if (!isEmpty(patchHeaders)) {
             for (Map.Entry<String, String> entry : patchHeaders.entrySet()) {
                 String key = entry.getKey();

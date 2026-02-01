@@ -88,7 +88,7 @@ public class Common {
     //    input: &Input,
     //    client: &dyn Client,
     //    abort_signal: AbortSignal,
-    //) -> Result<(String, Vec<ToolResult>)> {
+    // ) -> Result<(String, Vec<ToolResult>)> {
     //    let (tx, rx) = unbounded_channel();
     //    let mut handler = SseHandler::new(tx, abort_signal.clone());
     //

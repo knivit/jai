@@ -27,11 +27,17 @@ public class Value {
         for (Object elem : path) {
             if (elem instanceof String name) {
                 ptr = ((Map<String, ?>)ptr).get(name);
+                if (ptr == null) {
+                    return null;
+                }
                 continue;
             }
 
             if (elem instanceof Integer index) {
                 ptr = ((List<?>)ptr).get(index);
+                if (ptr == null) {
+                    return null;
+                }
                 continue;
             }
 
@@ -47,27 +53,30 @@ public class Value {
         return this;
     }
 
-    public String asStr() {
-        return (data == null) ? null : data.toString();
+    public String asStr(Object ... path) {
+        Value val = get(path);
+        return (val == null) ? null : val.toString();
     }
 
-    public Integer asInt() {
-        return (data == null) ? null : Integer.valueOf(data.toString());
+    public Integer asInt(Object ... path) {
+        Value val = get(path);
+        return (val == null) ? null : Integer.valueOf(val.toString());
     }
 
     public static boolean isList(Value value) {
         return (value != null) && (value.data instanceof List);
     }
 
-    public List<Value> asList() {
-        if (data == null) {
+    public List<Value> asList(Object ... path) {
+        Value val = get(path);
+        if (val == null) {
             return Collections.emptyList();
         }
 
-        if (data instanceof List<?> list) {
+        if (isList(val)) {
             List<Value> result = new ArrayList<>();
-            for (Object val : list) {
-                result.add(new Value(val));
+            for (Object item : (List<?>)data) {
+                result.add(new Value(item));
             }
             return result;
         }
@@ -79,16 +88,25 @@ public class Value {
         return (value != null) && (value.data instanceof Map);
     }
 
-    public Map<String, String> asMap() {
-        if (data == null) {
+    public static Map<String, String> asMap(Value val) {
+        if (isMap(val)) {
+            return (Map<String, String>)val.data;
+        }
+
+        throw new IllegalStateException("Not a map: " + val);
+    }
+
+    public Map<String, String> asMap(Object ... path) {
+        Value val = get(path);
+        if (val == null) {
             return Collections.emptyMap();
         }
 
-        if (data instanceof Map map) {
-            return map;
+        if (isMap(val)) {
+            return (Map<String, String>)val.data;
         }
 
-        throw new IllegalStateException("Not a map: " + data);
+        throw new IllegalStateException("Not a map: " + val);
     }
 
     public static Value jsonPatch(Value value, Value patch) {
@@ -117,5 +135,10 @@ public class Value {
             throw new IllegalStateException("The patch is not a list: " + patch);
         }
         throw new IllegalStateException("Unsupported operation");
+    }
+
+    @Override
+    public String toString() {
+        return (data == null) ? null : data.toString();
     }
 }
