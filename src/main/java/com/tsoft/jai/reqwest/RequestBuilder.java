@@ -71,6 +71,8 @@ public class RequestBuilder {
     }
 
     public RequestBuilder json(Value value) {
+        header("content-type", "application/json");
+        header("accept", "text/event-stream");
         this.body = Value.json(value);
         return this;
     }

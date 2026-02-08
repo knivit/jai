@@ -21,9 +21,30 @@ public class Value {
         this.data = data;
     }
 
+    public static String json(List<Value> list) {
+        if (list == null) {
+            return "null";
+        }
+
+        StringBuilder buf = new StringBuilder();
+
+        int i = 0;
+        buf.append('[');
+        for (Value entry : list) {
+            if (i > 0) {
+                buf.append(',');
+            }
+            buf.append(json(entry));
+            i ++;
+        }
+        buf.append(']');
+
+        return buf.toString();
+    }
+
     public static String json(Value value) {
         if (value == null) {
-            return null;
+            return "null";
         }
 
         if (value.data == null) {
@@ -33,31 +54,28 @@ public class Value {
         StringBuilder buf = new StringBuilder();
 
         if (isMap(value)) {
-            Map<String, String> map = asMap(value);
+            Map<String, Object> map = asMap(value);
 
             int i = 0;
             buf.append('{');
-            for (Map.Entry<String, String> entry : map.entrySet()) {
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
                 if (i > 0) {
                     buf.append(',');
                 }
-                buf.append('"').append(entry.getKey()).append('"').append(':').append(SerDe.toJsonString(entry.getValue()));
+                Object item = entry.getValue();
+                String text;
+                if (item instanceof List list) {
+                    text = json(list);
+                } else {
+                    text = SerDe.toJsonString(item);
+                }
+                buf.append('"').append(entry.getKey()).append('"').append(':').append(text);
                 i ++;
             }
             buf.append('}');
         } else if (isList(value)) {
             List<Value> list = asList(value);
-
-            int i = 0;
-            buf.append('[');
-            for (Value entry : list) {
-                if (i > 0) {
-                    buf.append(',');
-                }
-                buf.append('{').append(json(entry)).append('}');
-                i ++;
-            }
-            buf.append(']');
+            buf.append(json(list));
         } else {
             throw new IllegalStateException("Unknown data type (must be a Map or a List): " + value.data.getClass().getName());
         }
@@ -140,12 +158,12 @@ public class Value {
         return (value != null) && (value.data instanceof Map);
     }
 
-    public static Map<String, String> asMap(Value value) {
+    public static Map<String, Object> asMap(Value value) {
         if (!isMap(value)) {
             throw new IllegalStateException("Not a map: " + value);
         }
 
-        return (Map<String, String>)value.data;
+        return (Map<String, Object>)value.data;
     }
 
     public Map<String, String> asMap(Object ... path) {

@@ -108,12 +108,12 @@ public class Role {
             Result<Value> res = SerDe.parseYaml(metadata);
             if (isOk(res)) {
                 Value value = res.getValue();
-                for (Map.Entry<String, String> entry : asMap(value).entrySet()) {
+                for (Map.Entry<String, Object> entry : asMap(value).entrySet()) {
                     switch (entry.getKey()) {
-                        case "model" -> role.modelId = entry.getValue();
-                        case "temperature" -> role.temperature = Double.parseDouble(entry.getValue());
-                        case "top_p" -> role.topP = Double.parseDouble(entry.getValue());
-                        case "use_tools" -> role.useTools = entry.getValue();
+                        case "model" -> role.modelId = entry.getValue().toString();
+                        case "temperature" -> role.temperature = Double.parseDouble(entry.getValue().toString());
+                        case "top_p" -> role.topP = Double.parseDouble(entry.getValue().toString());
+                        case "use_tools" -> role.useTools = entry.getValue().toString();
                     }
                 }
             }

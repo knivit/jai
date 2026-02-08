@@ -1,0 +1,20 @@
+#
+# JAI
+#
+
+>>> POST /v1/chat/completions HTTP/1.1
+    Connection: Upgrade, HTTP2-Settings
+    Content-Length: 103
+    Host: localhost:11434
+    HTTP2-Settings: AAEAAEAAAAIAAAAAAAMAAAAAAAQBAAAAAAUAAEAAAAYABgAA
+    Upgrade: h2c
+    User-Agent: Java-http-client/25.0.1
+
+{"model":"lfm2.5-thinking","messages":[{"data":{"role":"User","content":"Hello !"}}],"stream":true}
+
+<<< HTTP/1.1 400 Bad Request
+    Content-Type: application/json; charset=utf-8
+    Date: Sun, 08 Feb 2026 21:40:18 GMT
+    Content-Length: 125
+
+{"error":{"message":"invalid message content type: \u003cnil\u003e","type":"invalid_request_error","param":null,"code":null}}
