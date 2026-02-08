@@ -1,7 +1,6 @@
 package com.tsoft.jai.reqwest;
 
 import com.tsoft.jai.anyhow.Result;
-import com.tsoft.jai.serdejson.SerDe;
 import com.tsoft.jai.serdejson.Value;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -72,7 +71,7 @@ public class RequestBuilder {
     }
 
     public RequestBuilder json(Value value) {
-        this.body = SerDe.toJsonString(value);
+        this.body = Value.json(value);
         return this;
     }
 

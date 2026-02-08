@@ -128,8 +128,7 @@ class MainTest {
 
         assertThat(getCapturedHttpRequests()).containsExactly(
             """
-            {"data":{"model":"lfm2.5-thinking","messages":[{"data":{"role":"User","content":"Hello !"}}],"stream":true}}
-            """
+            {"model":"lfm2.5-thinking","messages":[{"data":{"role":"User","content":"Hello !"}}],"stream":true}"""
         );
 
         assertThat(execute("--list-sessions")).isEqualTo("");
