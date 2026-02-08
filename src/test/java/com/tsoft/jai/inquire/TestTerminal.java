@@ -6,8 +6,9 @@ import org.jline.terminal.TerminalBuilder;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
-public class TestInquire {
+public class TestTerminal {
 
     private static final PipedInputStream terminalInput = new PipedInputStream();
     private static final PrintStream terminalInputStream = new PrintStream(terminalInputWriterStream(terminalInput));
@@ -19,17 +20,20 @@ public class TestInquire {
     }
 
     public static void newSession() {
-        newSession(null);
-    }
-
-    public static void newSession(String input) {
         // input
         Inquire.prompter = PrompterFactory.create(Inquire.terminal);
-        Inquire.lineReaderBuilder = new TestLineReaderFactory(Inquire.terminal, input);
 
         // output
         Inquire.writer = new TestWriter(output);
         output.reset();
+    }
+
+    public static void prepareInput(String input) {
+        prepareInputs(List.of(input));
+    }
+
+    public static void prepareInputs(List<String> inputs) {
+        Inquire.lineReaderBuilder = new TestLineReaderFactory(Inquire.terminal, inputs);
     }
 
     public static String getOutput() {

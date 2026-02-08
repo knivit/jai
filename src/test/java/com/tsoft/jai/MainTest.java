@@ -1,7 +1,7 @@
 package com.tsoft.jai;
 
 import com.tsoft.jai.anyhow.Result;
-import com.tsoft.jai.inquire.TestInquire;
+import com.tsoft.jai.inquire.TestTerminal;
 import com.tsoft.jai.reqwest.TestHttpClient;
 import com.tsoft.jai.utils.Asset;
 import com.tsoft.jai.utils.base.ListUtils;
@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.tsoft.jai.Main.main;
-import static com.tsoft.jai.reqwest.TestHttpClient.*;
+import static com.tsoft.jai.reqwest.TestHttpClient.getCapturedHttpRequests;
 import static com.tsoft.jai.testutils.TestStringUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -24,7 +24,7 @@ class MainTest {
 
     @BeforeAll
     static void beforeAll() {
-        TestInquire.init();
+        TestTerminal.init();
     }
 
     private String execute(String ... args) {
@@ -39,12 +39,12 @@ class MainTest {
         main(list.toArray(new String[] { }));
 
         // Return the gathered output
-        return normalize(TestInquire.getOutput(), CONFIG_DIR.getValue().toString(), "<dir>");
+        return normalize(TestTerminal.getOutput(), CONFIG_DIR.getValue().toString(), "<dir>");
     }
 
     @Test
     void main_list_models() {
-        TestInquire.newSession();
+        TestTerminal.newSession();
 
         assertThat(execute("--list-models")).isEqualTo("""
             ollama:lfm2.5-thinking
@@ -58,7 +58,7 @@ class MainTest {
 
     @Test
     void main_list_roles() {
-        TestInquire.newSession();
+        TestTerminal.newSession();
 
         assertThat(execute("--list-roles")).isEqualTo("""
             %code%
@@ -72,11 +72,17 @@ class MainTest {
 
     @Test
     void main_start_and_list_sessions() {
-        TestInquire.newSession();
+        TestTerminal.newSession();
+
         assertThat(execute("--list-sessions")).isEqualTo("\n");
 
-        TestInquire.newSession("Hello !");
-        TestHttpClient.newSession(
+        TestTerminal.newSession();
+
+        TestTerminal.prepareInput("Hello !");
+
+        TestHttpClient.newSession();
+
+        TestHttpClient.prepareResponses(
             """
             {
               "id": "chatcmpl-582",
@@ -115,13 +121,16 @@ class MainTest {
                 }
               ]
             }
-            """,
-            """
-            [DONE]
             """
         );
-        assertThat(execute("--session", "test")).isEqualTo("");
-        assertThat(getHttpRequest()).isEqualTo("");
+
+        assertThat(execute("--session", "test")).isEqualTo("\n\n");
+
+        assertThat(getCapturedHttpRequests()).containsExactly(
+            """
+            {"data":{"model":"lfm2.5-thinking","messages":[{"data":{"role":"User","content":"Hello !"}}],"stream":true}}
+            """
+        );
 
         assertThat(execute("--list-sessions")).isEqualTo("");
     }

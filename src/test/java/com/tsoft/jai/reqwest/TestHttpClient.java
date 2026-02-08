@@ -1,8 +1,5 @@
 package com.tsoft.jai.reqwest;
 
-import com.tsoft.jai.serdejson.SerDe;
-import lombok.Getter;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 import java.io.IOException;
@@ -13,28 +10,30 @@ import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 
-public class TestHttpClient extends HttpClient {
+import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 
-    @Getter
-    private static String httpRequest;
+public class TestHttpClient extends HttpClient {
 
     private static List<String> httpResponses;
 
-    private static final BlockingQueue<String> eventChannel = new ArrayBlockingQueue<>(100_000);
+    private static final BlockingQueue<String> eventChannel = new ArrayBlockingQueue<>(16);
 
-    public static void newSession(String ... responses) {
+    public static void newSession() {
         ReqwestClient.httpClientBuilder = new TestHttpClientBuilder();
+        RequestBuilder.getHttpBodyPublisher = TestHttpRequestBodyPublisher::getPublisher;
         EventSource.eventChannelFactory = new TestEventChannelFactory(eventChannel);
 
-        httpRequest = null;
+        TestHttpRequestBodyPublisher.clearRequests();
+        eventChannel.clear();
+    }
+
+    public static void prepareResponses(String ... responses) {
         httpResponses = Arrays.asList(responses);
     }
 
@@ -56,32 +55,34 @@ public class TestHttpClient extends HttpClient {
         }
     }
 
-    private List<ByteBuffer> toByteBuffers(String text) {
-        return List.of(ByteBuffer.wrap(text.getBytes(StandardCharsets.UTF_8)));
-    }
-
     @Override
     public <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler) {
-        httpRequest = SerDe.toJsonString(request);
-        HttpResponse.BodySubscriber<T> subscriber = responseBodyHandler.apply(new ResponseInfoImpl());
-        subscriber.onSubscribe(new Flow.Subscription() {
-            @Override
-            public void request(long n) {
-                //
-            }
+        // All the responses already sent
+        if (isEmpty(httpResponses)) {
+            CompletableFuture<HttpResponse<T>> future = new CompletableFuture<>();
+            future.complete(new TestHttpResponse<>(500));
+            return future;
+        }
 
-            @Override
-            public void cancel() {
-                //
-            }
-        });
+        responseBodyHandler.apply(new ResponseInfoImpl());
 
+        // Send all the SSE-responses to the channel
         for (String resp : httpResponses) {
             eventChannel.offer(resp);
         }
 
-        CompletableFuture<HttpResponse<T>> future = new CompletableFuture<>();//() -> new TestHttpResponse<>() );
+        // Clear sent responses
+        httpResponses = null;
+
+        // Send the final response
+        CompletableFuture<HttpResponse<T>> future = new CompletableFuture<>();
+        future.complete(new TestHttpResponse<>(200));
+
         return future;
+    }
+
+    public static List<String> getCapturedHttpRequests() {
+        return TestHttpRequestBodyPublisher.getCapturedHttpRequests();
     }
 
     @Override

@@ -10,6 +10,9 @@ import java.io.IOException;
 
 public class TestLineReader extends LineReaderImpl {
 
+    static final String USER_INTERRUPTION = "Ctrl+C";
+    static final String END_OF_FILE = "Ctrl+D";
+
     @Setter
     private String input;
 
@@ -19,6 +22,14 @@ public class TestLineReader extends LineReaderImpl {
 
     @Override
     public String readLine() throws UserInterruptException, EndOfFileException {
+        if (USER_INTERRUPTION.equals(input)) {
+            throw new UserInterruptException("");
+        }
+
+        if (END_OF_FILE.equals(input)) {
+            throw new EndOfFileException("");
+        }
+
         return input;
     }
 }

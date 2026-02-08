@@ -53,7 +53,7 @@ public class EventSource implements HttpResponse.BodySubscriber<Void> {
         }
 
         try {
-            String data = channel.take();      // blocks
+            String data = channel.take().trim();      // blocks
 
             if (DONE_MARKER.equals(data)) {
                 completed = true;
@@ -65,7 +65,7 @@ public class EventSource implements HttpResponse.BodySubscriber<Void> {
                 return Err(error.get());
             }
 
-            MessageEvent message = new MessageEvent().setData(data.trim());
+            MessageEvent message = new MessageEvent().setData(data);
             return Ok(Event.Message(message));
         } catch (Exception ex) {
             Thread.currentThread().interrupt();
@@ -100,6 +100,10 @@ public class EventSource implements HttpResponse.BodySubscriber<Void> {
     public Void onComplete(HttpResponse<?> response, Throwable ex) {
         if (ex != null) {
             onError(ex);
+        } else if (response != null && response.statusCode() >= 400) {
+            Object body = response.body();
+            String error = (body == null) ? "Unexpected error from LLM" : body.toString();
+            onError(response.statusCode(), error);
         } else {
             onComplete();
         }
@@ -113,7 +117,11 @@ public class EventSource implements HttpResponse.BodySubscriber<Void> {
 
     @Override
     public void onError(Throwable ex) {
-        error.set(EventSourceError.InvalidStatusCode(500, ex.getMessage()));
+        onError(500, ex.getMessage());
+    }
+
+    public void onError(int statusCode, String message) {
+        error.set(EventSourceError.InvalidStatusCode(statusCode, message));
         channel.offer(ERROR_MARKER);
     }
 

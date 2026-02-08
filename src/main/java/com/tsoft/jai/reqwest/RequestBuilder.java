@@ -13,6 +13,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import static com.tsoft.jai.anyhow.Result.Err;
 import static com.tsoft.jai.anyhow.Result.Ok;
@@ -28,6 +29,8 @@ public class RequestBuilder {
         GET,
         POST
     }
+
+    public static Function<String, HttpRequest.BodyPublisher> getHttpBodyPublisher = HttpRequest.BodyPublishers::ofString;
 
     private final HttpRequest.Builder httpRequestBuilder = HttpRequest.newBuilder();
 
@@ -75,10 +78,9 @@ public class RequestBuilder {
 
     public Result<Response> send() {
         try {
-            HttpRequest request = httpRequest();
+            HttpRequest request = buildHttpRequest();
             HttpResponse<String> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            Response response = new Response(StatusCode.of(httpResponse.statusCode()))
-                .setValue(httpResponse.body());
+            Response response = new Response(StatusCode.of(httpResponse.statusCode())).setValue(httpResponse.body());
             return Ok(response);
         } catch (Exception ex) {
             return Err(ex);
@@ -86,17 +88,17 @@ public class RequestBuilder {
     }
 
     public EventSource eventSource() {
-        HttpRequest request = httpRequest();
+        HttpRequest request = buildHttpRequest();
         EventSource eventSource = new EventSource();
         CompletableFuture<HttpResponse<Void>> future = httpClient.sendAsync(request, HttpResponse.BodyHandlers.fromSubscriber(eventSource));
         future.whenComplete(eventSource::onComplete);
         return eventSource;
     }
 
-    private HttpRequest httpRequest() {
+    private HttpRequest buildHttpRequest() {
         return switch (httpMethod) {
             case GET -> httpRequestBuilder.GET().build();
-            case POST -> httpRequestBuilder.POST(HttpRequest.BodyPublishers.ofString(body)).build();
+            case POST -> httpRequestBuilder.POST(getHttpBodyPublisher.apply(body)).build();
         };
     }
 }

@@ -1,5 +1,9 @@
 package com.tsoft.jai.reqwest;
 
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
+
 import javax.net.ssl.SSLSession;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -8,11 +12,17 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Optional;
 
+@Data
+@Accessors(chain = true)
+@RequiredArgsConstructor
 public class TestHttpResponse<T> implements HttpResponse<T> {
+
+    private final int statusCode;
+    private T body;
 
     @Override
     public int statusCode() {
-        return 0;
+        return statusCode;
     }
 
     @Override
@@ -32,7 +42,7 @@ public class TestHttpResponse<T> implements HttpResponse<T> {
 
     @Override
     public T body() {
-        return null;
+        return body;
     }
 
     @Override

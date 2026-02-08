@@ -19,8 +19,8 @@ import static com.tsoft.jai.utils.base.StringUtils.*;
 @Slf4j
 public class SerDe {
 
-    private static final JsonMapper jsonMapper = new JsonMapper();
-    private static final YAMLMapper yamlMapper = new YAMLMapper();
+    private static final ObjectMapper jsonMapper = new JsonMapper();
+    private static final ObjectMapper yamlMapper = new YAMLMapper();
 
     public static Result<Value> parseJson(String text) {
         return parse(text, jsonMapper);
