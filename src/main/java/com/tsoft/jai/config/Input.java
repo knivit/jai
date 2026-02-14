@@ -27,7 +27,7 @@ import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.client.macros.Macros.initClient;
 import static com.tsoft.jai.client.message.Message.patchMessages;
 import static com.tsoft.jai.inquire.Inquire.println;
-import static com.tsoft.jai.inquire.prompt.Spinner.abortableRunWithSpinner;
+import static com.tsoft.jai.inquire.spinner.Spinner.abortableRunWithSpinner;
 import static com.tsoft.jai.utils.Crypto.base64Encode;
 import static com.tsoft.jai.utils.Crypto.sha256;
 import static com.tsoft.jai.utils.Mod.isUrl;

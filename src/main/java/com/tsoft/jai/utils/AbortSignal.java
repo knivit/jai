@@ -1,9 +1,16 @@
 package com.tsoft.jai.utils;
 
+import com.tsoft.jai.anyhow.Result;
+import com.tsoft.jai.inquire.event.Event;
+import com.tsoft.jai.inquire.event.EventKey;
+import com.tsoft.jai.inquire.event.KeyModifiers;
 import com.tsoft.jai.tokio.Time;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static com.tsoft.jai.anyhow.Result.Ok;
+import static com.tsoft.jai.anyhow.Result.isOk;
 
 public class AbortSignal {
 
@@ -73,7 +80,7 @@ public class AbortSignal {
         ctrld.set(false);
     }
 
-    //  pub fn set_ctrlc(&self) {
+    // pub fn set_ctrlc(&self) {
     //     self.ctrlc.store(true, Ordering::SeqCst);
     // }
     public void setCtrlC() {
@@ -85,5 +92,45 @@ public class AbortSignal {
     // }
     public void setCtrlD() {
         ctrld.set(true);
+    }
+
+    // pub fn poll_abort_signal(abort_signal: &AbortSignal) -> Result<bool> {
+    //    if crossterm::event::poll(Duration::from_millis(25))? {
+    //        if let Event::Key(key) = event::read()? {
+    //            match key.code {
+    //                KeyCode::Char('c') if key.modifiers == KeyModifiers::CONTROL => {
+    //                    abort_signal.set_ctrlc();
+    //                    return Ok(true);
+    //                }
+    //                KeyCode::Char('d') if key.modifiers == KeyModifiers::CONTROL => {
+    //                    abort_signal.set_ctrld();
+    //                    return Ok(true);
+    //                }
+    //                _ => {}
+    //            }
+    //        }
+    //    }
+    //    Ok(false)
+    // }
+    public static Result<Boolean> pollAbortSignal(AbortSignal abortSignal) {
+        Result<Boolean> res = Event.poll(Duration.ofMillis(25));
+        if (isOk(res)) {
+            Result<EventKey> evt = Event.read();
+            if (isOk(evt)) {
+                EventKey key = evt.getValue();
+                if ('c' == key.getCode()) {
+                    if (KeyModifiers.CONTROL.equals(key.getKeyModifiers())) {
+                        abortSignal.setCtrlC();
+                        return Ok(true);
+                    }
+                } else if ('d' == key.getCode()) {
+                    if (KeyModifiers.CONTROL.equals(key.getKeyModifiers())) {
+                        abortSignal.setCtrlD();
+                        return Ok(true);
+                    }
+                }
+            }
+        }
+        return Ok(false);
     }
 }

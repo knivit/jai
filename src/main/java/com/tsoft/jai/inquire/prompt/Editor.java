@@ -47,7 +47,7 @@ public class Editor {
         LineReader lineReader = lineReaderBuilder.build();
 
         try {
-            String line = lineReader.readLine();
+            String line = lineReader.readLine("> ");
             return Signal.Success(line);
         } catch (UserInterruptException e) {
             return Signal.CtrlC();

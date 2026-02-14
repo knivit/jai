@@ -39,7 +39,7 @@ public class Result<T> {
     }
 
     public static <T, E> Result<T> Err(E errValue) {
-        return new Result<T>(ResultEnum.Err).setErr(new Error<E>(errValue));
+        return new Result<T>(ResultEnum.Err).setErr(new Error<>(errValue));
     }
 
     public static <T> Result<T> Err(Exception exception) {

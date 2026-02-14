@@ -5,6 +5,7 @@ import org.jline.prompt.Prompter;
 import org.jline.prompt.PrompterFactory;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
+import org.jline.terminal.Size;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
@@ -30,6 +31,10 @@ public final class Inquire {
         writer = terminal.writer();
     }
 
+    public static Size terminalSize() {
+        return terminal.getSize();
+    }
+
     public interface LineReaderFactory {
 
         LineReader build();
@@ -46,6 +51,7 @@ public final class Inquire {
                 .variable(LineReader.EDITING_MODE, "emacs"));
         }
 
+        @Override
         public LineReader build() {
             return builder.build();
         }
@@ -92,6 +98,10 @@ public final class Inquire {
     }
 
     public static void enableRawMode() {
+
+    }
+
+    public static void disableRawMode() {
 
     }
 }
