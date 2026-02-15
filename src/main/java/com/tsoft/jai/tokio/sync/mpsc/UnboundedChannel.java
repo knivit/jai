@@ -42,6 +42,7 @@ public class UnboundedChannel<T> {
             if (item != null) {
                 return item;
             }
+
             if (closed.get()) {
                 return Err(TryRecvError.Closed());
             }

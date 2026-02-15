@@ -23,6 +23,7 @@ import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.inquire.spinner.Spinner.abortableRunWithSpinner;
 import static com.tsoft.jai.render.Mod.renderStream;
 import static com.tsoft.jai.tokio.Join.join;
+import static com.tsoft.jai.tokio.sync.mpsc.Unbounded.unboundedChannel;
 import static com.tsoft.jai.utils.Mod.extractCodeBlock;
 import static com.tsoft.jai.utils.Mod.stripThinkTag;
 import static com.tsoft.jai.utils.base.StringUtils.isBlank;
@@ -120,8 +121,9 @@ public class Common {
     //    }
     // }
     public static Result<Tuple<String, List<ToolResult>>> callChatCompletionsStreaming(Input input, Client client, AbortSignal abortSignal) {
-        UnboundedSender<SseEvent> tx = new UnboundedSender<>();
-        UnboundedReceiver<SseEvent> rx = new UnboundedReceiver<>();
+        Tuple<UnboundedSender<SseEvent>, UnboundedReceiver<SseEvent>> utuple = unboundedChannel();
+        UnboundedSender<SseEvent> tx = utuple.first();
+        UnboundedReceiver<SseEvent> rx = utuple.second();
         SseHandler handler = new SseHandler(tx, abortSignal);
 
         TupleN tupleN = join(

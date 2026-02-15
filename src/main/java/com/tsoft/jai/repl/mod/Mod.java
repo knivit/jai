@@ -6,7 +6,7 @@ import com.tsoft.jai.config.*;
 import com.tsoft.jai.config.agent.Agent;
 import com.tsoft.jai.core.macros.BuiltIn;
 import com.tsoft.jai.function.ToolResult;
-import com.tsoft.jai.tokio.Time;
+import com.tsoft.jai.tokio.time.Time;
 import com.tsoft.jai.utils.AbortSignal;
 import com.tsoft.jai.utils.base.Tuple;
 

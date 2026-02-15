@@ -1,9 +1,9 @@
 package com.tsoft.jai.inquire.spinner;
 
 import com.tsoft.jai.anyhow.Result;
-import com.tsoft.jai.tokio.Select;
 import com.tsoft.jai.tokio.sync.oneshot.Oneshot;
-import com.tsoft.jai.tokio.Time;
+import com.tsoft.jai.tokio.time.Interval;
+import com.tsoft.jai.tokio.time.Time;
 import com.tsoft.jai.tokio.Tokio;
 import com.tsoft.jai.tokio.sync.oneshot.Receiver;
 import com.tsoft.jai.tokio.sync.oneshot.Sender;
@@ -19,6 +19,7 @@ import org.jline.keymap.BindingReader;
 import java.time.Duration;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
@@ -36,10 +37,6 @@ import static java.util.concurrent.CompletableFuture.supplyAsync;
 public class Spinner {
 
     private final UnboundedSender<SpinnerEvent> tx;
-
-    private String message;
-
-    private volatile boolean active = false;
 
     // pub fn create(message: &str) -> (Self, UnboundedReceiver<SpinnerEvent>) {
     //    let (tx, spinner_rx) = mpsc::unbounded_channel();
@@ -113,28 +110,33 @@ public class Spinner {
 
         Tokio.spawn(() -> {
             SpinnerInner spinnerInner = SpinnerInner.getDefault();
-            Duration interval = Duration.ofMillis(50);
-            while (true) {
+            Interval interval = new Interval(Duration.ofMillis(50));
+
+            AtomicBoolean done = new AtomicBoolean();
+            while (!done.get()) {
                 Tokio.select(
                     branch(supplyAsync(() -> spinnerRx.recv()),
-                      res -> {
-                        if (isOk(res)) {
-                            SpinnerEvent evt = res.getValue();
+                        res -> {
                             if (SpinnerEvent.isSetMessage(res)) {
+                                SpinnerEvent evt = (SpinnerEvent)res.getValue();
                                 String msg = evt.getMessage();
                                 spinnerInner.setMessage(msg);
                             } else if (SpinnerEvent.isStop(res)) {
                                 spinnerInner.clearMessage();
                                 // ? break;
                             }
-                        }
-                    }),
-                    branch(supplyAsync(() -> {
-                        
-                    }))
-                );
+                            return Ok();
+                        }),
+
+                    branch(supplyAsync(() -> interval.tick()),
+                        res -> {
+                            spinnerInner.step();
+                            return Ok();
+                        }));
             }
+            return Ok();
         });
+        return spinner;
     }
 
     // pub async fn abortable_run_with_spinner<F, T>(
@@ -202,6 +204,7 @@ public class Spinner {
                         doneTx.send(Ok());
                         return ret;
                     }),
+
                     branch(supplyAsync(() -> {
                         BindingReader bindingReader = new BindingReader(terminal.reader());
                         try {
@@ -219,6 +222,7 @@ public class Spinner {
                         doneTx.send(Ok());
                         return bail("Aborted.");
                     }),
+
                     branch(supplyAsync(() -> {
                         waitAbortSignal(abortSignal);
                         return Ok();
@@ -294,7 +298,7 @@ public class Spinner {
             Time.sleep(Duration.ofMillis(25));
 
             Result<?> cRes = doneRx.tryRecv();
-            if (isOk(cRes) || (isErr(cRes) && TryRecvError.isClosed(cRes.getErr()))) {
+            if (isOk(cRes) || (isErr(cRes) && TryRecvError.isClosed(cRes))) {
                 break;
             }
 

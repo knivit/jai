@@ -2,14 +2,17 @@ package com.tsoft.jai.render;
 
 import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.stream.SseEvent;
+import com.tsoft.jai.inquire.spinner.Spinner;
 import com.tsoft.jai.render.markdown.MarkdownRender;
 import com.tsoft.jai.tokio.sync.mpsc.UnboundedReceiver;
 import com.tsoft.jai.utils.AbortSignal;
 
 import java.io.PrintWriter;
 
-import static com.tsoft.jai.anyhow.Result.isErr;
+import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.inquire.Inquire.*;
+import static com.tsoft.jai.inquire.spinner.Spinner.spawnSpinner;
+import static com.tsoft.jai.utils.AbortSignal.pollAbortSignal;
 
 public class Stream {
 
@@ -182,6 +185,19 @@ public class Stream {
 
         int columns = terminalSize().getColumns();
 
+        Spinner spinner = spawnSpinner("Generating");
 
+        while (true) {
+            if (abortSignal.aborted()) {
+                break;
+            }
+
+            Result<Boolean> res = pollAbortSignal(abortSignal);
+            if (isOk(res) && Boolean.TRUE.equals(res.getValue())) {
+                break;
+            }
+        }
+
+        return Ok();
     }
 }

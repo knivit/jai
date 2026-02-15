@@ -1,13 +1,11 @@
 package com.tsoft.jai.tokio;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
-public class Spawn {
+import static java.util.concurrent.CompletableFuture.supplyAsync;
 
-    private static final Executor SPAWN_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
+public class Spawn {
 
     // Spawn function (analogous to tokio::spawn)
     //
@@ -22,16 +20,14 @@ public class Spawn {
     //    let result = handle.await.unwrap();
     //    println!("Result: {}", result);
     // }
-    public static <T> CompletableFuture<T> spawn(Supplier<CompletableFuture<T>> taskSupplier) {
-        return CompletableFuture.supplyAsync(
+    public static <T> CompletableFuture<T> spawn(Supplier<T> taskSupplier) {
+        return supplyAsync(
             () -> {
                 try {
-                    return taskSupplier.get().join();
+                    return taskSupplier.get();
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
-            },
-            SPAWN_EXECUTOR
-        );
+            });
     }
 }

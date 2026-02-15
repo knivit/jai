@@ -4,7 +4,7 @@ import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.inquire.event.Event;
 import com.tsoft.jai.inquire.event.EventKey;
 import com.tsoft.jai.inquire.event.KeyModifiers;
-import com.tsoft.jai.tokio.Time;
+import com.tsoft.jai.tokio.time.Time;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;

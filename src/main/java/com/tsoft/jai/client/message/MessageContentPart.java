@@ -3,6 +3,7 @@ package com.tsoft.jai.client.message;
 import lombok.*;
 import lombok.experimental.Accessors;
 
+import static com.tsoft.jai.core.Panic.panic;
 import static com.tsoft.jai.utils.base.StringUtils.format;
 
 @Getter
@@ -18,7 +19,6 @@ public class MessageContentPart {
 
     private final MessageContentPartEnum type;
 
-    @Setter
     private String text;
     private ImageUrl imageUrl;
 
@@ -28,6 +28,15 @@ public class MessageContentPart {
 
     public static MessageContentPart ImageUrl(ImageUrl imageUrl) {
         return new MessageContentPart(MessageContentPartEnum.ImageUrl).setImageUrl(imageUrl);
+    }
+
+    public MessageContentPart setText(String text) {
+        if (MessageContentPartEnum.Text.equals(type)) {
+            this.text = text;
+        } else {
+            panic();
+        }
+        return this;
     }
 
     @Override

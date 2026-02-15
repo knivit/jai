@@ -8,16 +8,16 @@ import java.util.function.Function;
 public final class Select {
 
     public static final class Branch<T> {
-        final CompletableFuture<? extends T> future;
-        final Function<? super T, ? extends T> handler;
+        private final CompletableFuture<T> future;
+        private final Function<T, T> handler;
 
-        private Branch(CompletableFuture<? extends T> f, Function<? super T, ? extends T> h) {
+        private Branch(CompletableFuture<T> f, Function<T, T> h) {
             this.future = f;
             this.handler = h;
         }
     }
 
-    public static <T> Branch<T> branch(CompletableFuture<? extends T> f, Function<? super T, ? extends T> h) {
+    public static <T> Branch<T> branch(CompletableFuture<T> f, Function<T, T> h) {
         return new Branch<>(f, h);
     }
 

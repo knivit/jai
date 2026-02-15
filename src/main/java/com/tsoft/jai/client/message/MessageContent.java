@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
+import static com.tsoft.jai.core.Panic.panic;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.base.StringUtils.format;
 
@@ -25,7 +26,6 @@ public class MessageContent {
 
     private final MessageContentEnum type;
 
-    @Setter
     private String text;
     private List<MessageContentPart> array;
 
@@ -34,6 +34,15 @@ public class MessageContent {
 
     public static MessageContent Text(String text) {
         return new MessageContent(MessageContentEnum.Text).setText(text);
+    }
+
+    public MessageContent setText(String text) {
+        if (MessageContentEnum.Text.equals(type)) {
+            this.text = text;
+        } else {
+            panic();
+        }
+        return this;
     }
 
     public static MessageContent Array(List<MessageContentPart> array) {

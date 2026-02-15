@@ -219,6 +219,7 @@ public abstract class Client {
                 handler.done();
                 return ret.withContext(() -> "Failed to call chat-completions api");
             }),
+
             branch(supplyAsync(() -> {
                 waitAbortSignal(abortSignal);
                 return Ok();

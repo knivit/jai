@@ -1,10 +1,13 @@
 package com.tsoft.jai.tokio.sync;
 
+import com.tsoft.jai.anyhow.Result;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+
+import static com.tsoft.jai.anyhow.Result.isErr;
 
 @Getter
 @Setter(AccessLevel.PRIVATE)
@@ -28,7 +31,7 @@ public class TryRecvError {
         return new TryRecvError(TryRecvErrorEnum.Closed);
     }
 
-    public static boolean isClosed(com.tsoft.jai.anyhow.Error<?> err) {
-        return (err != null) && (err.getErrValue() instanceof TryRecvError tre) && (TryRecvErrorEnum.Closed.equals(tre.getType()));
+    public static boolean isClosed(Result<?> res) {
+        return isErr(res) && (res.getErr() != null) && (res.getErr().getErrValue() instanceof TryRecvError tre) && (TryRecvErrorEnum.Closed.equals(tre.getType()));
     }
 }
