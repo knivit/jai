@@ -136,6 +136,8 @@ class MainTest {
 
     @Test
     void main_info() {
+        TestTerminal.newSession();
+
         assertThat(execute("--info")).isEqualTo("""
             model                   ollama:lfm2.5-thinking
             temperature             null

@@ -34,8 +34,12 @@ public final class StringUtils {
     }
 
     public static String format(String text, Object ... args) {
-        if (text == null || args == null) {
+        if (text == null) {
             return null;
+        }
+
+        if (args == null) {
+            return "null";
         }
 
         for (int i = 0; i < args.length; i ++) {

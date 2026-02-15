@@ -36,7 +36,7 @@ class StringUtilsTest {
         assertEquals(null, format(null));
         assertEquals(null, format(null, null));
         assertEquals("{}", format("{}"));
-        assertEquals("{}", format("{}", null));
+        assertEquals("null", format("{}", null));
         assertEquals(null, format(null, "a"));
         assertEquals("", format("", "a"));
         assertEquals("a", format("{}", "a"));
