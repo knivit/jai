@@ -33,6 +33,9 @@ import static com.tsoft.jai.utils.command.Command.SHELL;
 
 public class Main {
 
+    public static final String CARGO_CRATE_NAME = "Jai";
+    public static final String CARGO_PKG_VERSION = "0.30.0";
+
     // #[tokio::main]
     // async fn main() -> Result<()> {
     //    load_env_file()?;

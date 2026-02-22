@@ -7,6 +7,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.tsoft.jai.Main.CARGO_CRATE_NAME;
+import static com.tsoft.jai.Main.CARGO_PKG_VERSION;
 import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.base.StringUtils.format;
@@ -398,10 +400,7 @@ public class Cli {
     }
 
     private void version() {
-        println("""
-            jai 0.30.0
-            """);
-
+        println("{} {}", CARGO_CRATE_NAME, CARGO_PKG_VERSION);
         System.exit(0);
     }
 

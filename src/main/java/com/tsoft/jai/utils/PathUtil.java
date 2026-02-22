@@ -1,6 +1,7 @@
 package com.tsoft.jai.utils;
 
 import com.tsoft.jai.anyhow.Result;
+import com.tsoft.jai.core.Option;
 import com.tsoft.jai.utils.base.Triple;
 
 import java.io.File;
@@ -8,6 +9,8 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
 
+import static com.tsoft.jai.core.Option.None;
+import static com.tsoft.jai.core.Option.Some;
 import static com.tsoft.jai.std.Fs.readDir;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.base.StringUtils.isBlank;
@@ -227,15 +230,14 @@ public final class PathUtil {
     //        .extension()
     //        .map(|v| v.to_string_lossy().to_lowercase())
     // }
-    public static String getPatchExtension(String path) {
-        if (path == null) {
-            return null;
+    public static Option<String> getPatchExtension(String path) {
+        if (path != null) {
+            int n = path.lastIndexOf('.');
+            if (n != -1) {
+                return Some(path.substring(n + 1).toLowerCase());
+            }
         }
-        int n = path.lastIndexOf('.');
-        if (n != -1) {
-            return path.substring(n + 1).toLowerCase();
-        }
-        return null;
+        return None();
     }
 
     private PathUtil() { }

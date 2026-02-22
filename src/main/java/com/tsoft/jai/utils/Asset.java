@@ -1,7 +1,6 @@
 package com.tsoft.jai.utils;
 
 import com.tsoft.jai.anyhow.Result;
-import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -12,7 +11,6 @@ import static com.tsoft.jai.anyhow.Result.Ok;
 import static com.tsoft.jai.std.Fs.readDir;
 import static com.tsoft.jai.utils.base.StringUtils.format;
 
-@Slf4j
 public final class Asset {
 
     private Asset() { }

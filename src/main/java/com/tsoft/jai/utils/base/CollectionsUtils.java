@@ -5,6 +5,10 @@ import java.util.Map;
 
 public final class CollectionsUtils {
 
+    public static boolean isEmpty(String str) {
+        return (str == null) || str.isEmpty();
+    }
+
     public static boolean isEmpty(Map<?, ?> map) {
         return (map == null) || map.isEmpty();
     }

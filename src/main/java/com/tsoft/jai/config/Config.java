@@ -5,8 +5,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.client.model.ModelType;
+import com.tsoft.jai.client.model.ProviderModels;
 import com.tsoft.jai.config.agent.Agent;
 import com.tsoft.jai.config.role.RoleLike;
+import com.tsoft.jai.core.Option;
+import com.tsoft.jai.dirs.Dirs;
 import com.tsoft.jai.function.FunctionDeclaration;
 import com.tsoft.jai.function.Functions;
 import com.tsoft.jai.function.ToolResult;
@@ -17,6 +20,7 @@ import com.tsoft.jai.rag.Rag;
 import com.tsoft.jai.render.markdown.RenderOptions;
 import com.tsoft.jai.serdejson.SerDe;
 import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serdeyaml.SerDeYaml;
 import com.tsoft.jai.utils.AbortSignal;
 import com.tsoft.jai.utils.base.Tuple;
 import lombok.Data;
@@ -26,17 +30,21 @@ import lombok.experimental.Accessors;
 import java.io.File;
 import java.nio.file.*;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static com.tsoft.jai.Main.CARGO_CRATE_NAME;
+import static com.tsoft.jai.Main.CARGO_PKG_VERSION;
 import static com.tsoft.jai.anyhow.Macros.anyhow;
 import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.client.macros.Macros.listModels;
 import static com.tsoft.jai.config.Mod.RAG_TEMPLATE;
-import static com.tsoft.jai.core.Option.unwrapOr;
 import static com.tsoft.jai.inquire.Inquire.IS_STDOUT_TERMINAL;
 import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.std.Fs.readDir;
+import static com.tsoft.jai.std.Fs.readToString;
+import static com.tsoft.jai.utils.Mod.getEnvName;
 import static com.tsoft.jai.utils.PathUtil.listFileNames;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.base.NumberUtils.parseInt;
@@ -234,6 +242,33 @@ public class Config {
         return config;
     }
 
+    // pub fn config_dir() -> PathBuf {
+    //    if let Ok(v) = env::var(get_env_name("config_dir")) {
+    //        PathBuf::from(v)
+    //    } else if let Ok(v) = env::var("XDG_CONFIG_HOME") {
+    //        PathBuf::from(v).join(env!("CARGO_CRATE_NAME"))
+    //    } else {
+    //        let dir = dirs::config_dir().expect("No user's config directory");
+    //        dir.join(env!("CARGO_CRATE_NAME"))
+    //    }
+    // }
+    public static Path configDir() {
+        String v = System.getenv(getEnvName("config_dir"));
+        if (v != null) {
+            return Path.of(v);
+        } else {
+            Path dir = Dirs.configDir().expect("No user's config directory");
+            return dir.resolve(CARGO_CRATE_NAME);
+        }
+    }
+
+    // pub fn local_path(name: &str) -> PathBuf {
+    //    Self::config_dir().join(name)
+    // }
+    public static Path localPath(String name) {
+        return configDir().resolve(name);
+    }
+
     private static File configFile(String configFile) {
         if (!isBlank(configFile)) {
             return Paths.get(configFile).toAbsolutePath().toFile();
@@ -399,16 +434,21 @@ public class Config {
     //    }
     //    Ok(())
     // }
-    public void newRole(String name) {
+    public Result<?> newRole(String name) {
         if (macroFlag) {
-            bail("No role");
+            return bail("No role");
         }
-        boolean ans = new Confirm("Create a new role?").setDefaultValue(true).prompt();
+        Result<Boolean> res = new Confirm("Create a new role?").setDefaultValue(true).prompt();
+        if (isErr(res)) {
+            return Err(res);
+        }
+        boolean ans = res.getValue();
         if (ans) {
             upsertRole(name);
         } else {
-            bail("No role");
+            return bail("No role");
         }
+        return Ok();
     }
 
     // pub fn upsert_role(&mut self, name: &str) -> Result<()> {
@@ -421,13 +461,17 @@ public class Config {
     //    }
     //    Ok(())
     // }
-    public void upsertRole(String name) {
+    public Result<?> upsertRole(String name) {
         File rolePath = roleFile(name);
-        ensureParentExists(rolePath);
+        Result<?> res = ensureParentExists(rolePath);
+        if (isErr(res)) {
+            return Err(res);
+        }
         editFile(editor, rolePath);
         if (WorkingMode.Repl.equals(workingMode)) {
             println("✓ Saved the role to '{}'.", rolePath.toString());
         }
+        return Ok();
     }
 
     // pub fn roles_dir() -> PathBuf {
@@ -454,6 +498,13 @@ public class Config {
 
     public Path agentFunctionsDir(String agentName) {
         return configPath.resolve(FUNCTIONS_DIR_NAME).resolve(agentName);
+    }
+
+    // pub fn models_override_file() -> PathBuf {
+    //    Self::local_path("models-override.yaml")
+    // }
+    public static Path modelsOverrideFile() {
+        return localPath("models-override.yaml");
     }
 
     // pub fn agent_rag_file(agent_name: &str, rag_name: &str) -> PathBuf {
@@ -637,9 +688,15 @@ public class Config {
         rag = agent.getRag();
         this.agent = agent;
         if (!isBlank(session)) {
-            useSession(session);
+            Result<?> ret = useSession(session);
+            if (isErr(ret)) {
+                return Err(ret);
+            }
         } else {
-            initAgentSharedVariables();
+            Result<?> ret = initAgentSharedVariables();
+            if (isErr(ret)) {
+                return Err(ret);
+            }
         }
 
         return Ok();
@@ -787,20 +844,19 @@ public class Config {
     //        bail!("No role")
     //    }
     // }
-    public String roleInfo() {
+    public Result<String> roleInfo() {
         if (session != null) {
             if (!isBlank(session.getRoleName())) {
                 Role role = session.toRole();
-                return role.export();
+                return Ok(role.export());
             } else {
-                bail("No session role");
+                return bail("No session role");
             }
         } else if (role != null) {
-            return role.export();
+            return Ok(role.export());
         } else {
-            bail("No role");
+            return bail("No role");
         }
-        return null;
     }
 
     // pub fn save_role(&mut self, name: Option<&str>) -> Result<()> {
@@ -933,11 +989,18 @@ public class Config {
                 boolean continuous = lastMessage.isContinuous();
                 if (continuous && !isBlank(output)
                     && ((agent != null && input.isWithAgent()) || (agent == null && !input.isWithAgent()))) {
-                    boolean ans = new Confirm("Start a session that incorporates the last question and answer?")
+                    Result<Boolean> res = new Confirm("Start a session that incorporates the last question and answer?")
                         .setDefaultValue(false)
                         .prompt();
+                    if (isErr(res)) {
+                        return Err(res);
+                    }
+                    boolean ans = res.getValue();
                     if (ans) {
-                        session.addMessage(input, output);
+                        Result<?> ret = session.addMessage(input, output);
+                        if (isErr(ret)) {
+                            return Err(ret);
+                        }
                     }
                 }
             }
@@ -965,14 +1028,13 @@ public class Config {
     //        bail!("No session")
     //    }
     // }
-    public String sessionInfo() {
+    public Result<String> sessionInfo() {
         if (session != null) {
             RenderOptions renderOptions = renderOptions();
             return null;
         } else {
-            bail("No session");
+            return bail("No session");
         }
-        return null;
     }
 
     // pub fn save_session(&mut self, name: Option<&str>) -> Result<()> {
@@ -1049,10 +1111,9 @@ public class Config {
     //    config.write().rag = Some(Arc::new(rag));
     //    Ok(())
     // }
-    public void useRag(String name, AbortSignal abortSignal) {
+    public Result<?> useRag(String name, AbortSignal abortSignal) {
         if (agent != null) {
-            bail("Cannot perform this operation because you are using a agent");
-            return;
+            return bail("Cannot perform this operation because you are using a agent");
         }
 
         Rag rag;
@@ -1068,8 +1129,7 @@ public class Config {
             File ragPath = ragFile(name);
             if (!ragPath.exists()) {
                 if (WorkingMode.isCmd(workingMode)) {
-                    bail("Unknown RAG '{}'", name);
-                    return;
+                    return bail("Unknown RAG '{}'", name);
                 }
                 rag = Rag.init(this, name, ragPath, Collections.emptyList(), abortSignal);
             } else {
@@ -1078,6 +1138,7 @@ public class Config {
         }
 
         this.rag = rag;
+        return Ok();
     }
 
     // pub fn rag_template(&self, embeddings: &str, text: &str) -> String {
@@ -1094,7 +1155,8 @@ public class Config {
         if (isBlank(embeddings)) {
             return text;
         }
-        return unwrapOr(ragTemplate, RAG_TEMPLATE)
+        return new Option<>(ragTemplate)
+            .unwrapOr(RAG_TEMPLATE)
             .replace("__CONTEXT__", embeddings)
             .replace("__INPUT__", text);
     }
@@ -1181,9 +1243,9 @@ public class Config {
     //    }
     //    Ok(())
     // }
-    private void initAgentSharedVariables() {
+    private Result<?> initAgentSharedVariables() {
         if (agent == null) {
-            return;
+            return Ok();
         }
 
         if (!isEmpty(agent.definedVariables()) && isEmpty(agent.getSharedVariables())) {
@@ -1192,13 +1254,20 @@ public class Config {
                 configVariables.putAll(agentVariables);
             }
 
-            Map<String, String> newVariables = Agent.initAgentVariables(agent.definedVariables(), configVariables, infoFlag);
+            Result<Map<String, String>> res = Agent.initAgentVariables(agent.definedVariables(), configVariables, infoFlag);
+            if (isErr(res)) {
+                return Err(res);
+            }
+            Map<String, String> newVariables = res.getValue();
             agent.setSharedVariables(newVariables);
         }
-
         if (!infoFlag) {
-            agent.updateSharedDynamicInstructions(false);
+            Result<?> res = agent.updateSharedDynamicInstructions(false);
+            if (isErr(res)) {
+                return Err(res);
+            }
         }
+        return Ok();
     }
 
     // pub fn set_model(&mut self, model_id: &str) -> Result<()> {
@@ -1466,14 +1535,14 @@ public class Config {
     //    config.write().rag = Some(Arc::new(rag));
     //    Ok(())
     // }
-    public static void rebuildRag(Config config, AbortSignal abortSignal) {
+    public static Result<?> rebuildRag(Config config, AbortSignal abortSignal) {
         Rag rag = config.getRag();
         if (rag == null) {
-            bail("No RAG");
-            return;
+            return bail("No RAG");
         }
         List<String> documentPaths = rag.documentPaths();
         rag.refreshDocumentPaths(documentPaths, true, config, abortSignal);
+        return Ok();
     }
 
     // #[async_recursion::async_recursion]
@@ -2095,15 +2164,23 @@ public class Config {
     //
     //    Ok(())
     // }
-    private static void createConfigFile(File configFile) {
-        boolean ans = new Confirm("No config file, create a new one?")
+    private static Result<?> createConfigFile(File configFile) {
+        Result<Boolean> res = new Confirm("No config file, create a new one?")
             .setDefaultValue(true)
             .prompt();
+        if (isErr(res)) {
+            return Err(res);
+        }
+        boolean ans = res.getValue();
         if (!ans) {
             System.exit(0);
         }
 
-        String client = new Select("API Provider (required):", listClientTypes()).prompt();
+        Result<String> ret = new Select("API Provider (required):", listClientTypes()).prompt();
+        if (isErr(ret)) {
+            return Err(ret);
+        }
+        String client = ret.getValue();
 
         Value config = new Value();
         createClientConfig(config, client);
@@ -2119,6 +2196,8 @@ public class Config {
         }
 
         println("✓ Saved the config file to '{}'.\n", configFile.getAbsolutePath());
+
+        return Ok();
     }
 
     // fn load_from_file(config_path: &Path) -> Result<Self> {
@@ -2148,6 +2227,40 @@ public class Config {
         return SerDe.readFromYamlFile(configPath, Config.class);
     }
 
+    // pub fn loal_models_override() -> Result<Vec<ProviderModels>> {
+    //    let model_override_path = Self::models_override_file();
+    //    let err = || {
+    //        format!(
+    //            "Failed to load models at '{}'",
+    //            model_override_path.display()
+    //        )
+    //    };
+    //    let content = read_to_string(&model_override_path).with_context(err)?;
+    //    let models_override: ModelsOverride = serde_yaml::from_str(&content).with_context(err)?;
+    //    if models_override.version != env!("CARGO_PKG_VERSION") {
+    //        bail!("Incompatible version")
+    //    }
+    //    Ok(models_override.list)
+    // }
+    public static Result<List<ProviderModels>> loadModelsOverride() {
+        Path modelOverridePath = modelsOverrideFile();
+        Supplier<String> err = () -> format("Failed to load models at '{}'", modelOverridePath);
+        Result<String> res = readToString(modelOverridePath).withContext(err);
+        if (isErr(res)) {
+            return Err(res);
+        }
+        String content = res.getValue();
+        Result<ModelsOverride> ret = SerDeYaml.fromStr(content, ModelsOverride.class).withContext(err);
+        if (isErr(ret)) {
+            return Err(ret);
+        }
+        ModelsOverride modelsOverride = ret.getValue();
+        if (!Objects.equals(modelsOverride.getVersion(), CARGO_PKG_VERSION)) {
+            return bail("Incompatible version");
+        }
+        return Ok(modelsOverride.getList());
+    }
+
     private static List<String> listClientTypes() {
         return Arrays.asList(
             "openai",
@@ -2164,12 +2277,12 @@ public class Config {
         // to do
     }
 
-    public static void ensureParentExists(File configFile) {
+    public static Result<?> ensureParentExists(File configFile) {
         try {
             Files.createDirectories(Paths.get(configFile.getParent()));
+            return Ok();
         } catch (Exception ex) {
-            println("Failed to create directory '{}': {}", configFile, ex.getMessage());
-            throw new IllegalStateException(ex);
+            return Err(ex);
         }
     }
 

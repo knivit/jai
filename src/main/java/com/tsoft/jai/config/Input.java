@@ -26,6 +26,7 @@ import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.client.macros.Macros.initClient;
 import static com.tsoft.jai.client.message.Message.patchMessages;
+import static com.tsoft.jai.core.Option.STR_DEFAULT_VALUE;
 import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.inquire.spinner.Spinner.abortableRunWithSpinner;
 import static com.tsoft.jai.utils.Crypto.base64Encode;
@@ -159,7 +160,11 @@ public class Input implements Cloneable {
     // }
     public static Result<Input> fromFiles(Config config, String rawText, List<String> paths, Role role) {
         Map<String, String> loaders = config.getDocumentLoaders();
-        TupleN tuple = resolvePaths(loaders, paths);
+        Result<TupleN> res = resolvePaths(loaders, paths);
+        if (isErr(res)) {
+            return Err(res);
+        }
+        TupleN tuple = res.getValue();
         Set<String> rawPaths = tuple.get("raw_paths");
         Set<String> localPaths = tuple.get("local_paths");
         Set<String> remoteUrls = tuple.get("remote_urls");
@@ -167,11 +172,11 @@ public class Input implements Cloneable {
         Set<String> protocolPaths = tuple.get("protocol_paths");
         boolean withLastReply = tuple.get("with_last_reply");
         String lastReply = null;
-        tuple = loadDocuments(loaders, localPaths, remoteUrls, externalCmds, protocolPaths);
-        if (tuple == null) {
-            println("Failed to load files");
-            return null;
+        res = loadDocuments(loaders, localPaths, remoteUrls, externalCmds, protocolPaths).context("Failed to load files");
+        if (isErr(res)) {
+            return Err(res);
         }
+        tuple = res.getValue();
         List<Triple<String, String, String>> documents = tuple.get("documents");
         List<String> medias = tuple.get("medias");
         Map<String, String> dataUrls = tuple.get("data_urls");
@@ -387,7 +392,7 @@ public class Input implements Cloneable {
     //        with_last_reply,
     //    ))
     // }
-    private static TupleN resolvePaths(Map<String, String> loaders, List<String> paths) {
+    private static Result<TupleN> resolvePaths(Map<String, String> loaders, List<String> paths) {
         Set<String> rawPaths = new LinkedHashSet<>();
         Set<String> localPaths = new LinkedHashSet<>();
         Set<String> remoteUrls = new LinkedHashSet<>();
@@ -403,7 +408,7 @@ public class Input implements Cloneable {
                 rawPaths.add(path);
             } else if (isUrl(path)) {
                 if (!isBlank(stripSuffix(path, "**"))) {
-                    bail("Invalid website '{}'", path);
+                    return bail("Invalid website '{}'", path);
                 }
                 remoteUrls.add(path);
                 rawPaths.add(path);
@@ -421,14 +426,14 @@ public class Input implements Cloneable {
             }
         }
 
-        return TupleN.asLinkedMap(
+        return Ok(TupleN.asLinkedMap(
             "raw_paths", rawPaths,
             "local_paths", localPaths,
             "remote_urls", remoteUrls,
             "external_cmds", externalCmds,
             "protocol_paths", protocolPaths,
             "with_last_reply", withLastReply
-        );
+        ));
     }
 
     // async fn load_documents(
@@ -437,11 +442,11 @@ public class Input implements Cloneable {
     //    remote_urls: Vec<String>,
     //    external_cmds: Vec<String>,
     //    protocol_paths: Vec<String>,
-    //) -> Result<(
+    // ) -> Result<(
     //    Vec<(&'static str, String, String)>,
     //    Vec<String>,
     //    HashMap<String, String>,
-    //)> {
+    // )> {
     //    let mut files = vec![];
     //    let mut medias = vec![];
     //    let mut data_urls = HashMap::new();
@@ -494,7 +499,7 @@ public class Input implements Cloneable {
     //
     //    Ok((files, medias, data_urls))
     // }
-    public static TupleN loadDocuments(Map<String, String> loaders, Set<String> localPaths, Set<String> remoteUrls, Set<String> externalCmds, Set<String> protocolPaths) {
+    public static Result<TupleN> loadDocuments(Map<String, String> loaders, Set<String> localPaths, Set<String> remoteUrls, Set<String> externalCmds, Set<String> protocolPaths) {
         List<Triple<String, String, String>> files = new ArrayList<>();
         List<String> medias = new ArrayList<>();
         Map<String, String> dataUrls = new HashMap<>();
@@ -507,55 +512,56 @@ public class Input implements Cloneable {
         Set<String> localFiles = expandGlobPaths(localPaths, true);
         for (String filePath : localFiles) {
             if (isImage(filePath)) {
-                String contents = readMediaToDataUrl(filePath);
-                if (isBlank(contents)) {
-                    format("Unable to read media '{}'", filePath);
-                } else {
-                    dataUrls.put(sha256(contents), filePath);
-                    medias.add(contents);
+                Result<String> res = readMediaToDataUrl(filePath)
+                    .withContext(() -> format("Unable to read media '{}'", filePath));
+                if (isErr(res)) {
+                    return Err(res);
                 }
+                String contents = res.getValue();
+                dataUrls.put(sha256(contents), filePath);
+                medias.add(contents);
             } else {
-                LoadedDocument document = loadFile(loaders, filePath);
-                if (document == null) {
-                    format("Unable to read file '{}'", filePath);
-                } else {
-                    files.add(new Triple<>("FILE", filePath, document.getContents()));
+                Result<LoadedDocument> res = loadFile(loaders, filePath).withContext(() -> format("Unable to read file '{}'", filePath));
+                if (isErr(res)) {
+                    return Err(res);
                 }
+                LoadedDocument document = res.getValue();
+                files.add(new Triple<>("FILE", filePath, document.getContents()));
             }
         }
 
         for (String fileUrl : remoteUrls) {
-            Tuple<String, String> tuple = fetchWithLoaders(loaders, fileUrl, true);
-            if (tuple == null) {
-                format("Failed to load url '{}'", fileUrl);
+            Result<Tuple<String, String>> res = fetchWithLoaders(loaders, fileUrl, true).withContext(() -> format("Failed to load url '{}'", fileUrl));
+            if (isErr(res)) {
+                return Err(res);
+            }
+            Tuple<String, String> tuple = res.getValue();
+            String contents = tuple.first();
+            String extension = tuple.second();
+            if (MEDIA_URL_EXTENSION.equals(extension)) {
+                dataUrls.put(sha256(contents), fileUrl);
+                medias.add(contents);
             } else {
-                String contents = tuple.first();
-                String extension = tuple.second();
-                if (MEDIA_URL_EXTENSION.equals(extension)) {
-                    dataUrls.put(sha256(contents), fileUrl);
-                    medias.add(contents);
-                } else {
-                    files.add(new Triple<>("URL", fileUrl, contents));
-                }
+                files.add(new Triple<>("URL", fileUrl, contents));
             }
         }
 
         for (String protocolPath : protocolPaths) {
-            List<LoadedDocument> documents = loadProtocolPath(loaders, protocolPath);
-            if (documents == null) {
-                format("Failed to load from '{}'", protocolPath);
-            } else {
-                files.addAll(
-                    documents.stream()
-                        .map(document -> new Triple<>("FROM", document.getPath(), document.getContents()))
-                        .toList());
+            Result<List<LoadedDocument>> res = loadProtocolPath(loaders, protocolPath).withContext(() -> format("Failed to load from '{}'", protocolPath));
+            if (isErr(res)) {
+                return Err(res);
             }
+            List<LoadedDocument> documents = res.getValue();
+            files.addAll(
+                documents.stream()
+                    .map(document -> new Triple<>("FROM", document.getPath(), document.getContents()))
+                    .toList());
         }
 
-        return TupleN.asLinkedMap(
+        return Ok(TupleN.asLinkedMap(
             "files", files,
             "medias", medias,
-            "data_urls", dataUrls);
+            "data_urls", dataUrls));
     }
 
     // fn is_image(path: &str) -> bool {
@@ -626,18 +632,18 @@ public class Input implements Cloneable {
     //
     //    Ok(data_url)
     // }
-    private static String readMediaToDataUrl(String imagePath) {
-        String extension = getPatchExtension(imagePath);
+    private static Result<String> readMediaToDataUrl(String imagePath) {
+        String extension = getPatchExtension(imagePath).unwrapOrDefault(STR_DEFAULT_VALUE);
         String mimeType = switch (extension) {
             case "png" -> "image/png";
             case "jpg", "jpeg" -> "image/png";
             case "webp" -> "image/webp";
             case "gif" -> "image/gif";
-            default -> {
-                bail("Unexpected media type");
-                yield null;
-            }
+            default -> null;
         };
+        if (mimeType == null) {
+            return bail("Unexpected media type");
+        }
 
         String dataUrl;
         try {
@@ -645,11 +651,10 @@ public class Input implements Cloneable {
             String encodedImage = base64Encode(buffer);
             dataUrl = format("data:{};base64,{}", mimeType, encodedImage);
         } catch (Exception ex) {
-            bail("Can't read file {}: {}", imagePath, ex.getMessage());
-            dataUrl = null;
+            return bail("Can't read file {}: {}", imagePath, ex.getMessage());
         }
 
-        return dataUrl;
+        return Ok(dataUrl);
     }
 
     // pub fn prepare_completion_data(

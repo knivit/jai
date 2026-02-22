@@ -23,7 +23,9 @@ import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 @Getter
 public class OpenAICompatibleClient extends Client {
 
-    private final String name = "openai-compatible";
+    public static final String NAME = "openai-compatible";
+
+    private final String name = NAME;
     private final ClientConfig clientConfig;
     private final Config config;
     private final Model model;

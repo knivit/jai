@@ -1,38 +1,47 @@
 package com.tsoft.jai.inquire.prompt;
 
 import com.tsoft.jai.anyhow.Result;
+import com.tsoft.jai.inquire.validator.Validation;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.jline.prompt.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import static com.tsoft.jai.anyhow.Result.Err;
 import static com.tsoft.jai.anyhow.Result.Ok;
 import static com.tsoft.jai.inquire.Inquire.prompter;
 
+@Accessors(chain = true)
 @RequiredArgsConstructor
-public class Select {
+public class MultiSelect {
 
     private final String message;
     private final List<String> values;
 
-    public Result<String> prompt() {
-        ListBuilder listBuilder = prompter.newBuilder()
-            .createListPrompt()
-            .name("select")
+    @Setter()
+    private Function<List<String>, Result<Validation>> validator;
+
+    public Result<List<String>> prompt() {
+        CheckboxBuilder checkboxBuilder = prompter.newBuilder()
+            .createCheckboxPrompt()
+            .name("multiselect")
             .message(message);
 
         for (String value : values) {
-            listBuilder.add(value, value);
+            checkboxBuilder.newItem(value);
         }
 
-        PromptBuilder builder = listBuilder.addPrompt();
+        PromptBuilder builder = checkboxBuilder.addPrompt();
 
         try {
             Map<String, ? extends PromptResult<? extends Prompt>> results = prompter.prompt(new ArrayList<>(), builder.build());
-            return Ok(results.get("select").getResult());
+            CheckboxResult result = (CheckboxResult) results.get("multiselect");
+            return Ok(new ArrayList<>(result.getSelectedIds()));
         } catch (Exception ex) {
             return Err(ex);
         }

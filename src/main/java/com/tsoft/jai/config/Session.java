@@ -424,10 +424,11 @@ public class Session {
     //    }
     //    Ok(())
     // }
-    public void guardEmpty() {
+    public Result<?> guardEmpty() {
         if (!isEmpty()) {
-            bail("Cannot perform this operation because the session has messages, please `.empty session` first.");
+            return bail("Cannot perform this operation because the session has messages, please `.empty session` first.");
         }
+        return Ok();
     }
 
     // pub fn export(&self) -> Result<String> {
@@ -586,12 +587,16 @@ public class Session {
                 if (!isRepl) {
                     return Ok();
                 }
-                boolean ans = new Confirm("Save session?").setDefaultValue(false).prompt();
+                Result<Boolean> res = new Confirm("Save session?").setDefaultValue(false).prompt();
+                if (isErr(res)) {
+                    return Err(res);
+                }
+                boolean ans = res.getValue();
                 if (!ans) {
                     return Ok();
                 }
                 if (TEMP_SESSION_NAME.equals(sessionName)) {
-                    sessionName = new Text("Session name:")
+                    Result<String> ret = new Text("Session name:")
                         .setValidator(input -> {
                             input = input.trim();
                             if (isBlank(input)) {
@@ -602,6 +607,10 @@ public class Session {
                                 return true;
                             }
                         }).prompt();
+                    if (isErr(ret)) {
+                        return Err(ret);
+                    }
+                    sessionName = ret.getValue();
                 }
             } else if (Boolean.TRUE.equals(saveSession) && TEMP_SESSION_NAME.equals(sessionName)) {
                 sessionsDir = sessionsDir.resolve("_");

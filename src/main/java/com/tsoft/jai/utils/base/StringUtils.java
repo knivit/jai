@@ -89,6 +89,13 @@ public final class StringUtils {
         }
     }
 
+    public static String replace(String str, char oldChar, char newChar) {
+        if (str != null) {
+            str = str.replace(oldChar, newChar);
+        }
+        return str;
+    }
+
     public static String repeat(String str, int count) {
         StringBuilder buf = new StringBuilder();
         for (int i = 0; i < count; i ++) {

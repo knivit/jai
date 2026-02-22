@@ -6,12 +6,15 @@ import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.client.model.ModelType;
 import com.tsoft.jai.config.ClientConfig;
 import com.tsoft.jai.config.Config;
+import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.utils.base.Tuple;
 
 import java.util.Collections;
 import java.util.List;
 
 import static com.tsoft.jai.anyhow.Result.Err;
 import static com.tsoft.jai.anyhow.Result.Ok;
+import static com.tsoft.jai.client.common.Common.createOpenaiCompatibleClientConfig;
 
 public class Macros {
 
@@ -31,8 +34,23 @@ public class Macros {
     //    }
     // }
     public static List<Model> listModels(ClientConfig clientConfig) {
-        String clientName = clientConfig.getName();;
+        String clientName = clientConfig.getName();
         return Model.fromConfig(clientName, clientConfig.getModels());
+    }
+
+    // pub async fn create_client_config(client: &str) -> anyhow::Result<(String, serde_json::Value)> {
+    //     $(
+    //         if client == $client::NAME && client != $crate::client::OpenAICompatibleClient::NAME {
+    //             return create_config(&$client::PROMPTS, $client::NAME).await
+    //         }
+    //     )+
+    //     if let Some(ret) = create_openai_compatible_client_config(client).await? {
+    //         return Ok(ret);
+    //     }
+    //     anyhow::bail!("Unknown client '{}'", client)
+    // }
+    public static Result<Tuple<String, Value>> createClientConfig(String client) {
+        return createOpenaiCompatibleClientConfig(client);
     }
 
     // pub fn list_client_names(config: &$crate::config::Config) -> Vec<&'static String> {

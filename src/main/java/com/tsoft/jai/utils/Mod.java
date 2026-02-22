@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.tsoft.jai.Main.CARGO_CRATE_NAME;
 import static com.tsoft.jai.anyhow.Result.Ok;
 import static com.tsoft.jai.inquire.Inquire.NO_COLOR;
 import static com.tsoft.jai.unicodesegmentation.Word.isAscii;
@@ -21,6 +22,13 @@ public final class Mod {
 
     private static final Pattern CODE_BLOCK_RE = Pattern.compile("(?ms)```\\w*(.*)```");
     private static final Pattern THINK_TAG_RE = Pattern.compile("(?s)^\\s*<think>.*?</think>(\\s*|$)");
+
+    // pub fn get_env_name(key: &str) -> String {
+    //    format!("{}_{key}", env!("CARGO_CRATE_NAME"),).to_ascii_uppercase()
+    // }
+    public static String getEnvName(String key) {
+        return format("{}_{}", key, CARGO_CRATE_NAME).toUpperCase();
+    }
 
     // pub fn strip_think_tag(text: &str) -> Cow<'_, str> {
     //     THINK_TAG_RE.replace_all(text, "")

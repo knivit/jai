@@ -3,7 +3,6 @@ package com.tsoft.jai.client.mod;
 import com.tsoft.jai.client.openai.OpenAIClient;
 import com.tsoft.jai.client.openaicompatible.OpenAICompatibleClient;
 import com.tsoft.jai.config.ClientConfig;
-import com.tsoft.jai.config.Config;
 
 import java.util.HashMap;
 import java.util.List;

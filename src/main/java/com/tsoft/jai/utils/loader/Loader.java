@@ -1,5 +1,6 @@
 package com.tsoft.jai.utils.loader;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.utils.base.Tuple;
 
 import java.nio.file.Files;
@@ -8,6 +9,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.tsoft.jai.anyhow.Result.Err;
+import static com.tsoft.jai.anyhow.Result.Ok;
 import static com.tsoft.jai.utils.PathUtil.getPatchExtension;
 import static com.tsoft.jai.utils.Request.DEFAULT_EXTENSION;
 import static com.tsoft.jai.utils.base.StringUtils.isBlank;
@@ -25,11 +28,8 @@ public final class Loader {
     //        None => load_plain(path, &extension).await,
     //    }
     // }
-    public static LoadedDocument loadFile(Map<String, String> loaders, String path) {
-        String extension = getPatchExtension(path);
-        if (isBlank(extension)) {
-            extension = DEFAULT_EXTENSION;
-        }
+    public static Result<LoadedDocument> loadFile(Map<String, String> loaders, String path) {
+        String extension = getPatchExtension(path).unwrapOrElse(() -> DEFAULT_EXTENSION);
         String loaderCommand = loaders.get(extension);
         if (!isBlank(loaderCommand)) {
             return loadWithCommand(path, extension, loaderCommand);
@@ -44,17 +44,17 @@ public final class Loader {
     //    metadata.insert(EXTENSION_METADATA.into(), extension.to_string());
     //    Ok(LoadedDocument::new(path.into(), contents, metadata))
     // }
-    private static LoadedDocument loadPlain(String path, String extension) {
+    private static Result<LoadedDocument> loadPlain(String path, String extension) {
         try {
             String contents = Files.readString(Paths.get(path));
             Map<String, String> metadata = new LinkedHashMap<>();
             metadata.put(EXTENSION_METADATA, extension);
-            return new LoadedDocument()
+            return Ok(new LoadedDocument()
                 .setPath(path)
                 .setContents(contents)
-                .setMetadata(metadata);
+                .setMetadata(metadata));
         } catch (Exception ex) {
-            return null;
+            return Err(ex);
         }
     }
 
@@ -64,14 +64,14 @@ public final class Loader {
     //    metadata.insert(EXTENSION_METADATA.into(), DEFAULT_EXTENSION.to_string());
     //    Ok(LoadedDocument::new(path.into(), contents, metadata))
     // }
-    private static LoadedDocument loadWithCommand(String path, String extension, String loaderCommand) {
+    private static Result<LoadedDocument> loadWithCommand(String path, String extension, String loaderCommand) {
         String contents = runLoaderCommand(path, extension, loaderCommand);
         Map<String, String> metadata = new LinkedHashMap<>();
         metadata.put(EXTENSION_METADATA, DEFAULT_EXTENSION);
-        return new LoadedDocument()
+        return Ok(new LoadedDocument()
             .setPath(path)
             .setContents(contents)
-            .setMetadata(metadata);
+            .setMetadata(metadata));
     }
 
     // pub fn is_loader_protocol(loaders: &HashMap<String, String>, path: &str) -> bool {
@@ -123,8 +123,8 @@ public final class Loader {
     //    };
     //    Ok(output)
     // }
-    public static List<LoadedDocument> loadProtocolPath(Map<String, String> loaders, String path) {
-        return null;
+    public static Result<List<LoadedDocument>> loadProtocolPath(Map<String, String> loaders, String path) {
+        return Err("not implemented");
     }
 
     private Loader() { }

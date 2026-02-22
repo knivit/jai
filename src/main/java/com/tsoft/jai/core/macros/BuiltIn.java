@@ -1,5 +1,10 @@
 package com.tsoft.jai.core.macros;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import static com.tsoft.jai.core.Panic.panic;
+
 public final class BuiltIn {
 
     public enum Platform {
@@ -23,6 +28,15 @@ public final class BuiltIn {
             return Platform.LINUX;
         } else {
             return Platform.OTHER;
+        }
+    }
+
+    public static String includeStr(String fileName) {
+        try {
+            return Files.readString(Paths.get(BuiltIn.class.getResource(fileName).toURI()));
+        } catch (Exception ex) {
+            panic(ex);
+            return null;
         }
     }
 

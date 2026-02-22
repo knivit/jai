@@ -1,8 +1,12 @@
 package com.tsoft.jai.utils;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.utils.base.Tuple;
 
+import java.util.List;
 import java.util.Map;
+
+import static com.tsoft.jai.anyhow.Result.Err;
 
 public class Request {
 
@@ -110,7 +114,36 @@ public class Request {
     //    };
     //    Ok(result)
     // }
-    public static Tuple<String, String> fetchWithLoaders(Map<String, String> loaders, String path, boolean allowMedia) {
+    public static Result<Tuple<String, String>> fetchWithLoaders(Map<String, String> loaders, String path, boolean allowMedia) {
+        return Err("not implemented");
+    }
+
+    // pub async fn fetch_models(api_base: &str, api_key: Option<&str>) -> Result<Vec<String>> {
+    //    let client = match *CLIENT {
+    //        Ok(ref client) => client,
+    //        Err(ref err) => bail!("{err}"),
+    //    };
+    //    let mut builder = client.get(format!("{}/models", api_base.trim_end_matches('/')));
+    //    if let Some(api_key) = api_key {
+    //        builder = builder.bearer_auth(api_key);
+    //    }
+    //    let res_body: Value = builder.send().await?.json().await?;
+    //    let mut result: Vec<String> = res_body
+    //        .get("data")
+    //        .and_then(|v| v.as_array())
+    //        .map(|v| {
+    //            v.iter()
+    //                .filter_map(|v| v.get("id").and_then(|v| v.as_str().map(|v| v.to_string())))
+    //                .collect()
+    //        })
+    //        .unwrap_or_default();
+    //    if result.is_empty() {
+    //        bail!("No valid models")
+    //    }
+    //    result.sort_unstable();
+    //    Ok(result)
+    // }
+    public static Result<List<String>> fetchModels(String apiBase, String apiKey) {
         return null;
     }
 }

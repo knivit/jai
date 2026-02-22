@@ -1,5 +1,6 @@
 package com.tsoft.jai.function;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.config.Config;
 import com.tsoft.jai.serdejson.SerDe;
 import com.tsoft.jai.serdejson.Value;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
+import static com.tsoft.jai.anyhow.Result.Ok;
 import static com.tsoft.jai.serdejson.SerDe.json;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 
@@ -46,14 +48,14 @@ public class Functions {
     //    }
     //    Ok(output)
     // }
-    public static List<ToolResult> evalToolCalls(Config config, List<ToolCall> calls) {
+    public static Result<List<ToolResult>> evalToolCalls(Config config, List<ToolCall> calls) {
         List<ToolResult> output = new ArrayList<>();
         if (isEmpty(calls)) {
-            return output;
+            return Ok(output);
         }
         calls = ToolCall.dedup(calls);
         if (isEmpty(calls)) {
-            bail("The request was aborted because an infinite loop of function calls was detected.");
+            return bail("The request was aborted because an infinite loop of function calls was detected.");
         }
         boolean isAllNull = true;
         for (ToolCall call : calls) {
@@ -68,7 +70,7 @@ public class Functions {
         if (isAllNull) {
             output = new ArrayList<>();
         }
-        return output;
+        return Ok(output);
     }
 
     // pub fn init(declarations_path: &Path) -> Result<Self> {

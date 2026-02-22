@@ -584,10 +584,18 @@ public class Mod {
                 dumpReplHelp();
             } else if (".info".equals(cmd)) {
                 if ("role".equals(args)) {
-                    String info = config.roleInfo();
+                    Result<String> res = config.roleInfo();
+                    if (isErr(res)) {
+                        return Err(res);
+                    }
+                    String info = res.getValue();
                     print("{}", info);
                 } else if ("session".equals(args)) {
-                    String info = config.sessionInfo();
+                    Result<String> res = config.sessionInfo();
+                    if (isErr(res)) {
+                        return Err(res);
+                    }
+                    String info = res.getValue();
                     print("{}", info);
                 } else if ("rag".equals(args)) {
                     Result<String> info = config.ragInfo();
@@ -854,8 +862,8 @@ public class Mod {
     // fn unknown_command() -> Result<()> {
     //    bail!(r#"Unknown command. Type ".help" for additional help."#);
     // }
-    private static void unknownCommand() {
-        bail("Unknown command. Type \".help\" for additional help.");
+    private static Result<?> unknownCommand() {
+        return bail("Unknown command. Type \".help\" for additional help.");
     }
 
     // fn dump_repl_help() {

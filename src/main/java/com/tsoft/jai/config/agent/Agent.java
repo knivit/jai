@@ -191,9 +191,13 @@ public class Agent {
             if (!isEmpty(definition.getDocuments()) && !config.isInfoFlag()) {
                 boolean ans = false;
                 if (Inquire.prompter != null) {
-                    ans = new Confirm("The agent has the documents, init RAG?")
+                    Result<Boolean> res = new Confirm("The agent has the documents, init RAG?")
                         .setDefaultValue(true)
                         .prompt();
+                    if (isErr(res)) {
+                        return Err(res);
+                    }
+                    ans = res.getValue();
                 }
                 if (ans) {
                     List<String> documentPaths = new ArrayList<>();
@@ -287,10 +291,15 @@ public class Agent {
     //    }
     //    Ok(())
     // }
-    public void updateSharedDynamicInstructions(boolean force) {
+    public Result<?> updateSharedDynamicInstructions(boolean force) {
         if (isDynamicInstructions() && (force || isBlank(sharedDynamicInstructions))) {
-            sharedDynamicInstructions = runInstructionsFn();
+            Result<String> res = runInstructionsFn();
+            if (isErr(res)) {
+                return Err(res);
+            }
+            sharedDynamicInstructions = res.getValue();
         }
+        return Ok();
     }
 
     // fn to_role(&self) -> Role {
@@ -362,12 +371,12 @@ public class Agent {
     //        _ => bail!("No return value from '_instructions' function"),
     //    }
     // }
-    private String runInstructionsFn() {
+    private Result<String> runInstructionsFn() {
         String value = runLlmFunction(name, List.of("_instructions", "{}"), variableEnvs());
         if (isBlank(value)) {
-            bail("No return value from '_instructions' function");
+            return bail("No return value from '_instructions' function");
         }
-        return value;
+        return Ok(value);
     }
 
     // pub fn variables(&self) -> &AgentVariables {
@@ -513,10 +522,10 @@ public class Agent {
     //     }
     //     Ok(output)
     // }
-    public static Map<String, String> initAgentVariables(List<AgentVariable> agentVariables, Map<String, String> variables, boolean noInteraction) {
+    public static Result<Map<String, String>> initAgentVariables(List<AgentVariable> agentVariables, Map<String, String> variables, boolean noInteraction) {
         Map<String, String> output = new HashMap<>();
         if (isEmpty(agentVariables)) {
-            return output;
+            return Ok(output);
         }
 
         boolean printed = false;
@@ -551,11 +560,11 @@ public class Agent {
         }
 
         if (!isEmpty(unsetVariables)) {
-            bail("The following agent variables are required:\n{}",
+            return bail("The following agent variables are required:\n{}",
                 String.join("\n", unsetVariables.stream()
                     .map(e -> format("  - {}: {}", e.getName(), e.getDescription())).toList()));
         }
 
-        return output;
+        return Ok(output);
     }
 }

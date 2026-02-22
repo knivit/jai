@@ -1,15 +1,14 @@
 package com.tsoft.jai.anyhow;
 
+import com.tsoft.jai.core.Option;
 import lombok.*;
-import lombok.experimental.Accessors;
 
 import java.util.function.Supplier;
 
+import static com.tsoft.jai.core.Option.None;
+import static com.tsoft.jai.core.Option.Some;
 import static com.tsoft.jai.utils.base.StringUtils.format;
 
-@Getter
-@Setter(AccessLevel.PRIVATE)
-@Accessors(chain = true)
 @RequiredArgsConstructor
 public class Result<T> {
 
@@ -18,6 +17,7 @@ public class Result<T> {
         Err
     }
 
+    @Getter
     private final ResultEnum type;
     private T value;
     private Error<?> err;
@@ -31,7 +31,9 @@ public class Result<T> {
     }
 
     public static <T> Result<T> Ok(T value) {
-        return new Result<T>(ResultEnum.Ok).setValue(value);
+        Result<T> result = new Result<>(ResultEnum.Ok);
+        result.value = value;
+        return result;
     }
 
     public static <T> Result<T> Err() {
@@ -39,24 +41,34 @@ public class Result<T> {
     }
 
     public static <T, E> Result<T> Err(E errValue) {
-        return new Result<T>(ResultEnum.Err).setErr(new Error<>(errValue));
+        Result<T> result = new Result<>(ResultEnum.Err);
+        result.err = new Error<>(errValue);
+        return result;
     }
 
     public static <T> Result<T> Err(Exception exception) {
-        return new Result<T>(ResultEnum.Err).setErr(new Error<>(exception));
+        Result<T> result = new Result<>(ResultEnum.Err);
+        result.err = new Error<>(exception);
+        return result;
     }
 
     public static <T> Result<T> Err(String error) {
-        return new Result<T>(ResultEnum.Err).setErr(new Error<>(error));
+        Result<T> result = new Result<>(ResultEnum.Err);
+        result.err = new Error<>(error);
+        return result;
     }
 
     public static <T> Result<T> Err(String error, Object ... args) {
-        return new Result<T>(ResultEnum.Err).setErr(new Error<>(format(error, args)));
+        Result<T> result = new Result<>(ResultEnum.Err);
+        result.err = new Error<>(format(error, args));
+        return result;
     }
 
     public static <T> Result<T> Err(Result<?> err) {
         if (err != null && ResultEnum.Err.equals(err.type)) {
-            return new Result<T>(ResultEnum.Err).setErr(err.err);
+            Result<T> result = new Result<>(ResultEnum.Err);
+            result.err = err.err;
+            return result;
         }
         return Err();
     }
@@ -67,6 +79,31 @@ public class Result<T> {
 
     public static boolean isErr(Result<?> result) {
         return (result != null) && (ResultEnum.Err.equals(result.type));
+    }
+
+    public T getValue() {
+        if (isOk(this)) {
+            return value;
+        }
+        throw new IllegalStateException();
+    }
+
+    public Option<T> ok() {
+        return switch (type) {
+            case Ok -> Some(value);
+            case Err -> None();
+        };
+    }
+
+    public T unwrap() {
+        return getValue();
+    }
+
+    public Error<?> getErr() {
+        if (isErr(this)) {
+            return err;
+        }
+        throw new IllegalStateException();
     }
 
     // Wrap the error value with additional context
