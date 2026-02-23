@@ -6,7 +6,7 @@ import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.client.model.ModelType;
 import com.tsoft.jai.config.ClientConfig;
 import com.tsoft.jai.config.Config;
-import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serde.Value;
 import com.tsoft.jai.utils.base.Tuple;
 
 import java.util.Collections;

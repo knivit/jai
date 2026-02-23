@@ -1,15 +1,12 @@
 package com.tsoft.jai.client.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.annotation.Nulls;
-import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serde.Value;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 import java.math.BigDecimal;
-import java.util.Map;
 
 @Data
 @Accessors(chain = true)

@@ -12,9 +12,9 @@ import com.tsoft.jai.client.model.ModelType;
 import com.tsoft.jai.config.agent.Agent;
 import com.tsoft.jai.inquire.prompt.Confirm;
 import com.tsoft.jai.inquire.prompt.Text;
-import com.tsoft.jai.serdejson.SerDe;
-import com.tsoft.jai.serdejson.Value;
-import com.tsoft.jai.serdeyaml.SerDeYaml;
+import com.tsoft.jai.serde.Value;
+import com.tsoft.jai.serde.serdejson.SerdeJson;
+import com.tsoft.jai.serde.serdeyaml.SerdeYaml;
 import com.tsoft.jai.utils.base.CollectionsUtils;
 import com.tsoft.jai.utils.base.Tuple;
 import lombok.Data;
@@ -31,8 +31,7 @@ import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.config.Config.TEMP_SESSION_NAME;
 import static com.tsoft.jai.config.Config.ensureParentExists;
 import static com.tsoft.jai.inquire.Inquire.println;
-import static com.tsoft.jai.serdejson.SerDe.toJson;
-import static com.tsoft.jai.serdejson.Value.asMap;
+import static com.tsoft.jai.serde.Value.asMap;
 import static com.tsoft.jai.std.Fs.readToString;
 import static com.tsoft.jai.std.Fs.write;
 import static com.tsoft.jai.utils.base.StringUtils.*;
@@ -154,7 +153,7 @@ public class Session {
             return Err(res);
         }
         String content = res.getValue();
-        Result<Session> ret = SerDeYaml.fromStr(content, Session.class).withContext(() -> format("Invalid session {}", name));
+        Result<Session> ret = SerdeYaml.fromStr(content, Session.class).withContext(() -> format("Invalid session {}", name));
         if (isErr(ret)) {
             return Err(ret);
         }
@@ -338,7 +337,7 @@ public class Session {
     // }
     public String echoMessages(Input input) {
         List<Message> messages = buildMessages(input);
-        return SerDe.toYamlString(messages);
+        return SerdeYaml.toString(messages).unwrapOrElse(e -> "Unable to echo message");
     }
 
     // pub fn build_messages(&self, input: &Input) -> Vec<Message> {
@@ -497,9 +496,13 @@ public class Session {
         if (percent != 0.0f) {
             data.put("total/max", format("{}%", percent));
         }
-        data.put("messages", asMap(toJson(messages).getValue()));
+        data.put("messages", asMap(SerdeJson.json(messages).getValue()));
 
-        return Ok(SerDe.toYamlString(data));
+        Result<String> output = SerdeYaml.toString(data).withContext(() -> format("Unable to show info about session '{}'", name));
+        if (isErr(output)) {
+            return Err(output);
+        }
+        return Ok(output.getValue());
     }
 
     // pub fn tokens_usage(&self) -> (usize, f32) {
@@ -679,9 +682,12 @@ public class Session {
 
         path = sessionPath.toString();
 
-        String content = SerDe.toYamlString(this);
-        Result<?> res = write(sessionPath, content)
-            .withContext(() -> format("Failed to write session '{}' to '{}'", name, sessionPath));
+        Result<String> content = SerdeYaml.toString(this).withContext(() -> format("Failed to serde session '{}'", name));
+        if (isErr(content)) {
+            return Err(content);
+        }
+
+        Result<?> res = write(sessionPath, content.getValue()).withContext(() -> format("Failed to write session '{}' to '{}'", name, sessionPath));
         if (isErr(res)) {
             return Err(res);
         }

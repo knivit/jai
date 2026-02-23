@@ -3,8 +3,8 @@ package com.tsoft.jai.rag;
 import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.config.Config;
-import com.tsoft.jai.serdejson.Value;
-import com.tsoft.jai.serdeyaml.SerDeYaml;
+import com.tsoft.jai.serde.Value;
+import com.tsoft.jai.serde.serdeyaml.SerdeYaml;
 import com.tsoft.jai.utils.AbortSignal;
 import com.tsoft.jai.utils.base.Tuple;
 import lombok.Data;
@@ -90,7 +90,7 @@ public class Rag {
         if (isErr(content)) {
             return Err(content);
         }
-        Result<RagData> data = SerDeYaml.fromStr(content.getValue(), RagData.class).withContext(err);
+        Result<RagData> data = SerdeYaml.fromStr(content.getValue(), RagData.class).withContext(err);
         if (isErr(data)) {
             return Err(data);
         }
@@ -161,7 +161,7 @@ public class Rag {
             .put("batch_size", data.getBatchSize())
             .put("document_paths", data.getDocumentPaths())
             .put("files", files);
-        Result<String> output = SerDeYaml.toString(value).withContext(() -> format("Unable to show info about rag '{}'", name));
+        Result<String> output = SerdeYaml.toString(value).withContext(() -> format("Unable to show info about rag '{}'", name));
         if (isErr(output)) {
             return Err(output);
         }

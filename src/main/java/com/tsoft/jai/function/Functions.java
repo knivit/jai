@@ -2,8 +2,8 @@ package com.tsoft.jai.function;
 
 import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.config.Config;
-import com.tsoft.jai.serdejson.SerdeJson;
-import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serde.serdejson.SerdeJson;
+import com.tsoft.jai.serde.Value;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import tools.jackson.core.type.TypeReference;
@@ -17,7 +17,7 @@ import java.util.function.Supplier;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.anyhow.Result.*;
-import static com.tsoft.jai.serdejson.SerDe.json;
+import static com.tsoft.jai.serde.Value.json;
 import static com.tsoft.jai.std.Fs.readToString;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.base.StringUtils.format;

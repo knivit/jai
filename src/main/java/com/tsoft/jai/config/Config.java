@@ -10,6 +10,7 @@ import com.tsoft.jai.config.agent.Agent;
 import com.tsoft.jai.config.role.RoleLike;
 import com.tsoft.jai.core.Option;
 import com.tsoft.jai.dirs.Dirs;
+import com.tsoft.jai.env.Env;
 import com.tsoft.jai.function.FunctionDeclaration;
 import com.tsoft.jai.function.Functions;
 import com.tsoft.jai.function.ToolResult;
@@ -18,9 +19,9 @@ import com.tsoft.jai.inquire.prompt.Select;
 import com.tsoft.jai.rag.DocumentId;
 import com.tsoft.jai.rag.Rag;
 import com.tsoft.jai.render.markdown.RenderOptions;
-import com.tsoft.jai.serdejson.SerdeJson;
-import com.tsoft.jai.serdejson.Value;
-import com.tsoft.jai.serdeyaml.SerDeYaml;
+import com.tsoft.jai.serde.serdejson.SerdeJson;
+import com.tsoft.jai.serde.Value;
+import com.tsoft.jai.serde.serdeyaml.SerdeYaml;
 import com.tsoft.jai.std.Fs;
 import com.tsoft.jai.utils.AbortSignal;
 import com.tsoft.jai.utils.base.Tuple;
@@ -45,7 +46,7 @@ import static com.tsoft.jai.client.mod.Mod.OPENAI_COMPATIBLE_PROVIDERS;
 import static com.tsoft.jai.config.Mod.RAG_TEMPLATE;
 import static com.tsoft.jai.inquire.Inquire.IS_STDOUT_TERMINAL;
 import static com.tsoft.jai.inquire.Inquire.println;
-import static com.tsoft.jai.serdejson.SerDe.json;
+import static com.tsoft.jai.serde.Value.json;
 import static com.tsoft.jai.std.Fs.*;
 import static com.tsoft.jai.utils.Mod.getEnvName;
 import static com.tsoft.jai.utils.Mod.normalizeEnvName;
@@ -209,30 +210,33 @@ public class Config {
     public static Result<Config> init(WorkingMode workingMode, boolean infoFlag) {
         Path configPath = configFile();
 
-        Config config;
+        Config config = null;
         if (!Files.exists(configPath)) {
-            String v = System.getenv(getEnvName("provider"));
-            if (isEmpty(v)) {
-                v = System.getenv(getEnvName("platform"));
-            }
-            if (!isEmpty(v)) {
-                Result<Config> res = loadDynamic(v);
-                if (isErr(res)) {
-                    return Err(res);
-                }
-                config = res.getValue();
-            } else {
-                if (IS_STDOUT_TERMINAL) {
-                    Result<?> res = createConfigFile(configPath);
+            Option<String> var = Env.var(getEnvName("provider"))
+                .ok()
+                .orElse(() -> Env.var(getEnvName("platform")).ok());
+
+            switch (var.getType()) {
+                case Some -> {
+                    Result<Config> res = loadDynamic(var.getValue());
                     if (isErr(res)) {
                         return Err(res);
                     }
+                    config = res.getValue();
                 }
-                Result<Config> ret = loadFromFile(configPath);
-                if (isErr(ret)) {
-                    return Err(ret);
+                case None -> {
+                    if (IS_STDOUT_TERMINAL) {
+                        Result<?> res = createConfigFile(configPath);
+                        if (isErr(res)) {
+                            return Err(res);
+                        }
+                    }
+                    Result<Config> ret = loadFromFile(configPath);
+                    if (isErr(ret)) {
+                        return Err(ret);
+                    }
+                    config = ret.getValue();
                 }
-                config = ret.getValue();
             }
         } else {
             Result<Config> ret = loadFromFile(configPath);
@@ -278,9 +282,9 @@ public class Config {
     //    }
     // }
     public static Path configDir() {
-        String v = System.getenv(getEnvName("config_dir"));
-        if (v != null) {
-            return Path.of(v);
+        Result<String> var = Env.var(getEnvName("config_dir"));
+        if (isOk(var)) {
+            return Path.of(var.getValue());
         } else {
             Path dir = Dirs.configDir().expect("No user's config directory");
             return dir.resolve(CARGO_CRATE_NAME);
@@ -301,12 +305,11 @@ public class Config {
     //    }
     // }
     private static Path configFile() {
-        String value = System.getenv(getEnvName("config_file"));
-        if (!isEmpty(value)) {
-            return Paths.get(value);
-        } else {
-            return localPath(CONFIG_FILE_NAME);
-        }
+        Result<String> var = Env.var(getEnvName("config_file"));
+        return switch (var.getType()) {
+            case Ok -> Paths.get(var.getValue());
+            case Err -> localPath(CONFIG_FILE_NAME);
+        };
     }
 
     // pub async fn search_rag(
@@ -517,12 +520,11 @@ public class Config {
     //    }
     // }
     public Path rolesDir() {
-        String value = System.getenv("roles_dir");
-        if (!isEmpty(value)) {
-            return Paths.get(value);
-        } else {
-            return localPath(ROLES_DIR_NAME);
-        }
+        Result<String> var = Env.var(getEnvName("roles_dir"));
+        return switch (var.getType()) {
+            case Ok -> Paths.get(var.getValue());
+            case Err -> localPath(ROLES_DIR_NAME);
+        };
     }
 
     // pub fn macros_dir() -> PathBuf {
@@ -532,12 +534,11 @@ public class Config {
     //    }
     // }
     public Path macrosDir() {
-        String value = System.getenv(getEnvName("macros_dir"));
-        if (!isEmpty(value)) {
-            return Path.of(value);
-        } else {
-            return localPath(MACROS_DIR_NAME);
-        }
+        Result<String> var = Env.var(getEnvName("macros_dir"));
+        return switch (var.getType()) {
+            case Ok -> Paths.get(var.getValue());
+            case Err -> localPath(MACROS_DIR_NAME);
+        };
     }
 
     // pub fn functions_dir() -> PathBuf {
@@ -547,12 +548,11 @@ public class Config {
     //    }
     // }
     public Path functionsDir() {
-        String value = System.getenv(getEnvName("functions_dir"));
-        if (!isEmpty(value)) {
-            return Path.of(value);
-        } else {
-            return localPath(FUNCTIONS_DIR_NAME);
-        }
+        Result<String> var = Env.var(getEnvName("functions_dir"));
+        return switch (var.getType()) {
+            case Ok -> Paths.get(var.getValue());
+            case Err -> localPath(FUNCTIONS_DIR_NAME);
+        };
     }
 
     // pub fn agents_data_dir() -> PathBuf {
@@ -569,12 +569,11 @@ public class Config {
     //    }
     // }
     public Path agentDataDir(String name) {
-        String value = System.getenv(format("{}_DATA_DIR", normalizeEnvName(name)));
-        if (!isEmpty(value)) {
-            return Path.of(value);
-        } else {
-            return agentsDataDir().resolve(name);
-        }
+        Result<String> var = Env.var(format("{}_DATA_DIR", normalizeEnvName(name)));
+        return switch (var.getType()) {
+            case Ok -> Paths.get(var.getValue());
+            case Err -> agentsDataDir().resolve(name);
+        };
     }
 
     // pub fn agents_functions_dir() -> PathBuf {
@@ -591,12 +590,11 @@ public class Config {
     //    }
     // }
     public Path agentFunctionsDir(String name) {
-        String value = System.getenv(format("{}_FUNCTIONS_DIR", normalizeEnvName(name)));
-        if (!isEmpty(value)) {
-            return Path.of(value);
-        } else {
-            return agentsFunctionsDir().resolve(name);
-        }
+        Result<String> var = Env.var(format("{}_FUNCTIONS_DIR", normalizeEnvName(name)));
+        return switch (var.getType()) {
+            case Ok -> Paths.get(var.getValue());
+            case Err -> agentsFunctionsDir().resolve(name);
+        };
     }
 
     // pub fn models_override_file() -> PathBuf {
@@ -620,12 +618,11 @@ public class Config {
     //     }
     // }
     public Path agentConfigFile(String name) {
-        String value = System.getenv(format("{}_CONFIG_FILE", normalizeEnvName(name)));
-        if (!isEmpty(value)) {
-            return Paths.get(value);
-        } else {
-            return agentDataDir(name).resolve(CONFIG_FILE_NAME);
-        }
+        Result<String> var = Env.var(format("{}_CONFIG_FILE", normalizeEnvName(name)));
+        return switch (var.getType()) {
+            case Ok -> Paths.get(var.getValue());
+            case Err -> agentDataDir(name).resolve(name);
+        };
     }
 
     // pub fn rags_dir() -> PathBuf {
@@ -635,12 +632,11 @@ public class Config {
     //    }
     // }
     public Path ragsDir() {
-        String value = System.getenv(getEnvName("rags_dir"));
-        if (!isEmpty(value)) {
-            return Path.of(value);
-        } else {
-            return localPath(RAGS_DIR_NAME);
-        }
+        Result<String> var = Env.var(getEnvName("rags_dir"));
+        return switch (var.getType()) {
+            case Ok -> Paths.get(var.getValue());
+            case Err -> localPath(RAGS_DIR_NAME);
+        };
     }
 
     // pub fn sessions_dir(&self) -> PathBuf {
@@ -654,12 +650,11 @@ public class Config {
     // }
     public Path sessionsDir() {
         if (agent == null) {
-            String value = System.getenv(getEnvName("sessions_dir"));
-            if (!isEmpty(value)) {
-                return Paths.get(value);
-            } else {
-                return localPath(SESSIONS_DIR_NAME);
-            }
+            Result<String> var = Env.var(getEnvName("sessions_dir"));
+            return switch (var.getType()) {
+                case Ok -> Paths.get(var.getValue());
+                case Err -> localPath(SESSIONS_DIR_NAME);
+            };
         } else {
             return agentDataDir(agent.getName()).resolve(SESSIONS_DIR_NAME);
         }
@@ -696,12 +691,11 @@ public class Config {
     //    }
     // }
     public Path envFile() {
-        String value = System.getenv(getEnvName("env_file"));
-        if (!isEmpty(value)) {
-            return Path.of(value);
-        } else {
-            return localPath(ENV_FILE_NAME);
-        }
+        Result<String> var = Env.var(getEnvName("env_file"));
+        return switch (var.getType()) {
+            case Ok -> Paths.get(var.getValue());
+            case Err -> localPath(ENV_FILE_NAME);
+        };
     }
 
     // pub fn messages_file(&self) -> PathBuf {
@@ -715,12 +709,11 @@ public class Config {
     // }
     public Path messagesFile() {
         if (agent == null) {
-            String value = System.getenv(getEnvName("messages_file"));
-            if (!isEmpty(value)) {
-                return Path.of(value);
-            } else {
-                return localPath(MESSAGES_FILE_NAME);
-            }
+            Result<String> var = Env.var(getEnvName("messages_file"));
+            return switch (var.getType()) {
+                case Ok -> Paths.get(var.getValue());
+                case Err -> localPath(MESSAGES_FILE_NAME);
+            };
         } else {
             return agentDataDir(agent.getName()).resolve(MESSAGES_FILE_NAME);
         }
@@ -2066,7 +2059,7 @@ public class Config {
     // }
     private Result<?> setupModel() {
         String modelId = this.modelId;
-        if (isBlank(modelId)) {
+        if (isEmpty(modelId)) {
             List<Model> models = listModels(this, ModelType.Chat);
             if (isEmpty(models)) {
                 return bail("No available model");
@@ -2366,7 +2359,7 @@ public class Config {
         config.put("model", model);
         config.put(CLIENTS_FIELD, clientsConfig);
 
-        Result<String> rec = SerDeYaml.toString(config).withContext(() -> "Failed to create config");
+        Result<String> rec = SerdeYaml.toString(config).withContext(() -> "Failed to create config");
         if (isErr(rec)) {
             return Err(rec);
         }
@@ -2418,7 +2411,7 @@ public class Config {
             return Err(res);
         }
         String content = res.getValue();
-        Result<Config> ret = SerDeYaml.fromStr(content, Config.class).withContext(err);
+        Result<Config> ret = SerdeYaml.fromStr(content, Config.class).withContext(err);
         Config config = ret.getValue();
 
         return Ok(config);
@@ -2489,7 +2482,7 @@ public class Config {
             return Err(res);
         }
         String content = res.getValue();
-        Result<ModelsOverride> ret = SerDeYaml.fromStr(content, ModelsOverride.class).withContext(err);
+        Result<ModelsOverride> ret = SerdeYaml.fromStr(content, ModelsOverride.class).withContext(err);
         if (isErr(ret)) {
             return Err(ret);
         }

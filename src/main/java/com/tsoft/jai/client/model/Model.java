@@ -8,8 +8,8 @@ import com.tsoft.jai.client.message.MessageContentPart;
 import com.tsoft.jai.client.message.MessageRole;
 import com.tsoft.jai.config.Config;
 import com.tsoft.jai.function.ToolResult;
-import com.tsoft.jai.serdejson.SerDe;
-import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serde.serdejson.SerdeJson;
+import com.tsoft.jai.serde.Value;
 import com.tsoft.jai.utils.base.Tuple;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -19,10 +19,11 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
-import static com.tsoft.jai.anyhow.Result.Ok;
+import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.client.macros.Macros.listAllModels;
 import static com.tsoft.jai.client.macros.Macros.listClientNames;
 import static com.tsoft.jai.client.model.ModelType.canCreateFromName;
+import static com.tsoft.jai.core.Option.STR_DEFAULT_VALUE;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.Mod.estimateTokenLength;
 import static com.tsoft.jai.utils.Mod.stripThinkTag;
@@ -307,7 +308,7 @@ public class Model {
                     String text = c.getToolCalls().getText();
                     int sum = estimateTokenLength(text);
                     for (ToolResult toolResult : toolResults) {
-                        String str = SerDe.toJsonString(toolResult);
+                        String str = SerdeJson.toString(toolResult).unwrapOrDefault(STR_DEFAULT_VALUE);
                         sum += estimateTokenLength(str);
                     }
                     yield sum;

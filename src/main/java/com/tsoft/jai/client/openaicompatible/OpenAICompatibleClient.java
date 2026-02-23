@@ -9,7 +9,7 @@ import com.tsoft.jai.client.stream.SseHandler;
 import com.tsoft.jai.config.ClientConfig;
 import com.tsoft.jai.config.Config;
 import com.tsoft.jai.reqwest.RequestBuilder;
-import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serde.Value;
 import com.tsoft.jai.utils.base.Triple;
 import lombok.Getter;
 

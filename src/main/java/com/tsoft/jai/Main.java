@@ -33,7 +33,7 @@ import static com.tsoft.jai.utils.command.Command.SHELL;
 
 public class Main {
 
-    public static final String CARGO_CRATE_NAME = "Jai";
+    public static final String CARGO_CRATE_NAME = "jai";
     public static final String CARGO_PKG_VERSION = "0.30.0";
 
     // #[tokio::main]
@@ -86,6 +86,7 @@ public class Main {
 
         Result<Config> res = Config.init(workingMode, infoFlag);
         if (isErr(res)) {
+            System.err.println(res.getErr());
             System.exit(-1);
         } else {
             Config config = res.getValue();

@@ -2,7 +2,7 @@ package com.tsoft.jai.client.common;
 
 import com.tsoft.jai.reqwest.RequestBuilder;
 import com.tsoft.jai.reqwest.ReqwestClient;
-import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serde.Value;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static com.tsoft.jai.serdejson.Value.jsonPatch;
+import static com.tsoft.jai.serde.Value.jsonPatch;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 

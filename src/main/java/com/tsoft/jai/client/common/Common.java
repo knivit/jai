@@ -8,6 +8,7 @@ import com.tsoft.jai.client.stream.SseEvent;
 import com.tsoft.jai.client.stream.SseHandler;
 import com.tsoft.jai.config.Config;
 import com.tsoft.jai.config.Input;
+import com.tsoft.jai.env.Env;
 import com.tsoft.jai.function.ToolCall;
 import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.inquire.prompt.MultiSelect;
@@ -15,8 +16,8 @@ import com.tsoft.jai.inquire.prompt.Select;
 import com.tsoft.jai.inquire.prompt.Text;
 import com.tsoft.jai.inquire.validator.Validation;
 import com.tsoft.jai.inquire.validator.Validator;
-import com.tsoft.jai.serdejson.Value;
-import com.tsoft.jai.serdeyaml.SerDeYaml;
+import com.tsoft.jai.serde.Value;
+import com.tsoft.jai.serde.serdeyaml.SerdeYaml;
 import com.tsoft.jai.tokio.sync.mpsc.UnboundedReceiver;
 import com.tsoft.jai.tokio.sync.mpsc.UnboundedSender;
 import com.tsoft.jai.utils.AbortSignal;
@@ -35,7 +36,7 @@ import static com.tsoft.jai.function.Functions.evalToolCalls;
 import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.inquire.spinner.Spinner.abortableRunWithSpinner;
 import static com.tsoft.jai.render.Mod.renderStream;
-import static com.tsoft.jai.serdejson.SerDe.json;
+import static com.tsoft.jai.serde.Value.json;
 import static com.tsoft.jai.tokio.Join.join;
 import static com.tsoft.jai.tokio.sync.mpsc.Unbounded.unboundedChannel;
 import static com.tsoft.jai.utils.AbortSignal.createAbortSignal;
@@ -59,7 +60,7 @@ public class Common {
     public static final List<ProviderModels> ALL_PROVIDER_MODELS =
         Config.loadModelsOverride()
             .ok()
-            .unwrapOrElse(() -> SerDeYaml.fromStr(MODELS_YAML, new TypeReference<List<ProviderModels>>() { }).unwrap());
+            .unwrapOrElse(() -> SerdeYaml.fromStr(MODELS_YAML, new TypeReference<List<ProviderModels>>() { }).unwrap());
 
     // static EMBEDDING_MODEL_RE: LazyLock<Regex> = LazyLock::new(|| {
     //    Regex::new(r"((^|/)(bge-|e5-|uae-|gte-|text-)|embed|multilingual|minilm)").unwrap()
@@ -460,7 +461,7 @@ public class Common {
         String apiKeyStr = clientConfig.get("api_key").asStr();
         if (apiKeyStr == null) {
             String envName = format("{}_api_key", client).toUpperCase();
-            apiKeyStr = System.getenv(envName);
+            apiKeyStr = Env.var(envName).ok().unwrapOr(null);
         }
         final String apiKey = apiKeyStr;
         if (isOpenAICompatible && !isBlank(apiBase) && !isBlank(apiKey)) {

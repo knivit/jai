@@ -1,14 +1,18 @@
 package com.tsoft.jai.config.agent;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.config.Config;
-import com.tsoft.jai.serdejson.SerDe;
+import com.tsoft.jai.serde.serdeyaml.SerdeYaml;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Map;
+
+import static com.tsoft.jai.anyhow.Result.*;
+import static com.tsoft.jai.std.Fs.readToString;
+import static com.tsoft.jai.utils.base.StringUtils.format;
 
 @Data
 @Accessors(chain = true)
@@ -50,8 +54,18 @@ public class AgentConfig {
     //        .with_context(|| format!("Failed to load agent config at '{}'", path.display()))?;
     //    Ok(config)
     // }
-    public static AgentConfig load(File configFile) {
-        return SerDe.readFromYamlFile(configFile, AgentConfig.class);
+    public static Result<AgentConfig> load(Path path) {
+        Result<String> contents = readToString(path)
+            .withContext(() -> format("Failed to read agent config file at '{}'", path));
+        if (isErr(contents)) {
+            return Err(contents);
+        }
+        Result<AgentConfig> config = SerdeYaml.fromStr(contents.getValue(), AgentConfig.class)
+            .withContext(() -> format("Failed to load agent config at '{}'", path));
+        if (isErr(config)) {
+            return Err(config);
+        }
+        return Ok(config.getValue());
     }
 
     public void loadEnvs(String name) {

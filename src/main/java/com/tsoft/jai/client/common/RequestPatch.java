@@ -1,6 +1,6 @@
 package com.tsoft.jai.client.common;
 
-import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serde.Value;
 import lombok.Data;
 import lombok.experimental.Accessors;
 

@@ -3,10 +3,12 @@ package com.tsoft.jai.anyhow;
 import com.tsoft.jai.core.Option;
 import lombok.*;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.tsoft.jai.core.Option.None;
 import static com.tsoft.jai.core.Option.Some;
+import static com.tsoft.jai.core.Panic.panic;
 import static com.tsoft.jai.utils.base.StringUtils.format;
 
 @RequiredArgsConstructor
@@ -81,11 +83,29 @@ public class Result<T> {
         return (result != null) && (ResultEnum.Err.equals(result.type));
     }
 
+    public T unwrap() {
+        return getValue();
+    }
+
+    public T unwrapOrElse(Function<String, T> fun) {
+        return switch (type) {
+            case Ok -> value;
+            case Err -> fun.apply(err.toString());
+        };
+    }
+
+    public T unwrapOrDefault(T def) {
+        return switch (type) {
+            case Ok -> value;
+            case Err -> def;
+        };
+    }
+
     public T getValue() {
-        if (isOk(this)) {
-            return value;
-        }
-        throw new IllegalStateException();
+        return switch (type) {
+            case Ok -> value;
+            case Err -> panic();
+        };
     }
 
     public Option<T> ok() {
@@ -93,10 +113,6 @@ public class Result<T> {
             case Ok -> Some(value);
             case Err -> None();
         };
-    }
-
-    public T unwrap() {
-        return getValue();
     }
 
     public Error<?> getErr() {

@@ -10,8 +10,8 @@ import com.tsoft.jai.inquire.prompt.Confirm;
 import com.tsoft.jai.inquire.prompt.Input;
 import com.tsoft.jai.inquire.Inquire;
 import com.tsoft.jai.rag.Rag;
-import com.tsoft.jai.serdejson.SerDe;
-import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serde.Value;
+import com.tsoft.jai.serde.serdeyaml.SerdeYaml;
 import com.tsoft.jai.utils.AbortSignal;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -27,8 +27,8 @@ import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.function.Functions.runLlmFunction;
 import static com.tsoft.jai.inquire.Inquire.println;
-import static com.tsoft.jai.serdejson.SerDe.toJson;
-import static com.tsoft.jai.serdejson.Value.asMap;
+import static com.tsoft.jai.serde.Value.asMap;
+import static com.tsoft.jai.serde.serdejson.SerdeJson.json;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.Mod.isUrl;
 import static com.tsoft.jai.utils.Mod.normalizeEnvName;
@@ -143,20 +143,28 @@ public class Agent {
     // }
     public static Result<Agent> init(Config config, String name, AbortSignal abortSignal) {
         Path functionsDir = config.agentFunctionsDir(name);
-        File definitionFile = functionsDir.resolve("index.yaml").toFile();
-        if (!definitionFile.exists()) {
+        Path definitionFile = functionsDir.resolve("index.yaml");
+        if (!Files.exists(definitionFile)) {
             return bail("Unknown agent '{}', name");
         }
         Path functionsFile = functionsDir.resolve("functions.json");
         Path ragFile = config.agentRagFile(name, DEFAULT_AGENT_NAME);
-        File configFile = config.agentConfigFile(name).toFile();
+        Path configFile = config.agentConfigFile(name);
         AgentConfig agentConfig;
-        if (configFile.exists()) {
-            agentConfig = AgentConfig.load(configFile);
+        if (Files.exists(configFile)) {
+            Result<AgentConfig> res = AgentConfig.load(configFile);
+            if (isErr(res)) {
+                return Err(res);
+            }
+            agentConfig = res.getValue();
         } else {
             agentConfig = AgentConfig.create(config);
         }
-        AgentDefinition definition = AgentDefinition.load(definitionFile);
+        Result<AgentDefinition> ret = AgentDefinition.load(definitionFile);
+        if (isErr(ret)) {
+            return Err(ret);
+        }
+        AgentDefinition definition = ret.getValue();
         Functions functions;
         if (Files.exists(functionsFile)) {
             Result<Functions> res = Functions.init(functionsFile);
@@ -437,14 +445,17 @@ public class Agent {
         if (!isEmpty(vars)) {
             value.put("variables", vars);
         }
-        value.put("config", asMap(toJson(this.config).getValue()));
-        value.put("definition", asMap(toJson(definition).getValue()));
+        value.put("config", asMap(json(this.config).getValue()));
+        value.put("definition", asMap(json(definition).getValue()));
         value.put("functions_dir", config.agentFunctionsDir(name));
         value.put("data_dir", config.agentDataDir(name));
         value.put("config_file", config.agentConfigFile(name));
 
-        String data = SerDe.toYamlString(value);
-        return Ok(data);
+        Result<String> data = SerdeYaml.toString(value);
+        if (isErr(data)) {
+            return Err(data);
+        }
+        return Ok(data.getValue());
     }
 
     // pub fn variable_envs(&self) -> HashMap<String, String> {

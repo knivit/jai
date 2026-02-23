@@ -66,6 +66,13 @@ public class Option<T> {
         return unwrapOr(def);
     }
 
+    public Option<T> orElse(Supplier<Option<T>> supplier) {
+        return switch (type) {
+            case Some -> this;
+            case None -> supplier.get();
+        };
+    }
+
     public T unwrapOrElse(Supplier<T> supplier) {
         return switch (type) {
             case Some -> value;

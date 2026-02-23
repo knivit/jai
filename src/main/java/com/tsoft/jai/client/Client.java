@@ -12,7 +12,7 @@ import com.tsoft.jai.config.Input;
 import com.tsoft.jai.reqwest.ClientBuilder;
 import com.tsoft.jai.reqwest.RequestBuilder;
 import com.tsoft.jai.reqwest.ReqwestClient;
-import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serde.Value;
 import com.tsoft.jai.utils.AbortSignal;
 import com.tsoft.jai.utils.base.Triple;
 

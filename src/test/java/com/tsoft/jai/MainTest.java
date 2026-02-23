@@ -4,13 +4,10 @@ import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.inquire.TestTerminal;
 import com.tsoft.jai.reqwest.TestHttpClient;
 import com.tsoft.jai.utils.Asset;
-import com.tsoft.jai.utils.base.ListUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.List;
 
 import static com.tsoft.jai.Main.main;
 import static com.tsoft.jai.reqwest.TestHttpClient.getCapturedHttpRequests;
@@ -29,14 +26,10 @@ class MainTest {
 
     private String execute(String ... args) {
         // Add a config file reference
-        String configFileName = CONFIG_FILE.getValue().toString();
-        List<String> list = ListUtils.of("--config-file", configFileName);
-        if (args != null) {
-            list.addAll(Arrays.asList(args));
-        }
+        System.setProperty("CONFIG_FILE_JAI", CONFIG_FILE.getValue().toString());
 
         // Start
-        main(list.toArray(new String[] { }));
+        main(args);
 
         // Return the gathered output
         return normalize(TestTerminal.getOutput(), CONFIG_DIR.getValue().toString(), "<dir>");

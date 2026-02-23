@@ -1,15 +1,19 @@
 package com.tsoft.jai.config.agent;
 
+import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.function.FunctionDeclaration;
 import com.tsoft.jai.function.Functions;
-import com.tsoft.jai.serdejson.SerDe;
+import com.tsoft.jai.serde.serdeyaml.SerdeYaml;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 
+import static com.tsoft.jai.anyhow.Result.*;
+import static com.tsoft.jai.std.Fs.readToString;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.StringUtils.format;
 import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 @Data
@@ -32,8 +36,25 @@ public class AgentDefinition {
     //#[serde(default)]
     private List<String> documents;
 
-    public static AgentDefinition load(File configFile) {
-        return SerDe.readFromYamlFile(configFile, AgentDefinition.class);
+    // pub fn load(path: &Path) -> Result<Self> {
+    //    let contents = read_to_string(path)
+    //        .with_context(|| format!("Failed to read agent index file at '{}'", path.display()))?;
+    //    let definition: Self = serde_yaml::from_str(&contents)
+    //        .with_context(|| format!("Failed to load agent index at '{}'", path.display()))?;
+    //    Ok(definition)
+    // }
+    public static Result<AgentDefinition> load(Path path) {
+        Result<String> contents = readToString(path)
+            .withContext(() -> format("Failed to read agent index file at '{}'", path));
+        if (isErr(contents)) {
+            return Err(contents);
+        }
+        Result<AgentDefinition> definition = SerdeYaml.fromStr(contents.getValue(), AgentDefinition.class)
+            .withContext(() -> format("Failed to load agent index at '{}'", path));
+        if (isErr(definition)) {
+            return Err(definition);
+        }
+        return Ok(definition.getValue());
     }
 
     //     fn banner(&self) -> String {

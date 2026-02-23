@@ -5,8 +5,8 @@ import com.tsoft.jai.reqwest.Event;
 import com.tsoft.jai.reqwest.EventSource;
 import com.tsoft.jai.reqwest.EventSourceError;
 import com.tsoft.jai.reqwest.RequestBuilder;
-import com.tsoft.jai.serdejson.SerDe;
-import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serde.serdejson.SerdeJson;
+import com.tsoft.jai.serde.Value;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.anyhow.Result.Ok;
@@ -93,7 +93,7 @@ public class Stream {
                         case StreamEnded -> {}
                         case InvalidStatusCode -> {
                             String text = err.getText();
-                            Result<Value> data = SerDe.parseJson(text);
+                            Result<Value> data = SerdeJson.fromStr(text);
                             if (isErr(data)) {
                                 return bail("Invalid response data: {} (status: {})", text, err.getStatus());
                             } else {

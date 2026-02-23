@@ -1,15 +1,26 @@
-package com.tsoft.jai.serdejson;
+package com.tsoft.jai.serde;
 
+import com.tsoft.jai.anyhow.Result;
+import com.tsoft.jai.serde.serdejson.SerdeJson;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
+
+import static com.tsoft.jai.anyhow.Result.*;
+import static com.tsoft.jai.utils.base.StringUtils.getFirstChar;
+import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
 @Slf4j
 @Data
 @Accessors(chain = true)
 public class Value {
+
+    private static final int MAX_RECURSION_LEVEL = 32;
 
     private final Object data;
 
@@ -21,9 +32,17 @@ public class Value {
         this.data = data;
     }
 
-    public static String json(List<Value> list) {
+    public static Result<String> json(List<Value> list) {
+        return json(list, 0);
+    }
+
+    private static Result<String> json(List<Value> list, int level) {
+        if (level > MAX_RECURSION_LEVEL) {
+            return Err("Serialization recursion level is more than ", MAX_RECURSION_LEVEL);
+        }
+
         if (list == null) {
-            return "null";
+            return Ok("null");
         }
 
         StringBuilder buf = new StringBuilder();
@@ -34,21 +53,33 @@ public class Value {
             if (i > 0) {
                 buf.append(',');
             }
-            buf.append(json(entry));
+            Result<String> res = json(entry, level + 1);
+            if (isErr(res)) {
+                return Err(res);
+            }
+            buf.append(res.getValue());
             i ++;
         }
         buf.append(']');
 
-        return buf.toString();
+        return Ok(buf.toString());
     }
 
-    public static String json(Value value) {
+    public static Result<String> json(Value value) {
+        return json(value, 0);
+    }
+
+    private static Result<String> json(Value value, int level) {
+        if (level > MAX_RECURSION_LEVEL) {
+            return Err("Serialization recursion level is more than ", MAX_RECURSION_LEVEL);
+        }
+
         if (value == null) {
-            return "null";
+            return Ok("null");
         }
 
         if (value.data == null) {
-            return "{ }";
+            return Ok("{ }");
         }
 
         StringBuilder buf = new StringBuilder();
@@ -65,9 +96,17 @@ public class Value {
                 Object item = entry.getValue();
                 String text;
                 if (item instanceof List list) {
-                    text = json(list);
+                    Result<String> res = json(list, level + 1);
+                    if (isErr(res)) {
+                        return Err(res);
+                    }
+                    text = res.getValue();
                 } else {
-                    text = SerDe.toJsonString(item);
+                    Result<String> res = SerdeJson.toString(item);
+                    if (isErr(res)) {
+                        return Err(res);
+                    }
+                    text = res.getValue();
                 }
                 buf.append('"').append(entry.getKey()).append('"').append(':').append(text);
                 i ++;
@@ -75,12 +114,65 @@ public class Value {
             buf.append('}');
         } else if (isList(value)) {
             List<Value> list = asList(value);
-            buf.append(json(list));
+            Result<String> res = json(list, level + 1);
+            if (isErr(res)) {
+                return Err(res);
+            }
+            buf.append(res.getValue());
         } else {
-            throw new IllegalStateException("Unknown data type (must be a Map or a List): " + value.data.getClass().getName());
+            return Err("Unknown data type (must be a Map or a List): {}", value.data.getClass().getName());
         }
 
-        return buf.toString();
+        return Ok(buf.toString());
+    }
+
+    public static Value json(Object ... values) {
+        if (values == null || values.length == 0) {
+            return null;
+        }
+
+        Value value = new Value();
+        for (int i = 0; i < values.length; i += 2) {
+            value.put((String)values[i], values[i + 1]);
+        }
+
+        return value;
+    }
+
+    public static Result<Value> json(Object obj, ObjectMapper mapper) {
+        try {
+            if (obj == null) {
+                return Ok(new Value());
+            }
+            String json = mapper.writeValueAsString(obj);
+            return fromStr(json, mapper);
+        } catch (Exception ex) {
+            return Err(ex);
+        }
+    }
+
+    public static Result<Value> fromStr(String str, ObjectMapper mapper) {
+        if (isBlank(str)) {
+            return Ok(new Value());
+        }
+
+        try {
+            char ch = getFirstChar(str);
+
+            if (ch == '{') {
+                LinkedHashMap<String, Object> map = mapper.readValue(str, new TypeReference<>() {});
+                return Ok(new Value(map));
+            }
+
+            if (ch == '[') {
+                List<LinkedHashMap<String, Object>> map = mapper.readValue(str, new TypeReference<>() {});
+                return Ok(new Value(map));
+            }
+
+            return Err("Not a Value.");
+        } catch (JacksonException ex) {
+            return Err(ex);
+        }
     }
 
     public Value get(Object ... path) {

@@ -1,4 +1,4 @@
-package com.tsoft.jai.serdejson;
+package com.tsoft.jai.serde;
 
 import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.reqwest.Response;
@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class SerDeTest {
+class SerdeTest {
 
     @Test
     void parse() {

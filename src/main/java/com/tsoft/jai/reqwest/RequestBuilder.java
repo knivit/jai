@@ -1,7 +1,7 @@
 package com.tsoft.jai.reqwest;
 
 import com.tsoft.jai.anyhow.Result;
-import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serde.Value;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -14,8 +14,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static com.tsoft.jai.anyhow.Result.Err;
-import static com.tsoft.jai.anyhow.Result.Ok;
+import static com.tsoft.jai.anyhow.Result.*;
+import static com.tsoft.jai.core.Panic.panic;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
@@ -73,7 +73,11 @@ public class RequestBuilder {
     public RequestBuilder json(Value value) {
         header("content-type", "application/json");
         header("accept", "text/event-stream");
-        this.body = Value.json(value);
+        Result<String> res = Value.json(value);
+        if (isErr(res)) {
+            panic(res.toString());
+        }
+        body = res.getValue();
         return this;
     }
 

@@ -18,9 +18,6 @@ import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 @Accessors(chain = true)
 public class Cli {
 
-    /// Path to a config file
-    private String configFile;
-
     /// Select a LLM model
     //#[clap(short, long)]
     private String model;
@@ -209,11 +206,6 @@ public class Cli {
         while (!stack.isEmpty()) {
             String arg = stack.pop();
 
-            if ("--config-file".equals(arg)) {
-                configFile = getArg(stack, "error: a value is required for '--config-file <FILE>' but none was supplied");
-                continue;
-            }
-
             if ("--model".equals(arg) || "-m".equals(arg)) {
                 model = getArg(stack, "error: a value is required for '--model <MODEL>' but none was supplied");
                 continue;
@@ -366,7 +358,6 @@ public class Cli {
               [TEXT]...  Input text
             
             Options:
-                  --config-file <FILE>             Path to a config file
               -m, --model <MODEL>                  Select a LLM model
                   --prompt <PROMPT>                Use the system prompt
               -r, --role <ROLE>                    Select a role

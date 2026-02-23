@@ -1,7 +1,7 @@
 package com.tsoft.jai.function;
 
 import com.tsoft.jai.config.Config;
-import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serde.Value;
 import lombok.Data;
 import lombok.experimental.Accessors;
 

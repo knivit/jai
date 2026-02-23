@@ -21,7 +21,7 @@ public final class Fs {
 
     public static Result<String> readToString(Path path) {
         try {
-            String content = Files.readString(Paths.get(BuiltIn.class.getResource(path.toString()).toURI()));
+            String content = Files.readString(path);
             return Ok(content);
         } catch (Exception ex) {
             return Err(ex);

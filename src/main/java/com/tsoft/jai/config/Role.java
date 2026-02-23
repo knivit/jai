@@ -8,8 +8,8 @@ import com.tsoft.jai.client.message.MessageContent;
 import com.tsoft.jai.client.message.MessageRole;
 import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.config.agent.Agent;
-import com.tsoft.jai.serdejson.SerDe;
-import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serde.Value;
+import com.tsoft.jai.serde.serdeyaml.SerdeYaml;
 import com.tsoft.jai.utils.Asset;
 import com.tsoft.jai.utils.base.Tuple;
 import lombok.Data;
@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import static com.tsoft.jai.anyhow.Result.*;
-import static com.tsoft.jai.serdejson.Value.asMap;
+import static com.tsoft.jai.serde.Value.asMap;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.base.StringUtils.*;
 import static com.tsoft.jai.utils.Variables.interpolateVariables;
@@ -92,20 +92,20 @@ public class Role {
     // }
     public static Role create(String name, String content) {
         String metadata = "";
-        String prompt = isBlank(content) ? "" : content.trim();
+        String prompt = isEmpty(content) ? "" : content.trim();
         if (RE_METADATA.matcher(content).hasMatch()) {
             String[] caps = RE_METADATA.split(content);
             String metadataValue = (caps.length <= 1) ? null : caps[1];
             String promptValue = (caps.length <= 2) ? null : caps[2];
-            if (!isBlank(metadataValue) && !isBlank(promptValue)) {
+            if (!isEmpty(metadataValue) && !isEmpty(promptValue)) {
                 metadata = metadataValue.trim();
                 prompt = promptValue.trim();
             }
         }
         prompt = interpolateVariables(prompt);
         Role role = new Role().setName(name).setPrompt(prompt);
-        if (!isBlank(metadata)) {
-            Result<Value> res = SerDe.parseYaml(metadata);
+        if (!isEmpty(metadata)) {
+            Result<Value> res = SerdeYaml.fromStr(metadata);
             if (isOk(res)) {
                 Value value = res.getValue();
                 for (Map.Entry<String, Object> entry : asMap(value).entrySet()) {

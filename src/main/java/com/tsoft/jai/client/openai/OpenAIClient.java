@@ -21,22 +21,21 @@ import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.reqwest.RequestBuilder;
 import com.tsoft.jai.reqwest.Response;
 import com.tsoft.jai.reqwest.StatusCode;
-import com.tsoft.jai.serdejson.SerDe;
-import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serde.Value;
+import com.tsoft.jai.serde.serdejson.SerdeJson;
 import com.tsoft.jai.utils.base.Triple;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
 import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.client.common.Common.catchError;
 import static com.tsoft.jai.client.stream.Stream.sseStream;
-import static com.tsoft.jai.serdejson.SerDe.json;
-import static com.tsoft.jai.serdejson.Value.isMap;
+import static com.tsoft.jai.serde.Value.isMap;
+import static com.tsoft.jai.serde.Value.json;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.Mod.stripThinkTag;
 import static com.tsoft.jai.utils.base.StringUtils.format;
@@ -236,7 +235,7 @@ public class OpenAIClient extends Client {
                         if (functionArguments == null) {
                             functionArguments = "{}";
                         }
-                        Result<Value> arguments = SerDe.parseJson(functionArguments).withContext(() ->
+                        Result<Value> arguments = SerdeJson.fromStr(functionArguments).withContext(() ->
                             format("Tool call '{}' have non-JSON arguments '{}'", functionName, functionArguments));
                         if (isErr(arguments)) {
                             return Err(arguments);
@@ -249,7 +248,7 @@ public class OpenAIClient extends Client {
                     return Ok(true);
                 }
 
-                Result<Value> res = SerDe.parseJson(message.getData());
+                Result<Value> res = SerdeJson.fromStr(message.getData());
                 if (isErr(res)) {
                     return Err(res);
                 }
@@ -294,7 +293,7 @@ public class OpenAIClient extends Client {
                             if (functionArguments == null) {
                                 functionArguments = "{}";
                             }
-                            Result<Value> arguments = SerDe.parseJson(functionArguments).withContext(() ->
+                            Result<Value> arguments = SerdeJson.fromStr(functionArguments).withContext(() ->
                                 format("Tool call '{}' have non-JSON arguments '{function_arguments}'", functionName, functionArguments));
                             if (isErr(arguments)) {
                                 return Err(arguments);
@@ -658,7 +657,7 @@ public class OpenAIClient extends Client {
             for (Value call : calls) {
                 String name = call.asStr("function", "name");
                 String arguments = call.asStr("function", "arguments");
-                Result<Value> res = SerDe.parseJson(arguments).withContext(() ->
+                Result<Value> res = SerdeJson.fromStr(arguments).withContext(() ->
                     format("Tool call '{}' have non-JSON arguments '{}'", name, arguments));
                 if (isErr(res)) {
                     return Err(res);

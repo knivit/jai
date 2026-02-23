@@ -1,11 +1,10 @@
 package com.tsoft.jai.reqwest;
 
 import com.tsoft.jai.anyhow.Result;
-import com.tsoft.jai.serdejson.SerDe;
-import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serde.serdejson.SerdeJson;
+import com.tsoft.jai.serde.Value;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.experimental.Accessors;
 
 @Getter
@@ -20,7 +19,7 @@ public class Response {
 
     public Response setValue(String value) {
         this.value = value;
-        json = SerDe.parseJson(value);
+        json = SerdeJson.fromStr(value);
         return this;
     }
 }
