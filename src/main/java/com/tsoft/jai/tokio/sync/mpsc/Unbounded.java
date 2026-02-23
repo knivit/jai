@@ -1,6 +1,5 @@
 package com.tsoft.jai.tokio.sync.mpsc;
 
-import com.tsoft.jai.inquire.spinner.SpinnerEvent;
 import com.tsoft.jai.utils.base.Tuple;
 
 public class Unbounded {

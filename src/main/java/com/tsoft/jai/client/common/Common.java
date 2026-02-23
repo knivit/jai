@@ -274,7 +274,7 @@ public class Common {
         List<ToolCall> toolCalls = tuple.second();
         return switch (getType(sendRet)) {
             case Ok -> {
-                if (!isBlank(text) && !text.endsWith("\n")) {
+                if (!isEmpty(text) && !text.endsWith("\n")) {
                     println();
                 }
                 Result<List<ToolResult>> res = evalToolCalls(client.getConfig(), toolCalls);
@@ -284,7 +284,7 @@ public class Common {
                 yield Ok(new Tuple<>(text, res.getValue()));
             }
             case Err -> {
-                if (!isBlank(text)) {
+                if (!isEmpty(text)) {
                     println();
                 }
                 yield Err(sendRet);

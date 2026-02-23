@@ -2,6 +2,7 @@ package com.tsoft.jai.render;
 
 import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.stream.SseEvent;
+import com.tsoft.jai.core.Option;
 import com.tsoft.jai.inquire.spinner.Spinner;
 import com.tsoft.jai.render.markdown.MarkdownRender;
 import com.tsoft.jai.tokio.sync.mpsc.UnboundedReceiver;
@@ -10,6 +11,7 @@ import com.tsoft.jai.utils.AbortSignal;
 import java.io.PrintWriter;
 
 import static com.tsoft.jai.anyhow.Result.*;
+import static com.tsoft.jai.core.Option.Some;
 import static com.tsoft.jai.inquire.Inquire.*;
 import static com.tsoft.jai.inquire.spinner.Spinner.spawnSpinner;
 import static com.tsoft.jai.utils.AbortSignal.pollAbortSignal;
@@ -78,8 +80,35 @@ public class Stream {
     //    }
     //    Ok(())
     // }
-    public static void rawStream(UnboundedReceiver<SseEvent> rx, AbortSignal abortSignal) {
+    public static Result<?> rawStream(UnboundedReceiver<SseEvent> rx, AbortSignal abortSignal) {
+        Option<Spinner> spinner = Some(spawnSpinner("Generating"));
 
+        boolean done = false;
+        while (!done) {
+            if (abortSignal.aborted()) {
+                break;
+            }
+            Result<SseEvent> res = rx.recv();
+            Spinner spin = spinner.take();
+            if (spin != null) {
+                spin.stop();
+            }
+
+            SseEvent evt = res.getValue();
+            switch (evt.getType()) {
+                case Text -> {
+                    print("{}", evt.getText());
+                }
+                case Done -> {
+                    done = true;
+                }
+            }
+        }
+        Spinner spin = spinner.take();
+        if (spin != null) {
+            spin.stop();
+        }
+        return Ok();
     }
 
     // async fn markdown_stream_inner(

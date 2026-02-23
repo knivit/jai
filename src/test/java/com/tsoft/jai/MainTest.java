@@ -1,7 +1,6 @@
 package com.tsoft.jai;
 
 import com.tsoft.jai.anyhow.Result;
-import com.tsoft.jai.config.Config;
 import com.tsoft.jai.inquire.TestTerminal;
 import com.tsoft.jai.reqwest.TestHttpClient;
 import com.tsoft.jai.utils.Asset;
@@ -75,7 +74,7 @@ class MainTest {
         // Step 2
         TestTerminal.newSession();
 
-        TestTerminal.prepareInput("Hello !");
+        TestTerminal.prepareInputs("Hello !");
 
         TestHttpClient.newSession();
 
@@ -121,14 +120,24 @@ class MainTest {
             """
         );
 
-        assertThat(execute("--session", "test")).isEqualTo("\n\n");
+        assertThat(execute("--session", "test")).isEqualTo("""
+            <think>
+            Okay
+            </think>
+            
+            I don't know
+            
+            """);
 
         assertThat(getCapturedHttpRequests()).containsExactly(
             """
-            {"model":"lfm2.5-thinking","messages":[{"role":"user","content":"Hello !"}],"stream":true}"""
+            {"model":"lfm2.5-thinking","messages":[{"role":"User","content":"Hello !"}],"stream":true}"""
         );
 
-        assertThat(execute("--list-sessions")).isEqualTo("");
+        // Step 3
+        TestTerminal.newSession();
+
+        assertThat(execute("--list-sessions")).isEqualTo("\n");
     }
 
     @Test

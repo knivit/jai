@@ -6,6 +6,7 @@ import org.jline.terminal.TerminalBuilder;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 
 public class TestTerminal {
@@ -28,12 +29,8 @@ public class TestTerminal {
         output.reset();
     }
 
-    public static void prepareInput(String input) {
-        prepareInputs(List.of(input));
-    }
-
-    public static void prepareInputs(List<String> inputs) {
-        Inquire.lineReaderBuilder = new TestLineReaderFactory(Inquire.terminal, inputs);
+    public static void prepareInputs(String ... inputs) {
+        Inquire.lineReaderBuilder = new TestLineReaderFactory(Inquire.terminal, Arrays.asList(inputs));
     }
 
     public static String getOutput() {

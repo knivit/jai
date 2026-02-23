@@ -20,7 +20,7 @@ public class Option<T> {
     private static final Option<?> None = new Option<>();
 
     @Getter
-    private final OptionEnum type;
+    private OptionEnum type;
     private T value;
 
     public static <T> Option<T> None() {
@@ -77,6 +77,19 @@ public class Option<T> {
         return switch (type) {
             case Some -> value;
             case None -> supplier.get();
+        };
+    }
+
+    // Takes the value out of the option, leaving a None in its place
+    public T take() {
+        return switch (type) {
+            case Some -> {
+                T old = value;
+                type = OptionEnum.None;
+                value = null;
+                yield old;
+            }
+            case None -> null;
         };
     }
 }

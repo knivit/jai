@@ -8,6 +8,7 @@ import com.tsoft.jai.utils.base.Tuple;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +17,7 @@ import static com.tsoft.jai.anyhow.Result.Ok;
 import static com.tsoft.jai.anyhow.Result.isErr;
 import static com.tsoft.jai.utils.base.StringUtils.isBlank;
 
+@Slf4j
 @Data
 @Accessors(chain = true)
 @RequiredArgsConstructor
@@ -72,7 +74,13 @@ public class SseHandler {
     //    }
     // }
     public void done() {
-        sender.send(SseEvent.Done());
+        Result<?> ret = sender.send(SseEvent.Done());
+        if (isErr(ret)) {
+            if (abortSignal.aborted()) {
+                return;
+            }
+            log.warn("Failed to send SseEvent:Done");
+        }
     }
 
     // pub fn tool_call(&mut self, call: ToolCall) -> Result<()> {

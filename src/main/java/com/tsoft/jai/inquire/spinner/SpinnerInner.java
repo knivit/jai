@@ -14,7 +14,7 @@ public class SpinnerInner {
     // const DATA: [&'static str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
     private static final String[] DATA = {"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"};
 
-    private Integer index;
+    private int index;
     private String message;
 
     public static SpinnerInner getDefault() {
