@@ -8,7 +8,7 @@ import com.tsoft.jai.client.stream.SseEvent;
 import com.tsoft.jai.client.stream.SseHandler;
 import com.tsoft.jai.config.Config;
 import com.tsoft.jai.config.Input;
-import com.tsoft.jai.env.Env;
+import com.tsoft.jai.std.env.Env;
 import com.tsoft.jai.function.ToolCall;
 import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.inquire.prompt.MultiSelect;

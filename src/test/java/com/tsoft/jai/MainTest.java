@@ -1,6 +1,7 @@
 package com.tsoft.jai;
 
 import com.tsoft.jai.anyhow.Result;
+import com.tsoft.jai.config.Config;
 import com.tsoft.jai.inquire.TestTerminal;
 import com.tsoft.jai.reqwest.TestHttpClient;
 import com.tsoft.jai.utils.Asset;
@@ -27,6 +28,7 @@ class MainTest {
     private String execute(String ... args) {
         // Add a config file reference
         System.setProperty("CONFIG_FILE_JAI", CONFIG_FILE.getValue().toString());
+        System.setProperty("CONFIG_DIR_JAI", CONFIG_DIR.getValue().toString());
 
         // Start
         main(args);
@@ -153,6 +155,7 @@ class MainTest {
             highlight               true
             theme                   null
             config_file             <dir>/config.yaml
+            env_file                <dir>/.env
             roles_dir               <dir>/roles
             sessions_dir            <dir>/sessions
             rags_dir                <dir>/rags
