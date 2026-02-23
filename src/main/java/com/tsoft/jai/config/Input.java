@@ -5,6 +5,7 @@ import com.tsoft.jai.client.Client;
 import com.tsoft.jai.client.common.ChatCompletionsData;
 import com.tsoft.jai.client.message.*;
 import com.tsoft.jai.client.model.Model;
+import com.tsoft.jai.core.Option;
 import com.tsoft.jai.function.FunctionDeclaration;
 import com.tsoft.jai.function.ToolResult;
 import com.tsoft.jai.rag.Rag;

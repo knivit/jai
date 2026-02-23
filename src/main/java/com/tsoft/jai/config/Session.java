@@ -14,12 +14,12 @@ import com.tsoft.jai.inquire.prompt.Confirm;
 import com.tsoft.jai.inquire.prompt.Text;
 import com.tsoft.jai.serdejson.SerDe;
 import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serdeyaml.SerDeYaml;
 import com.tsoft.jai.utils.base.CollectionsUtils;
 import com.tsoft.jai.utils.base.Tuple;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -33,6 +33,7 @@ import static com.tsoft.jai.config.Config.ensureParentExists;
 import static com.tsoft.jai.inquire.Inquire.println;
 import static com.tsoft.jai.serdejson.SerDe.toJson;
 import static com.tsoft.jai.serdejson.Value.asMap;
+import static com.tsoft.jai.std.Fs.readToString;
 import static com.tsoft.jai.std.Fs.write;
 import static com.tsoft.jai.utils.base.StringUtils.*;
 
@@ -147,14 +148,23 @@ public class Session {
     //
     //    Ok(session)
     // }
-    public static Result<Session> load(Config config, String name, File path) {
-        Session session = SerDe.readFromYamlFile(path, Session.class);
-
-        Result<Model> res = Model.retrieveModel(config, session.modelId, ModelType.Chat);
+    public static Result<Session> load(Config config, String name, Path path) {
+        Result<String> res = readToString(path).withContext(() -> format("Failed to load session {} at {}", name, path));
         if (isErr(res)) {
             return Err(res);
         }
-        session.setModel(res.getValue());
+        String content = res.getValue();
+        Result<Session> ret = SerDeYaml.fromStr(content, Session.class).withContext(() -> format("Invalid session {}", name));
+        if (isErr(ret)) {
+            return Err(ret);
+        }
+        Session session = ret.getValue();
+
+        Result<Model> rem = Model.retrieveModel(config, session.modelId, ModelType.Chat);
+        if (isErr(rem)) {
+            return Err(rem);
+        }
+        session.setModel(rem.getValue());
 
         Tuple<String, String> tuple = splitOnce(name, '/');
         String autoname = tuple.second();
@@ -166,7 +176,7 @@ public class Session {
             }
         } else {
             session.name = name;
-            session.path = path.getAbsolutePath();
+            session.path = path.toString();
         }
 
         if (!isBlank(session.roleName)) {
@@ -614,7 +624,10 @@ public class Session {
                 }
             } else if (Boolean.TRUE.equals(saveSession) && TEMP_SESSION_NAME.equals(sessionName)) {
                 sessionsDir = sessionsDir.resolve("_");
-                ensureParentExists(sessionsDir.toFile());
+                Result<?> res = ensureParentExists(sessionsDir);
+                if (isErr(res)) {
+                    return Err(res);
+                }
 
                 LocalDateTime now = LocalDateTime.now();
                 sessionName = now.format(DateTimeFormatter.ofPattern("yyyy-MM-ddTHH:mm:ss"));
@@ -659,7 +672,10 @@ public class Session {
     //    Ok(())
     // }
     public Result<?> save(String sessionName, Path sessionPath, boolean isRepl) {
-        ensureParentExists(sessionPath.toFile());
+        Result<?> ret = ensureParentExists(sessionPath);
+        if (isErr(ret)) {
+            return Err(ret);
+        }
 
         path = sessionPath.toString();
 

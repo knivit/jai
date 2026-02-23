@@ -21,6 +21,11 @@ public class TestLineReader extends LineReaderImpl {
     }
 
     @Override
+    public String readLine(String prompt) throws UserInterruptException, EndOfFileException {
+        return readLine();
+    }
+
+    @Override
     public String readLine() throws UserInterruptException, EndOfFileException {
         if (USER_INTERRUPTION.equals(input)) {
             throw new UserInterruptException("");

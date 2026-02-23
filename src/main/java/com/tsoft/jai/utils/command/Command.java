@@ -1,9 +1,12 @@
 package com.tsoft.jai.utils.command;
 
+import com.tsoft.jai.anyhow.Result;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +15,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
+import static com.tsoft.jai.anyhow.Result.Ok;
 import static java.util.Collections.addAll;
 
 public final class Command {
@@ -178,8 +182,8 @@ public final class Command {
     //    child.wait()?;
     //    Ok(())
     // }
-    public static void editFile(String editor, File roleFile) {
-
+    public static Result<?> editFile(String editor, Path path) {
+        return Ok();
     }
 
     private Command() { }

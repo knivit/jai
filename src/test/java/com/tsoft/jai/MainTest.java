@@ -72,10 +72,12 @@ class MainTest {
 
     @Test
     void main_start_and_list_sessions() {
+        // Step 1
         TestTerminal.newSession();
 
         assertThat(execute("--list-sessions")).isEqualTo("\n");
 
+        // Step 2
         TestTerminal.newSession();
 
         TestTerminal.prepareInput("Hello !");

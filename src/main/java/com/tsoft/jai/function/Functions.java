@@ -2,21 +2,25 @@ package com.tsoft.jai.function;
 
 import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.config.Config;
-import com.tsoft.jai.serdejson.SerDe;
+import com.tsoft.jai.serdejson.SerdeJson;
 import com.tsoft.jai.serdejson.Value;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import tools.jackson.core.type.TypeReference;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import static com.tsoft.jai.anyhow.Macros.bail;
-import static com.tsoft.jai.anyhow.Result.Ok;
+import static com.tsoft.jai.anyhow.Result.*;
 import static com.tsoft.jai.serdejson.SerDe.json;
+import static com.tsoft.jai.std.Fs.readToString;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.StringUtils.format;
 
 @Data
 @Accessors(chain = true)
@@ -89,15 +93,21 @@ public class Functions {
     //
     //    Ok(Self { declarations })
     // }
-    public static Functions init(File functionsFile) {
+    public static Result<Functions> init(Path declarationsPath) {
         List<FunctionDeclaration> declarations;
-        if (functionsFile.exists()) {
-            declarations = SerDe.readFromYamlFile(functionsFile, new TypeReference<>() { });
+        if (Files.exists(declarationsPath)) {
+            Supplier<String> ctx = () -> format("Failed to load functions at {}", declarationsPath);
+            Result<String> content = readToString(declarationsPath).withContext(ctx);
+            if (isErr(content)) {
+                return Err(content);
+            }
+            Result<List<FunctionDeclaration>> res = SerdeJson.fromStr(content.getValue(), new TypeReference<List<FunctionDeclaration>>() { }).withContext(ctx);
+            declarations = res.getValue();
         } else {
             declarations = new ArrayList<>();
         }
 
-        return new Functions().setDeclarations(declarations);
+        return Ok(new Functions().setDeclarations(declarations));
     }
 
     // pub fn run_llm_function(

@@ -8,6 +8,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -41,9 +42,18 @@ public final class Fs {
         return Ok(Collections.emptyList());
     }
 
-    public static Result<Void> write(Path path, String content) {
+    public static Result<?> write(Path path, String content) {
         try {
-            Files.writeString(path, content);
+            Files.writeString(path, content, StandardOpenOption.CREATE_NEW);
+            return Ok();
+        } catch (Exception ex) {
+            return Err(ex);
+        }
+    }
+
+    public static Result<?> removeFile(Path path) {
+        try {
+            Files.delete(path);
             return Ok();
         } catch (Exception ex) {
             return Err(ex);

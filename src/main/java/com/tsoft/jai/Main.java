@@ -84,9 +84,13 @@ public class Main {
             || cli.isListMacros()
             || cli.isListSessions();
 
-        Config config = Config.init(workingMode, infoFlag, cli.getConfigFile());
-
-        run(config, cli, text);
+        Result<Config> res = Config.init(workingMode, infoFlag);
+        if (isErr(res)) {
+            System.exit(-1);
+        } else {
+            Config config = res.getValue();
+            run(config, cli, text);
+        }
     }
 
     // async fn run(config: GlobalConfig, cli: Cli, text: Option<String>) -> Result<()> {
@@ -271,25 +275,43 @@ public class Main {
             if (cli.getAgentVariable() != null) {
                 config.setAgentVariables(cli.getAgentVariable());
             }
-            config.useAgent(agent, session, abortSignal);
+            Result<?> ret = config.useAgent(agent, session, abortSignal);
             config.setAgentVariables(Collections.emptyMap());
-            return Ok();
+            return ret;
         } else {
             String prompt = cli.getPrompt();
             if (!isBlank(prompt)) {
-                config.usePrompt(prompt);
+                Result<?> res = config.usePrompt(prompt);
+                if (isErr(res)) {
+                    return Err(res);
+                }
             } else if (!isBlank(cli.getRole())) {
-                config.useRole(cli.getRole());
+                Result<?> res = config.useRole(cli.getRole());
+                if (isErr(res)) {
+                    return Err(res);
+                }
             } else if (cli.isExecute()) {
-                config.useRole(SHELL_ROLE);
+                Result<?> res = config.useRole(SHELL_ROLE);
+                if (isErr(res)) {
+                    return Err(res);
+                }
             } else if (cli.isCode()) {
-                config.useRole(CODE_ROLE);
+                Result<?> res = config.useRole(CODE_ROLE);
+                if (isErr(res)) {
+                    return Err(res);
+                }
             }
             if (!isBlank(cli.getSession())) {
-                config.useSession(cli.getSession());
+                Result<?> res = config.useSession(cli.getSession());
+                if (isErr(res)) {
+                    return Err(res);
+                }
             }
             if (!isBlank(cli.getRag())) {
-                config.useRag(cli.getRag(), abortSignal);
+                Result<?> res = config.useRag(cli.getRag(), abortSignal);
+                if (isErr(res)) {
+                    return Err(res);
+                }
             }
         }
         if (cli.isListSessions()) {
@@ -320,7 +342,10 @@ public class Main {
 
         boolean isRepl = WorkingMode.Repl.equals(config.getWorkingMode());
         if (cli.isRebuildRag()) {
-            Config.rebuildRag(config, abortSignal);
+            Result<?> res = Config.rebuildRag(config, abortSignal);
+            if (isErr(res)) {
+                return Err(res);
+            }
             if (isRepl) {
                 return Ok();
             }

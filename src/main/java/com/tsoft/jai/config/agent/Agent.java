@@ -147,8 +147,8 @@ public class Agent {
         if (!definitionFile.exists()) {
             return bail("Unknown agent '{}', name");
         }
-        File functionsFile = functionsDir.resolve("functions.json").toFile();
-        File ragFile = config.agentRagFile(name, DEFAULT_AGENT_NAME);
+        Path functionsFile = functionsDir.resolve("functions.json");
+        Path ragFile = config.agentRagFile(name, DEFAULT_AGENT_NAME);
         File configFile = config.agentConfigFile(name).toFile();
         AgentConfig agentConfig;
         if (configFile.exists()) {
@@ -158,8 +158,12 @@ public class Agent {
         }
         AgentDefinition definition = AgentDefinition.load(definitionFile);
         Functions functions;
-        if (functionsFile.exists()) {
-            functions = Functions.init(functionsFile);
+        if (Files.exists(functionsFile)) {
+            Result<Functions> res = Functions.init(functionsFile);
+            if (isErr(res)) {
+                return Err(res);
+            }
+            functions = res.getValue();
         } else {
             functions = new Functions();
         }
@@ -185,8 +189,12 @@ public class Agent {
         }
 
         Rag rag = null;
-        if (ragFile.exists()) {
-            rag = Rag.load(config, DEFAULT_AGENT_NAME, ragFile);
+        if (Files.exists(ragFile)) {
+            Result<Rag> res = Rag.load(config, DEFAULT_AGENT_NAME, ragFile);
+            if (isErr(res)) {
+                return Err(res);
+            }
+            rag = res.getValue();
         } else {
             if (!isEmpty(definition.getDocuments()) && !config.isInfoFlag()) {
                 boolean ans = false;
@@ -209,7 +217,11 @@ public class Agent {
                             documentPaths.add(newPath);
                         }
                     }
-                    rag = Rag.init(config, "rag", ragFile, documentPaths, abortSignal);
+                    Result<Rag> res = Rag.init(config, "rag", ragFile, documentPaths, abortSignal);
+                    if (isErr(res)) {
+                        return Err(res);
+                    }
+                    rag = res.getValue();
                 }
             }
         }

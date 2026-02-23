@@ -13,7 +13,7 @@ public final class StringUtils {
     }
 
     public static Tuple<String, String> splitOnce(String str, char ... chs) {
-        if (str == null || chs == null ||  chs.length == 0) {
+        if (str == null || chs == null || chs.length == 0) {
             return new Tuple<>(null, null);
         }
 

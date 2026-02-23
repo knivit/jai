@@ -3,17 +3,19 @@ package com.tsoft.jai.rag;
 import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.model.Model;
 import com.tsoft.jai.config.Config;
-import com.tsoft.jai.serdejson.SerDe;
 import com.tsoft.jai.serdejson.Value;
+import com.tsoft.jai.serdeyaml.SerDeYaml;
 import com.tsoft.jai.utils.AbortSignal;
 import com.tsoft.jai.utils.base.Tuple;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Supplier;
 
-import static com.tsoft.jai.anyhow.Result.Ok;
+import static com.tsoft.jai.anyhow.Result.*;
+import static com.tsoft.jai.std.Fs.readToString;
 import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.base.StringUtils.format;
 
@@ -72,8 +74,8 @@ public class Rag {
     //    }
     //    Ok(rag)
     // }
-    public static Rag init(Config config, String name, File savePath, List<String> docPaths, AbortSignal abortSignal) {
-        return new Rag();
+    public static Result<Rag> init(Config config, String name, Path savePath, List<String> docPaths, AbortSignal abortSignal) {
+        return Ok(new Rag());
     }
 
     // pub fn load(config: &GlobalConfig, name: &str, path: &Path) -> Result<Self> {
@@ -82,9 +84,17 @@ public class Rag {
     //    let data: RagData = serde_yaml::from_str(&content).with_context(err)?;
     //    Self::create(config, name, path, data)
     // }
-    public static Rag load(Config config, String name, File path) {
-        RagData data = SerDe.readFromYamlFile(path, RagData.class);
-        return create(config, name, path, data);
+    public static Result<Rag> load(Config config, String name, Path path) {
+        Supplier<String> err = () -> format("Failed to load rag '{}' at '{}'", name, path);
+        Result<String> content = readToString(path).withContext(err);
+        if (isErr(content)) {
+            return Err(content);
+        }
+        Result<RagData> data = SerDeYaml.fromStr(content.getValue(), RagData.class).withContext(err);
+        if (isErr(data)) {
+            return Err(data);
+        }
+        return create(config, name, path, data.getValue());
     }
 
     // pub fn create(config: &GlobalConfig, name: &str, path: &Path, data: RagData) -> Result<Self> {
@@ -104,8 +114,8 @@ public class Rag {
     //    };
     //    Ok(rag)
     // }
-    public static Rag create(Config config, String name, File path, RagData data) {
-        return new Rag();
+    public static Result<Rag> create(Config config, String name, Path path, RagData data) {
+        return Ok(new Rag());
     }
 
     // pub fn export(&self) -> Result<String> {
@@ -151,8 +161,11 @@ public class Rag {
             .put("batch_size", data.getBatchSize())
             .put("document_paths", data.getDocumentPaths())
             .put("files", files);
-        String output = SerDe.toYamlString(value);
-        return Ok(output);
+        Result<String> output = SerDeYaml.toString(value).withContext(() -> format("Unable to show info about rag '{}'", name));
+        if (isErr(output)) {
+            return Err(output);
+        }
+        return Ok(output.getValue());
     }
 
     // pub async fn search(
