@@ -1,6 +1,5 @@
 package com.tsoft.jai.inquire;
 
-import lombok.Setter;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.UserInterruptException;
 import org.jline.reader.impl.LineReaderImpl;
@@ -10,14 +9,11 @@ import java.io.IOException;
 
 public class TestLineReader extends LineReaderImpl {
 
-    static final String USER_INTERRUPTION = "Ctrl+C";
-    static final String END_OF_FILE = "Ctrl+D";
+    private final TestTerminalInput terminalInput;
 
-    @Setter
-    private String input;
-
-    public TestLineReader(Terminal terminal) throws IOException {
+    public TestLineReader(Terminal terminal, TestTerminalInput input) throws IOException {
         super(terminal);
+        terminalInput = input;
     }
 
     @Override
@@ -26,15 +22,21 @@ public class TestLineReader extends LineReaderImpl {
     }
 
     @Override
-    public String readLine() throws UserInterruptException, EndOfFileException {
-        if (USER_INTERRUPTION.equals(input)) {
-            throw new UserInterruptException("");
-        }
+    public String readLine(String prompt, String rightPrompt, Character mask, String buffer)  throws UserInterruptException, EndOfFileException {
+        return readLine();
+    }
 
-        if (END_OF_FILE.equals(input)) {
+    @Override
+    public String readLine() throws UserInterruptException, EndOfFileException {
+        TestInput input = terminalInput.get();
+        if (TestInput.is(input, TestInput.TextInputEnum.CtrlD)) {
             throw new EndOfFileException("");
         }
 
-        return input;
+        if (TestInput.is(input, TestInput.TextInputEnum.CtrlC)) {
+            throw new UserInterruptException("");
+        }
+
+        return input.getValue();
     }
 }

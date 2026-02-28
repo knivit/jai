@@ -2,6 +2,8 @@ package com.tsoft.jai.anyhow;
 
 import lombok.Getter;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +22,7 @@ public class Error<T> {
     }
 
     public Error(Exception exception) {
-        this(exception.getMessage(), exception, null);
+        this(null, exception, null);
     }
 
     public Error(T errValue) {
@@ -55,6 +57,13 @@ public class Error<T> {
         for (String error : errors) {
             buf.append(error).append('\n');
         }
+
+        if (backtrace != null) {
+            StringWriter sw = new StringWriter();
+            backtrace.printStackTrace(new PrintWriter(sw));
+            buf.append('\n').append(sw);
+        }
+
         return buf.toString();
     }
 }

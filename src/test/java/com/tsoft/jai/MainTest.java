@@ -4,12 +4,10 @@ import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.inquire.TestTerminal;
 import com.tsoft.jai.reqwest.TestHttpClient;
 import com.tsoft.jai.utils.Asset;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-import static com.tsoft.jai.Main.main;
 import static com.tsoft.jai.reqwest.TestHttpClient.getCapturedHttpRequests;
 import static com.tsoft.jai.testutils.TestStringUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,11 +16,6 @@ class MainTest {
 
     static final Result<File> CONFIG_DIR = Asset.file("configs/config1");
     static final Result<File> CONFIG_FILE = Asset.file("configs/config1/config.yaml");
-
-    @BeforeAll
-    static void beforeAll() {
-        TestTerminal.init();
-    }
 
     private String main(String ... args) {
         // Add a config file reference
@@ -38,7 +31,7 @@ class MainTest {
 
     @Test
     void main_list_models() {
-        TestTerminal.newSession();
+        TestTerminal.init();
 
         assertThat(main("--list-models")).isEqualTo("""
             ollama:lfm2.5-thinking
@@ -52,7 +45,7 @@ class MainTest {
 
     @Test
     void main_list_roles() {
-        TestTerminal.newSession();
+        TestTerminal.init();
 
         assertThat(main("--list-roles")).isEqualTo("""
             %code%
@@ -67,16 +60,15 @@ class MainTest {
     @Test
     void main_start_and_list_sessions() {
         // Step 1
-        TestTerminal.newSession();
+        TestTerminal.init();
 
         assertThat(main("--list-sessions")).isEqualTo("\n");
 
         // Step 2
         TestTerminal.newSession();
+        TestTerminal.setInput("Hello !");
+
         TestHttpClient.newSession();
-
-        TestTerminal.prepareInputs("Hello !");
-
         TestHttpClient.prepareResponses(
             """
             {
@@ -142,7 +134,7 @@ class MainTest {
 
     @Test
     void main_info() {
-        TestTerminal.newSession();
+        TestTerminal.init();
 
         assertThat(main("--info")).isEqualTo("""
             model                   ollama:lfm2.5-thinking

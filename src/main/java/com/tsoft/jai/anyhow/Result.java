@@ -33,7 +33,7 @@ public class Result<T> {
     }
 
     public static <T> Result<T> Ok(T value) {
-        Result<T> result = new Result<>(ResultEnum.Ok);
+        Result<T> result = Ok();
         result.value = value;
         return result;
     }
@@ -43,32 +43,32 @@ public class Result<T> {
     }
 
     public static <T, E> Result<T> Err(E errValue) {
-        Result<T> result = new Result<>(ResultEnum.Err);
+        Result<T> result = Err();
         result.err = new Error<>(errValue);
         return result;
     }
 
     public static <T> Result<T> Err(Exception exception) {
-        Result<T> result = new Result<>(ResultEnum.Err);
+        Result<T> result = Err();
         result.err = new Error<>(exception);
         return result;
     }
 
     public static <T> Result<T> Err(String error) {
-        Result<T> result = new Result<>(ResultEnum.Err);
+        Result<T> result = Err();
         result.err = new Error<>(error);
         return result;
     }
 
     public static <T> Result<T> Err(String error, Object ... args) {
-        Result<T> result = new Result<>(ResultEnum.Err);
+        Result<T> result = Err();
         result.err = new Error<>(format(error, args));
         return result;
     }
 
     public static <T> Result<T> Err(Result<?> err) {
         if (err != null && ResultEnum.Err.equals(err.type)) {
-            Result<T> result = new Result<>(ResultEnum.Err);
+            Result<T> result = Err();
             result.err = err.err;
             return result;
         }

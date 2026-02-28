@@ -38,7 +38,7 @@ public class Text {
 
         try {
             Map<String, ? extends PromptResult<? extends Prompt>> results = prompter.prompt(new ArrayList<>(), promptBuilder.build());
-            return Ok(results.get("input").getResult());
+            return Ok(results.get("text").getResult());
         } catch (Exception ex) {
             return Err(ex);
         }

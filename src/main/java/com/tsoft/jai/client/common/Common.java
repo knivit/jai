@@ -458,10 +458,13 @@ public class Common {
         List<String> modelNames = new ArrayList<>();
         boolean isOpenAICompatible = Objects.equals(OpenAICompatibleClient.NAME, clientConfig.get("type").asStr());
         String apiBase = clientConfig.get("api_base").asStr();
-        String apiKeyStr = clientConfig.get("api_key").asStr();
-        if (apiKeyStr == null) {
+        Value apiKeyVal = clientConfig.get("api_key");
+        String apiKeyStr;
+        if (apiKeyVal == null) {
             String envName = format("{}_api_key", client).toUpperCase();
             apiKeyStr = Env.var(envName).ok().unwrapOr(null);
+        } else {
+            apiKeyStr = apiKeyVal.asStr();
         }
         final String apiKey = apiKeyStr;
         if (isOpenAICompatible && !isBlank(apiBase) && !isBlank(apiKey)) {
