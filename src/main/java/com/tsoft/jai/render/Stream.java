@@ -2,19 +2,28 @@ package com.tsoft.jai.render;
 
 import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.client.stream.SseEvent;
-import com.tsoft.jai.core.Option;
+import com.tsoft.jai.inquire.Inquire;
 import com.tsoft.jai.inquire.spinner.Spinner;
 import com.tsoft.jai.render.markdown.MarkdownRender;
+import com.tsoft.jai.tokio.Tokio;
 import com.tsoft.jai.tokio.sync.mpsc.UnboundedReceiver;
+import com.tsoft.jai.tokio.time.Time;
 import com.tsoft.jai.utils.AbortSignal;
 
 import java.io.PrintWriter;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.tsoft.jai.anyhow.Result.*;
-import static com.tsoft.jai.core.Option.Some;
 import static com.tsoft.jai.inquire.Inquire.*;
 import static com.tsoft.jai.inquire.spinner.Spinner.spawnSpinner;
+import static com.tsoft.jai.tokio.Select.branch;
 import static com.tsoft.jai.utils.AbortSignal.pollAbortSignal;
+import static com.tsoft.jai.utils.base.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.base.StringUtils.format;
+import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 public class Stream {
 
@@ -37,7 +46,7 @@ public class Stream {
     // }
     public static Result<?> markdownStream(UnboundedReceiver<SseEvent> rx, MarkdownRender render, AbortSignal abortSignal) {
         enableRawMode();
-        PrintWriter stdout = terminal.writer();
+        PrintWriter stdout = Inquire.writer;
 
         Result<?> ret = markdownStreamInner(rx, render, abortSignal, stdout);
 
@@ -81,7 +90,7 @@ public class Stream {
     //    Ok(())
     // }
     public static Result<?> rawStream(UnboundedReceiver<SseEvent> rx, AbortSignal abortSignal) {
-        Option<Spinner> spinner = Some(spawnSpinner("Generating"));
+        Spinner spinner = spawnSpinner("Generating");
 
         boolean done = false;
         while (!done) {
@@ -89,9 +98,10 @@ public class Stream {
                 break;
             }
             Result<SseEvent> res = rx.recv();
-            Spinner spin = spinner.take();
-            if (spin != null) {
-                spin.stop();
+
+            if (spinner != null) {
+                spinner.stop();
+                spinner = null;
             }
 
             SseEvent evt = res.getValue();
@@ -104,9 +114,8 @@ public class Stream {
                 }
             }
         }
-        Spinner spin = spinner.take();
-        if (spin != null) {
-            spin.stop();
+        if (spinner != null) {
+            spinner.stop();
         }
         return Ok();
     }
@@ -209,16 +218,42 @@ public class Stream {
     //    Ok(())
     // }
     private static Result<?> markdownStreamInner(UnboundedReceiver<SseEvent> rx, MarkdownRender render, AbortSignal abortSignal, PrintWriter writer) {
-        StringBuilder buffer = new StringBuilder();
+        String buffer = "";
         int bufferRows = 1;
 
         int columns = terminalSize().getColumns();
 
         Spinner spinner = spawnSpinner("Generating");
 
-        while (true) {
+        AtomicBoolean done = new AtomicBoolean(false);
+        while (!done.get()) {
             if (abortSignal.aborted()) {
                 break;
+            }
+
+            for (SseEvent replyEvent : gatherEvents(rx)) {
+                if (spinner != null) {
+                    spinner.stop();
+                    spinner = null;
+                }
+
+                switch (replyEvent.getType()) {
+                    case Text -> {
+                        String text = replyEvent.getText();
+                        text = text.replace("\t", "    ");
+
+                        buffer = format("{}{}", buffer, text);
+                        String output = render.renderLine(buffer);
+
+                        writer.println(output);
+                        writer.flush();
+                    }
+                    case Done -> done.set(true);
+                }
+
+                if (done.get()) {
+                    break;
+                }
             }
 
             Result<Boolean> res = pollAbortSignal(abortSignal);
@@ -227,6 +262,69 @@ public class Stream {
             }
         }
 
+        if (spinner != null) {
+            spinner.stop();
+        }
+
         return Ok();
+    }
+
+    // async fn gather_events(rx: &mut UnboundedReceiver<SseEvent>) -> Vec<SseEvent> {
+    //    let mut texts = vec![];
+    //    let mut done = false;
+    //    tokio::select! {
+    //        _ = async {
+    //            while let Some(reply_event) = rx.recv().await {
+    //                match reply_event {
+    //                    SseEvent::Text(v) => texts.push(v),
+    //                    SseEvent::Done => {
+    //                        done = true;
+    //                        break;
+    //                    }
+    //                }
+    //            }
+    //        } => {}
+    //        _ = tokio::time::sleep(Duration::from_millis(50)) => {}
+    //    };
+    //    let mut events = vec![];
+    //    if !texts.is_empty() {
+    //        events.push(SseEvent::Text(texts.join("")))
+    //    }
+    //    if done {
+    //        events.push(SseEvent::Done)
+    //    }
+    //    events
+    // }
+    private static List<SseEvent> gatherEvents(UnboundedReceiver<SseEvent> rx) {
+        List<String> texts = new ArrayList<>();
+        AtomicBoolean done = new AtomicBoolean(false);
+        Tokio.select(
+            branch(supplyAsync(() -> {
+                    while (!done.get()) {
+                        Result<SseEvent> res = rx.recv();
+                        if (isErr(res)) {
+                            break;
+                        }
+                        SseEvent replyEvent = res.getValue();
+                        switch (replyEvent.getType()) {
+                            case Text -> texts.add(replyEvent.getText());
+                            case Done -> done.set(true);
+                        }
+                    }
+                    return Ok();
+                }), (__) -> Ok()),
+            branch(supplyAsync(() -> {
+                Time.sleep(Duration.ofMillis(50));
+                return Ok();
+            }), (__) -> Ok())
+        );
+        List<SseEvent> events = new ArrayList<>();
+        if (!isEmpty(texts)) {
+            events.add(SseEvent.Text(String.join("", texts)));
+        }
+        if (done.get()) {
+            events.add(SseEvent.Done());
+        }
+        return events;
     }
 }

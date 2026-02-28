@@ -81,15 +81,15 @@ public class Option<T> {
     }
 
     // Takes the value out of the option, leaving a None in its place
-    public T take() {
+    public Option<T> take() {
         return switch (type) {
             case Some -> {
                 T old = value;
                 type = OptionEnum.None;
                 value = null;
-                yield old;
+                yield Some(old);
             }
-            case None -> null;
+            case None -> None();
         };
     }
 }

@@ -24,13 +24,13 @@ class MainTest {
         TestTerminal.init();
     }
 
-    private String execute(String ... args) {
+    private String main(String ... args) {
         // Add a config file reference
         System.setProperty("CONFIG_FILE_JAI", CONFIG_FILE.getValue().toString());
         System.setProperty("CONFIG_DIR_JAI", CONFIG_DIR.getValue().toString());
 
         // Start
-        main(args);
+        Main.main(args);
 
         // Return the gathered output
         return normalize(TestTerminal.getOutput(), CONFIG_DIR.getValue().toString(), "<dir>");
@@ -40,7 +40,7 @@ class MainTest {
     void main_list_models() {
         TestTerminal.newSession();
 
-        assertThat(execute("--list-models")).isEqualTo("""
+        assertThat(main("--list-models")).isEqualTo("""
             ollama:lfm2.5-thinking
             ollama:deepseek-v3.2:cloud
             ollama:glm-4.7:cloud
@@ -54,7 +54,7 @@ class MainTest {
     void main_list_roles() {
         TestTerminal.newSession();
 
-        assertThat(execute("--list-roles")).isEqualTo("""
+        assertThat(main("--list-roles")).isEqualTo("""
             %code%
             %create-prompt%
             %create-title%
@@ -69,14 +69,13 @@ class MainTest {
         // Step 1
         TestTerminal.newSession();
 
-        assertThat(execute("--list-sessions")).isEqualTo("\n");
+        assertThat(main("--list-sessions")).isEqualTo("\n");
 
         // Step 2
         TestTerminal.newSession();
+        TestHttpClient.newSession();
 
         TestTerminal.prepareInputs("Hello !");
-
-        TestHttpClient.newSession();
 
         TestHttpClient.prepareResponses(
             """
@@ -120,12 +119,13 @@ class MainTest {
             """
         );
 
-        assertThat(execute("--session", "test")).isEqualTo("""
+        assertThat(main("--session", "test")).isEqualTo("""
             <think>
             Okay
             </think>
             
             I don't know
+            
             
             """);
 
@@ -137,14 +137,14 @@ class MainTest {
         // Step 3
         TestTerminal.newSession();
 
-        assertThat(execute("--list-sessions")).isEqualTo("\n");
+        assertThat(main("--list-sessions")).isEqualTo("\n");
     }
 
     @Test
     void main_info() {
         TestTerminal.newSession();
 
-        assertThat(execute("--info")).isEqualTo("""
+        assertThat(main("--info")).isEqualTo("""
             model                   ollama:lfm2.5-thinking
             temperature             null
             top_p                   null

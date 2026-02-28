@@ -13,6 +13,9 @@ public class Event {
     public static final int EOF_EVENT = -1;
     public static final int TIMEOUT_EVENT = -2;
 
+    // Checks if there is an Event available.
+    // Returns Ok(true) if an Event is available otherwise it returns Ok(false).
+    // Ok(true) guarantees that subsequent call to the read function won't block.
     public static Result<Boolean> poll(Duration duration) {
         try {
             int res = terminal.reader().peek(duration.toMillis());

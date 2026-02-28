@@ -114,7 +114,7 @@ public class AbortSignal {
     // }
     public static Result<Boolean> pollAbortSignal(AbortSignal abortSignal) {
         Result<Boolean> res = Event.poll(Duration.ofMillis(25));
-        if (isOk(res)) {
+        if (isOk(res) && res.getValue()) {
             Result<EventKey> evt = Event.read();
             if (isOk(evt)) {
                 EventKey key = evt.getValue();

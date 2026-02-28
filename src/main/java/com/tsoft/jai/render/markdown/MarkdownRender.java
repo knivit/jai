@@ -1,5 +1,6 @@
 package com.tsoft.jai.render.markdown;
 
+import com.tsoft.jai.utils.base.Triple;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -54,7 +55,7 @@ public class MarkdownRender {
     //    })
     // }
     public static MarkdownRender init(RenderOptions options) {
-        return null;
+        return new MarkdownRender();
     }
 
     // pub fn render(&mut self, text: &str) -> String {
@@ -67,6 +68,18 @@ public class MarkdownRender {
         return String.join("\n", Arrays.stream(text.split("\n"))
             .map(line -> renderLineMut(line))
             .toList());
+    }
+
+    // pub fn render_line(&self, line: &str) -> String {
+    //    let (_, code_syntax, is_code) = self.check_line(line);
+    //    if is_code {
+    //        self.highlight_code_line(line, &code_syntax)
+    //    } else {
+    //        self.highlight_line(line, &self.md_syntax, false)
+    //    }
+    // }
+    public String renderLine(String line) {
+        return line;
     }
 
     // fn render_line_mut(&mut self, line: &str) -> String {
