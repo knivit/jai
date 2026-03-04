@@ -1044,6 +1044,19 @@ public class Config {
         return Ok();
     }
 
+    // pub fn exit_role(&mut self) -> Result<()> {
+    //     if let Some(session) = self.session.as_mut() {
+    //         session.guard_empty()?;
+    //         session.clear_role();
+    //     } else if self.role.is_some() {
+    //         self.role = None;
+    //     }
+    //     Ok(())
+    // }
+    public Result<?> exitRole() {
+        return Ok();
+    }
+
     // pub fn use_session(&mut self, session_name: Option<&str>) -> Result<()> {
     //    if self.session.is_some() {
     //        bail!(
@@ -1227,6 +1240,33 @@ public class Config {
         return Ok();
     }
 
+    // pub fn exit_agent(&mut self) -> Result<()> {
+    //    self.exit_session()?;
+    //    if self.agent.take().is_some() {
+    //        self.rag.take();
+    //        self.discontinuous_last_message();
+    //    }
+    //    Ok(())
+    // }
+    public Result<?> exitAgent() {
+        exitSession();
+        return Ok();
+    }
+
+    //  pub fn exit_agent_session(&mut self) -> Result<()> {
+    //     self.exit_session()?;
+    //     if let Some(agent) = self.agent.as_mut() {
+    //         agent.exit_session();
+    //         if self.working_mode.is_repl() {
+    //             self.init_agent_shared_variables()?;
+    //         }
+    //     }
+    //     Ok(())
+    // }
+    public Result<?> exitAgentSession() {
+        return Ok();
+    }
+
     // pub async fn use_rag(
     //    config: &GlobalConfig,
     //    rag: Option<&str>,
@@ -1336,6 +1376,14 @@ public class Config {
         } else {
             return bail("No RAG");
         }
+    }
+
+    //  pub fn exit_rag(&mut self) -> Result<()> {
+    //     self.rag.take();
+    //     Ok(())
+    // }
+    public Result<?> exitRag() {
+        return Ok();
     }
 
     // pub fn state(&self) -> StateFlags {

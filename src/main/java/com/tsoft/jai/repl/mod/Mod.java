@@ -610,7 +610,10 @@ public class Mod {
                     }
                     print("{}", info.getValue());
                 } else if (!isBlank(args)) {
-                    unknownCommand();
+                    Result<?> res = unknownCommand();
+                    if (isErr(res)) {
+                        return Err(res);
+                    }
                 } else {
                     Result<String> output = config.sysinfo();
                     if (isErr(output)) {
@@ -730,12 +733,67 @@ public class Mod {
                 tuple = splitFirstArg(args);
                 String name = tuple.second();
                 if ("role".equals(tuple.first()) && !isBlank(name)) {
-                    config.saveRole(name);
+                    Result<?> res = config.saveRole(name);
+                    if (isErr(res)) {
+                        return Err(res);
+                    }
                 } else if ("session".equals(tuple.first()) && !isBlank(name)) {
-                    config.saveSession(name);
+                    Result<?> res = config.saveSession(name);
+                    if (isErr(res)) {
+                        return Err(res);
+                    }
                 } else {
                     println("Usage: .save <role|session> [name]");
                 }
+            } else if (".edit".equals(cmd)) {
+                if (config.isMacroFlag()) {
+                    return bail("Cannot perform this operation because you are in a macro");
+                }
+            } else if (".compress".equals(cmd)) {
+
+            } else if (".empty".equals(cmd)) {
+
+            } else if (".rebuild".equals(cmd)) {
+
+            } else if (".sources".equals(cmd)) {
+
+            } else if (".macro".equals(cmd)) {
+
+            } else if (".file".equals(cmd)) {
+
+            } else if (".continue".equals(cmd)) {
+
+            } else if (".regenerate".equals(cmd)) {
+
+            } else if (".set".equals(cmd)) {
+
+            } else if (".delete".equals(cmd)) {
+
+            } else if (".copy".equals(cmd)) {
+
+            } else if (".exit".equals(cmd)) {
+                if (".role".equals(args)) {
+                    config.exitRole();
+                } else if (".session".equals(args)) {
+                    if (config.getAgent() != null) {
+                        config.exitAgentSession();
+                    } else {
+                        config.exitSession();
+                    }
+                } else if (".rag".equals(args)) {
+                    config.exitRag();
+                } else if (".agent".equals(args)) {
+                    config.exitAgent();
+                } else if (!isEmpty(args)) {
+                    Result<?> res = unknownCommand();
+                    if (isErr(res)) {
+                        return Err(res);
+                    }
+                } else {
+                    return Ok(true);
+                }
+            } else if (".clear".equals(cmd)) {
+
             }
         } else {
             Input input = Input.fromStr(config, line, null);
@@ -890,8 +948,7 @@ public class Mod {
             
             Type ::: to start multi-line editing, type ::: to finish it.
             Press Ctrl+O to open an editor for editing the input buffer.
-            Press Ctrl+C to cancel the response, Ctrl+D to exit the REPL.
-            """, head);
+            Press Ctrl+C to cancel the response, Ctrl+D to exit the REPL.""", head);
     }
 
     // fn split_first_arg(args: Option<&str>) -> Option<(&str, Option<&str>)> {

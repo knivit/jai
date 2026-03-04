@@ -7,10 +7,11 @@ import com.tsoft.jai.config.StateFlags;
 import com.tsoft.jai.inquire.prompt.Editor;
 import com.tsoft.jai.repl.prompt.ReplPrompt;
 import com.tsoft.jai.utils.AbortSignal;
-import com.tsoft.jai.utils.base.BuildInfo;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import static com.tsoft.jai.Main.CARGO_CRATE_NAME;
+import static com.tsoft.jai.Main.CARGO_PKG_VERSION;
 import static com.tsoft.jai.anyhow.Result.Ok;
 import static com.tsoft.jai.inquire.Inquire.*;
 import static com.tsoft.jai.render.Mod.renderError;
@@ -105,7 +106,7 @@ public class Repl {
             print("""
                 Welcome to {} {}
                 Type ".help" for additional help.
-                """, BuildInfo.getProject(), BuildInfo.getVersion());
+                """, CARGO_CRATE_NAME, CARGO_PKG_VERSION);
         }
 
         boolean stop = false;
