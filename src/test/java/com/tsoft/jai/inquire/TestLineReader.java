@@ -28,15 +28,6 @@ public class TestLineReader extends LineReaderImpl {
 
     @Override
     public String readLine() throws UserInterruptException, EndOfFileException {
-        TestInput input = terminalInput.get();
-        if (TestInput.is(input, TestInput.TextInputEnum.CtrlD)) {
-            throw new EndOfFileException("");
-        }
-
-        if (TestInput.is(input, TestInput.TextInputEnum.CtrlC)) {
-            throw new UserInterruptException("");
-        }
-
-        return input.getValue();
+        return terminalInput.get();
     }
 }

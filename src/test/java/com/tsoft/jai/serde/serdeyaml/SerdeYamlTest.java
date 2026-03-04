@@ -18,14 +18,14 @@ class SerdeYamlTest {
 
     @Test
     void value_to_string() {
+        TestTerminal.init();
+        TestTerminal.setInput("lfm2.5-thinking");
+
         Value clientsConfig = json(
             "type", OpenAICompatibleClient.NAME,
             "name", "ollama"
         );
         clientsConfig.put("api_base", "http://localhost:11434/v1");
-
-        TestTerminal.init();
-        TestTerminal.setInput("llama3.3,qwen2.5");
 
         Result<String> res = setClientModelsConfig(clientsConfig, "ollama");
         assertThat(isOk(res)).isTrue();
@@ -42,11 +42,11 @@ class SerdeYamlTest {
         assertThat(res.getValue()).isEqualTo("""
             model: ollama:lfm2.5-thinking
             clients:
-            - type: openai-compatible
-              name: ollama
-              api_base: http://localhost:11434/v1
-              models:
-              - name: lfm2.5-thinking
+              - type: openai-compatible
+                name: ollama
+                api_base: http://localhost:11434/v1
+                models:
+                  - name: lfm2.5-thinking
             """);
     }
 }

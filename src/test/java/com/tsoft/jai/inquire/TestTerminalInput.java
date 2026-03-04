@@ -1,5 +1,8 @@
 package com.tsoft.jai.inquire;
 
+import org.jline.reader.EndOfFileException;
+import org.jline.reader.UserInterruptException;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,14 +15,23 @@ public class TestTerminalInput {
         inputs.add(input);
     }
 
-    public TestInput get() {
+    public String get() {
+        TestInput input;
         if (index >= inputs.size()) {
-            return TestInput.CtrlD();       // End of file
+            input = TestInput.CtrlD();       // End of file
+        } else {
+            input = inputs.get(index);
+            index++;
         }
 
-        TestInput input = inputs.get(index);
-        index ++;
+        if (TestInput.is(input, TestInput.TextInputEnum.CtrlD)) {
+            throw new EndOfFileException("");
+        }
 
-        return input;
+        if (TestInput.is(input, TestInput.TextInputEnum.CtrlC)) {
+            throw new UserInterruptException("");
+        }
+
+        return input.getValue();
     }
 }

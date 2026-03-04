@@ -1,0 +1,29 @@
+<configuration>
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
+    <if condition='isDefined("LOG_FILENAME") and property("LOG_FILENAME").length() > 0'>
+        <then>
+            <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+                <file>logs/application.log</file>
+                <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                    <fileNamePattern>logs/application.%d{yyyy-MM-dd}.log</fileNamePattern>
+                    <maxHistory>10</maxHistory>
+                    <totalSizeCap>10MB</totalSizeCap>
+                </rollingPolicy>
+                <encoder>
+                    <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+                </encoder>
+            </appender>
+
+            <root level="DEBUG">
+                <appender-ref ref="FILE" />
+            </root>
+        </then>
+        <else>
+            <!-- Explicitly configure root with no appenders to disable logging -->
+            <root level="OFF">
+                <!-- No appender-ref means no logging output -->
+            </root>
+        </else>
+    </if>
+</configuration>

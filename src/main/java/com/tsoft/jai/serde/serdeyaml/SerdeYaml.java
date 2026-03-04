@@ -6,6 +6,8 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.dataformat.yaml.YAMLMapper;
 
+import java.time.Instant;
+
 import static com.tsoft.jai.anyhow.Result.Err;
 import static com.tsoft.jai.anyhow.Result.Ok;
 
@@ -23,10 +25,30 @@ public final class SerdeYaml {
 
     public static Result<String> toString(Value value) {
         try {
-            return Ok(yamlMapper.writeValueAsString(value.getData()));
+            return Value.yaml(value);
         } catch (Exception ex) {
             return Err(ex);
         }
+    }
+
+    public static Result<String> asStr(Object value) {
+        if (value == null) {
+            return Ok("null");
+        }
+
+        if (value instanceof String str) {
+            return Ok(str);
+        }
+
+        if (value instanceof Number num) {
+            return Ok(num.toString());
+        }
+
+        if (value instanceof Instant ins) {
+            return Ok(ins.toString());
+        }
+
+        return Ok(value.toString());
     }
 
     public static <T> Result<T> fromStr(String content, Class<T> clazz) {

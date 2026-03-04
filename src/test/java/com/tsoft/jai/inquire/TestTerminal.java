@@ -27,9 +27,11 @@ public class TestTerminal {
     @SneakyThrows
     public static void newSession() {
         // input
-        TestLineReader lineReader = new TestLineReader(Inquire.terminal, input);
-        Inquire.prompter = PrompterFactory.create(lineReader, Inquire.terminal, DefaultPrompterConfig.defaults());
+        //TestLineReader lineReader = new TestLineReader(Inquire.terminal, input);
+        //Inquire.prompter = PrompterFactory.create(lineReader, Inquire.terminal, DefaultPrompterConfig.defaults());
+        Inquire.prompter = new TestPrompter(Inquire.terminal, input);
         Inquire.lineReaderBuilder = new TestLineReaderFactory(Inquire.terminal, input);
+
 
         // output
         Inquire.writer = new TestWriter(output);

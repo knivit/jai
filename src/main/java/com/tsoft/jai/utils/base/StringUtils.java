@@ -97,11 +97,7 @@ public final class StringUtils {
     }
 
     public static String repeat(String str, int count) {
-        StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < count; i ++) {
-            buf.append(str);
-        }
-        return buf.toString();
+        return String.valueOf(str).repeat(Math.max(0, count));
     }
 
     private StringUtils() { }

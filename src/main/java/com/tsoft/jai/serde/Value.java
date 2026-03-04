@@ -2,6 +2,7 @@ package com.tsoft.jai.serde;
 
 import com.tsoft.jai.anyhow.Result;
 import com.tsoft.jai.serde.serdejson.SerdeJson;
+import com.tsoft.jai.serde.serdeyaml.SerdeYaml;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -12,8 +13,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.*;
 
 import static com.tsoft.jai.anyhow.Result.*;
-import static com.tsoft.jai.utils.base.StringUtils.getFirstChar;
-import static com.tsoft.jai.utils.base.StringUtils.isBlank;
+import static com.tsoft.jai.utils.base.StringUtils.*;
 
 @Slf4j
 @Data
@@ -38,7 +38,7 @@ public class Value {
 
     private static Result<String> json(List<Value> list, int level) {
         if (level > MAX_RECURSION_LEVEL) {
-            return Err("Serialization recursion level is more than ", MAX_RECURSION_LEVEL);
+            return Err("Serialization recursion level is more than {}", MAX_RECURSION_LEVEL);
         }
 
         if (list == null) {
@@ -71,7 +71,7 @@ public class Value {
 
     private static Result<String> json(Value value, int level) {
         if (level > MAX_RECURSION_LEVEL) {
-            return Err("Serialization recursion level is more than ", MAX_RECURSION_LEVEL);
+            return Err("Serialization recursion level is more than {}", MAX_RECURSION_LEVEL);
         }
 
         if (value == null) {
@@ -115,6 +115,103 @@ public class Value {
         } else if (isList(value)) {
             List<Value> list = asList(value);
             Result<String> res = json(list, level + 1);
+            if (isErr(res)) {
+                return Err(res);
+            }
+            buf.append(res.getValue());
+        } else {
+            return Err("Unknown data type (must be a Map or a List): {}", value.data.getClass().getName());
+        }
+
+        return Ok(buf.toString());
+    }
+
+    public static Result<String> yaml(List<Value> list) {
+        return yaml(list, 0);
+    }
+
+    private static Result<String> yaml(List<Value> list, int level) {
+        if (level > MAX_RECURSION_LEVEL) {
+            return Err("Serialization recursion level is more than {}", MAX_RECURSION_LEVEL);
+        }
+
+        if (list == null) {
+            return Ok("null");
+        }
+
+        StringBuilder buf = new StringBuilder();
+
+        buf.append(repeat("  ", level - 1));
+        for (Value entry : list) {
+            Result<String> res = yaml(entry, level + 1);
+            if (isErr(res)) {
+                return Err(res);
+            }
+            buf.append(res.getValue());
+        }
+
+        return Ok(buf.toString());
+    }
+
+    public static Result<String> yaml(Value value) {
+        return yaml(value, 0);
+    }
+
+    private static Result<String> yaml(Value value, int level) {
+        if (level > MAX_RECURSION_LEVEL) {
+            return Err("Serialization recursion level is more than {}", MAX_RECURSION_LEVEL);
+        }
+
+        if (value == null) {
+            return Ok("null");
+        }
+
+        if (value.data == null) {
+            return Ok("");
+        }
+
+        StringBuilder buf = new StringBuilder();
+
+        if (isMap(value)) {
+            Map<String, Object> map = asMap(value);
+
+            boolean first = true;
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                Object item = entry.getValue();
+                String text;
+                if (item instanceof List list) {
+                    Result<String> res = yaml(list, level);
+                    if (isErr(res)) {
+                        return Err(res);
+                    }
+                    text = res.getValue();
+                    buf.append(repeat("  ", level)).append(entry.getKey()).append(":\n").append(text);
+                } else if (item instanceof Value val) {
+                    Result<String> res = yaml(val, level);
+                    if (isErr(res)) {
+                        return Err(res);
+                    }
+                    text = res.getValue();
+                    buf.append(repeat("  ", level)).append(entry.getKey()).append(":\n").append(text);
+                } else {
+                    Result<String> res = SerdeYaml.asStr(item);
+                    if (isErr(res)) {
+                        return Err(res);
+                    }
+                    text = res.getValue();
+                    if (first && level > 1) {
+                        buf.append(repeat("  ", level - 1)).append("- ");
+                    } else {
+                        buf.append(repeat("  ", level));
+                    }
+                    buf.append(entry.getKey()).append(": ").append(text).append('\n');
+                }
+
+                first = false;
+            }
+        } else if (isList(value)) {
+            List<Value> list = asList(value);
+            Result<String> res = yaml(list, level + 1);
             if (isErr(res)) {
                 return Err(res);
             }

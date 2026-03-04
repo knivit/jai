@@ -63,7 +63,7 @@ public class RequestData {
     //    builder
     // }
     public RequestBuilder intoBuilder(ReqwestClient client) {
-        log.debug("Request {} {}", url, body);
+        log.trace("Request {} {}", url, body);
 
         RequestBuilder builder = client.post(url);
         if (!isEmpty(headers)) {
