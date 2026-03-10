@@ -3,10 +3,13 @@ package com.tsoft.jai.mods.provider;
 import com.tsoft.jai.mods.session.struct.Session;
 import com.tsoft.jai.mods.provider.openai.OpenAiMod;
 import com.tsoft.jai.std.Result;
+import com.tsoft.jai.user.terminal.TerminalUtils;
 
 import java.util.List;
 
 import static com.tsoft.jai.std.Result.Err;
+import static com.tsoft.jai.std.Result.Ok;
+import static com.tsoft.jai.user.terminal.TerminalUtils.println;
 import static com.tsoft.jai.utils.StringUtils.isBlank;
 
 public final class ProviderMod {
@@ -22,8 +25,11 @@ public final class ProviderMod {
         };
     }
 
-    public static Result<Session> chat(Session session, String message) {
-        return OpenAiMod.chat(session, message);
+    public static Result<?> chat(Session ses, String msg) {
+        return Ok()
+            .then(_ -> OpenAiMod.chat(ses, msg))
+            .then(_ -> Ok(ses.getMessages().getLast().getContent()))
+            .then(TerminalUtils::println);
     }
 
     private ProviderMod() { }

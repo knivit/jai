@@ -55,30 +55,57 @@ public final class OpenAiMod {
     //    ],
     //    "temperature": 0.7
     // }
-    public static Result<Session> chat(Session session, String message) {
-        ValueRef<String> body = new ValueRef<>();
+    // Response:
+    // {
+    //  "id": "chatcmpl-qb9qd6rjrcwas4nsb9gf",
+    //  "object": "chat.completion",
+    //  "created": 1773164882,
+    //  "model": "google/gemma-3-4b",
+    //  "choices": [
+    //    {
+    //      "index": 0,
+    //      "message": {
+    //        "role": "assistant",
+    //        "content": "Hello there! How’s your day going so far? 😊 \n\nIs there anything I can help you with today, or were you just saying hello?",
+    //        "tool_calls": []
+    //      },
+    //      "logprobs": null,
+    //      "finish_reason": "stop"
+    //    }
+    //  ],
+    //  "usage": {
+    //    "prompt_tokens": 11,
+    //    "completion_tokens": 33,
+    //    "total_tokens": 44
+    //  },
+    //  "stats": {},
+    //  "system_fingerprint": "google/gemma-3-4b"
+    // }
+    public static Result<Session> chat(Session ses, String msg) {
+        ValueRef<String> body = new ValueRef<>("");
 
         return Ok()
-            .then(_ -> toChat(session, message))
+            .then(_ -> toChat(ses, msg))
             .then(chat -> chat.setStream(false))
             .then(SerdeJson::toString)
             .then(body::set)
             .then(_ -> buildHttpRequestContext())
             .then(ctx -> ctx.setMethod(HttpMethod.POST))
-            .then(ctx -> ctx.setUrl(session.getApiBase() + "/v1/chat/completions"))
+            .then(ctx -> ctx.setUrl(ses.getApiBase() + "/v1/chat/completions"))
             .then(ctx -> ctx.setHeader("accept", "application/json"))
             .then(ctx -> ctx.setHeader("content-type", "application/json"))
             .then(ctx -> ctx.setBody(body.get()))
             .then(HttpUtils::buildHttpRequest)
             .then(HttpUtils::sendHttpRequest)
             .then(ctx -> ctx.getHttpCode() == 200 ? Ok(ctx.getBody()) : Err("Request for chat failed."))
-            .then(json -> updateSession(session, json));
+            .then(json -> updateSession(ses, json));
     }
 
-    private static Result<Session> updateSession(Session session, String json) {
+    private static Result<Session> updateSession(Session ses, String json) {
         return Ok()
             .then(_ -> SerdeJson.fromStr(json, ChatRs.class))
-            .then(chat -> session.addMessage("system", chat.getChoices().getFirst().getMessage()));
+            .then(chat -> Ok(chat.getChoices().getFirst().getMessage()))
+            .then(msg -> ses.addMessage(msg.getRole(), msg.getContent()));
     }
 
     private static Result<List<String>> toModels(String json) {
@@ -89,28 +116,25 @@ public final class OpenAiMod {
                 .toList()));
     }
 
-    private static Result<ChatRq> toChat(Session session, String message) {
-        return Ok(new ChatRq())
-            .then(chat -> isEmpty(session.getModel()) ? Err("model can't be empty") : chat.setModel(session.getModel()))
-            .then(chat -> chat.setMessages(toChatMessages(session, message)))
-            .then(chat -> chat.setTemperature(session.getTemperature()));
+    private static Result<ChatRq> toChat(Session ses, String msg) {
+        ChatRq chat = new ChatRq();
+
+        return Ok()
+            .then(_ -> isEmpty(ses.getModel()) ? Err("model can't be empty") : chat.setModel(ses.getModel()))
+            .then(_ -> ses.addMessage("user", msg))
+            .then(_ -> chat.setMessages(toChatMessages(ses)))
+            .then(_ -> chat.setTemperature(ses.getTemperature()));
     }
 
-    private static List<ChatMessageRq> toChatMessages(Session session, String message) {
-        List<ChatMessageRq> historyMessages = isEmpty(session.getMessages()) ?
-            Collections.emptyList() : session.getMessages().stream()
+    private static List<ChatMessageRq> toChatMessages(Session ses) {
+        List<ChatMessageRq> historyMessages = isEmpty(ses.getMessages()) ?
+            Collections.emptyList() : ses.getMessages().stream()
                 .map(e -> new ChatMessageRq()
                     .setRole(e.getRole())
                     .setContent(e.getContent()))
                     .toList();
 
-        List<ChatMessageRq> chatMessages = new ArrayList<>(historyMessages);
-
-        chatMessages.add(new ChatMessageRq()
-                .setRole("user")
-                .setContent(message));
-
-        return chatMessages;
+        return new ArrayList<>(historyMessages);
     }
 
     private OpenAiMod() { }

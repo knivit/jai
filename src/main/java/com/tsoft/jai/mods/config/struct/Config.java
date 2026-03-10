@@ -92,12 +92,12 @@ public class Config {
         return Ok(this);
     }
 
-    public Result<Config> setModels(List<String> models) {
+    public Result<Config> setAllModels(List<String> models) {
         allModels.addAll(models);
         return Ok(this);
     }
 
-    public Result<Config> setSelectedModels(Collection<String> list) {
+    public Result<Config> setModels(Collection<String> list) {
         models = new ArrayList<>();
         if (!isEmpty(list)) {
             models.addAll(list);
@@ -108,7 +108,7 @@ public class Config {
     }
 
     public Result<Config> setModel(String model) {
-        this.model = model;
+        this.model = providerName + ":" + model;
         return Ok(this);
     }
 }

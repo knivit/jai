@@ -7,6 +7,7 @@ import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.UserInterruptException;
+import org.jline.terminal.Size;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
@@ -50,7 +51,7 @@ public final class TerminalUtils {
             .message(prompt);
 
         for (String value : values) {
-            listBuilder.newItem(value);
+            listBuilder.add(value, value);
         }
 
         PromptBuilder builder = listBuilder.addPrompt();
@@ -75,7 +76,7 @@ public final class TerminalUtils {
             .message(prompt);
 
         for (String value : values) {
-            checkboxBuilder.newItem(value);
+            checkboxBuilder.add(value, value);
         }
 
         PromptBuilder builder = checkboxBuilder.addPrompt();
@@ -124,7 +125,7 @@ public final class TerminalUtils {
 
     private static void init() {
         try {
-            terminal = TerminalBuilder.builder().build();
+            terminal = TerminalBuilder.builder().size(new Size(100, 60)).build();
             lineReader = LineReaderBuilder.builder().terminal(terminal).build();
             prompter = PrompterFactory.create(terminal);
             writer = terminal.writer();

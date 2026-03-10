@@ -16,7 +16,7 @@ public final class ReplMod {
 
     public static Result<?> start(Cli cli, Config cfg, Session ses) {
         Result<?> res = Ok();
-        ValueRef<Boolean> exit = new ValueRef<>();
+        ValueRef<Boolean> exit = new ValueRef<>(false);
         while (!exit.get() && !isErr(res)) {
             res = Ok()
                 .then(_ -> readLine("> "))
