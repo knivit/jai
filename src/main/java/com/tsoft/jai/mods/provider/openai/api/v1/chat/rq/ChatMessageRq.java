@@ -1,4 +1,4 @@
-package com.tsoft.jai.provider.openai.api.v1.chat.rq;
+package com.tsoft.jai.mods.provider.openai.api.v1.chat.rq;
 
 import lombok.Data;
 import lombok.experimental.Accessors;

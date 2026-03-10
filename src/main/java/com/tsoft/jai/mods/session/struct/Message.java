@@ -1,4 +1,4 @@
-package com.tsoft.jai.mods.session.dto;
+package com.tsoft.jai.mods.session.struct;
 
 import lombok.Data;
 import lombok.experimental.Accessors;

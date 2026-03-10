@@ -1,27 +1,23 @@
 package com.tsoft.jai.mods.config;
 
-import com.tsoft.jai.mods.config.dto.ClientConfig;
-import com.tsoft.jai.mods.config.dto.Config;
-import com.tsoft.jai.provider.ProviderMod;
+import com.tsoft.jai.mods.cli.struct.Cli;
+import com.tsoft.jai.mods.config.ser.ConfigSer;
+import com.tsoft.jai.mods.config.struct.Config;
+import com.tsoft.jai.mods.provider.ProviderMod;
 import com.tsoft.jai.std.Result;
 import com.tsoft.jai.user.UserInput;
 import com.tsoft.jai.utils.SerdeYaml;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 
 import static com.tsoft.jai.std.Result.*;
 import static com.tsoft.jai.user.terminal.TerminalUtils.*;
-import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.StringUtils.isBlank;
 
 public class ConfigMod {
 
-    public static Result<Config> loadOrCreate() {
+    public static Result<Config> loadOrCreate(Cli cli) {
         return Ok()
             .then(_ -> configFile())
             .then(path -> Files.exists(path) ? load(path) : create(path));
@@ -29,118 +25,45 @@ public class ConfigMod {
 
     private static Result<Config> load(Path file) {
         return Ok()
-            .then(_ -> SerdeYaml.fromFile(file, Config.class));
+            .then(_ -> SerdeYaml.fromFile(file, ConfigSer.class))
+            .then(Config::fromSer);
     }
 
     private static Result<?> save(Path file, Config cfg) {
         return Ok()
-            .then(_ -> SerdeYaml.toFile(file, cfg))
+            .then(_ -> cfg.toSer())
+            .then(ser -> SerdeYaml.toFile(file, ser))
             .then(_ -> println("✓ Saved the config file to '{}'.", file));
     }
 
     private static Result<Config> create(Path file) {
-        class ConfigContext {
-            final List<String> providers = List.of(
-                "openai-compatible",
-                "openai",
-                "gemini",
-                "claude",
-                "cohere",
-                "azure-openai",
-                "vertexai");
-
-            final List<String> allModels = new ArrayList<>();
-
-            String provider;
-            String providerName;
-            String apiBase;
-            String apiKey;
-            List<String> models;
-            String model;
-
-            public Result<ConfigContext> setProvider(String provider) {
-                this.provider = providers.contains(provider) ? provider : providers.getFirst();
-                return Ok(this);
-            }
-
-            public Result<ConfigContext> setProviderName(String providerName) {
-                this.providerName = providerName;
-                return Ok(this);
-            }
-
-            public Result<ConfigContext> setApiBase(String apiBase) {
-                this.apiBase = apiBase;
-                return Ok(this);
-            }
-
-            public Result<ConfigContext> setApiKey(String apiKey) {
-                this.apiKey = apiKey;
-                return Ok(this);
-            }
-
-            public Result<ConfigContext> setModels(List<String> models) {
-                allModels.addAll(models);
-                return Ok(this);
-            }
-
-            public Result<ConfigContext> setSelectedModels(Collection<String> list) {
-                models = new ArrayList<>();
-                if (!isEmpty(list)) {
-                    models.addAll(list);
-                }
-
-                models = Collections.unmodifiableList(models);
-                return Ok(this);
-            }
-
-            public Result<ConfigContext> setModel(String model) {
-                this.model = model;
-                return Ok(this);
-            }
-
-            public Result<Config> createConfig() {
-                ClientConfig clientConfig = new ClientConfig();
-                clientConfig.setType(provider);
-                clientConfig.setName(providerName);
-                clientConfig.setApiBase(apiBase);
-                clientConfig.setModels(models);
-
-                Config cfg = new Config();
-                cfg.setModel(model);
-                cfg.setClients(List.of(clientConfig));
-
-                return Ok(cfg);
-            }
-        }
-
-        ConfigContext ctx = new ConfigContext();
+        Config cfg = new Config();
 
         return Ok()
             .then(_ -> readLine("No config file, create a new one? (Y/n)"))
             .then(UserInput::getMessage)
             .then(msg -> (isBlank(msg) || "Y".equalsIgnoreCase(msg)) ? Ok() : Err("Operation aborted."))
-            .then(_ -> select("API Provider (required):", ctx.providers))
+            .then(_ -> select("API Provider (required):", cfg.getProviders()))
             .then(UserInput::getMessage)
-            .then(ctx::setProvider)
+            .then(cfg::setProvider)
             .then(_ -> readLine("Provider Name (required):"))
             .then(UserInput::getMessage)
-            .then(ctx::setProviderName)
+            .then(cfg::setProviderName)
             .then(_ -> readLine("API Base (required):"))
             .then(UserInput::getMessage)
-            .then(ctx::setApiBase)
+            .then(cfg::setApiBase)
             .then(_ -> readLine("API Key (optional):"))
             .then(UserInput::getMessage)
-            .then(ctx::setApiKey)
-            .then(_ -> ProviderMod.getModels(ctx.provider, ctx.apiBase))
-            .then(ctx::setModels)
-            .then(_ -> multiSelect("LLMs to include (required):", ctx.allModels))
+            .then(cfg::setApiKey)
+            .then(_ -> ProviderMod.getModels(cfg.getProvider(), cfg.getApiBase()))
+            .then(cfg::setModels)
+            .then(_ -> multiSelect("LLMs to include (required):", cfg.getAllModels()))
             .then(UserInput::getList)
-            .then(ctx::setSelectedModels)
-            .then(_ -> select("Default Model (required):", ctx.models))
+            .then(cfg::setSelectedModels)
+            .then(_ -> select("Default Model (required):", cfg.getModels()))
             .then(UserInput::getMessage)
-            .then(ctx::setModel)
-            .then(ConfigContext::createConfig)
-            .then(cfg -> save(file, cfg))
+            .then(cfg::setModel)
+            .then(_ -> save(file, cfg))
             .then(_ -> load(file));
     }
 

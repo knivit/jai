@@ -1,15 +1,15 @@
-package com.tsoft.jai.provider.openai.api;
+package com.tsoft.jai.mods.provider.openai;
 
 import com.tsoft.jai.http.HttpMethod;
 import com.tsoft.jai.http.HttpUtils;
-import com.tsoft.jai.mods.session.dto.Session;
-import com.tsoft.jai.provider.openai.api.v1.chat.rq.ChatMessageRq;
-import com.tsoft.jai.provider.openai.api.v1.chat.rq.ChatRq;
-import com.tsoft.jai.provider.openai.api.v1.chat.rs.ChatRs;
-import com.tsoft.jai.provider.openai.api.v1.model.rs.ModelRs;
-import com.tsoft.jai.provider.openai.api.v1.model.rs.ModelsRs;
+import com.tsoft.jai.mods.session.struct.Session;
+import com.tsoft.jai.mods.provider.openai.api.v1.chat.rq.ChatMessageRq;
+import com.tsoft.jai.mods.provider.openai.api.v1.chat.rq.ChatRq;
+import com.tsoft.jai.mods.provider.openai.api.v1.chat.rs.ChatRs;
+import com.tsoft.jai.mods.provider.openai.api.v1.model.rs.ModelRs;
+import com.tsoft.jai.mods.provider.openai.api.v1.model.rs.ModelsRs;
 import com.tsoft.jai.std.Result;
-import com.tsoft.jai.std.Value;
+import com.tsoft.jai.std.ValueRef;
 import com.tsoft.jai.utils.SerdeJson;
 
 import java.util.ArrayList;
@@ -20,7 +20,7 @@ import static com.tsoft.jai.http.HttpUtils.buildHttpRequestContext;
 import static com.tsoft.jai.std.Result.*;
 import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
 
-public final class OpenAiApi {
+public final class OpenAiMod {
 
     // HTTP GET http://localhost:11434/v1/models
     // {
@@ -43,7 +43,7 @@ public final class OpenAiApi {
             .then(HttpUtils::buildHttpRequest)
             .then(HttpUtils::sendHttpRequest)
             .then(ctx -> ctx.getHttpCode() == 200 ? Ok(ctx.getBody()) : Err("Request for models failed."))
-            .then(OpenAiApi::toModels);
+            .then(OpenAiMod::toModels);
     }
 
     // HTTP POST http://localhost:11434/v1/chat/completions
@@ -56,19 +56,19 @@ public final class OpenAiApi {
     //    "temperature": 0.7
     // }
     public static Result<Session> chat(Session session, String message) {
-        Value val = new Value();
+        ValueRef<String> body = new ValueRef<>();
 
         return Ok()
             .then(_ -> toChat(session, message))
             .then(chat -> chat.setStream(false))
             .then(SerdeJson::toString)
-            .then(json -> val.set("json", json))
+            .then(body::set)
             .then(_ -> buildHttpRequestContext())
             .then(ctx -> ctx.setMethod(HttpMethod.POST))
             .then(ctx -> ctx.setUrl(session.getApiBase() + "/v1/chat/completions"))
             .then(ctx -> ctx.setHeader("accept", "application/json"))
             .then(ctx -> ctx.setHeader("content-type", "application/json"))
-            .then(ctx -> ctx.setBody(val.get("json")))
+            .then(ctx -> ctx.setBody(body.get()))
             .then(HttpUtils::buildHttpRequest)
             .then(HttpUtils::sendHttpRequest)
             .then(ctx -> ctx.getHttpCode() == 200 ? Ok(ctx.getBody()) : Err("Request for chat failed."))
@@ -113,5 +113,5 @@ public final class OpenAiApi {
         return chatMessages;
     }
 
-    private OpenAiApi() { }
+    private OpenAiMod() { }
 }

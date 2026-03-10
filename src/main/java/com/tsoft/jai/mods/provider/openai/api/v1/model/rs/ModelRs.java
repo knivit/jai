@@ -1,4 +1,4 @@
-package com.tsoft.jai.provider.openai.api.v1.model.rs;
+package com.tsoft.jai.mods.provider.openai.api.v1.model.rs;
 
 import lombok.Data;
 
