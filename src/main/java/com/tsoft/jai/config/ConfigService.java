@@ -4,6 +4,9 @@ import com.tsoft.jai.config.dto.ClientConfig;
 import com.tsoft.jai.config.dto.Config;
 import com.tsoft.jai.http.HttpMethod;
 import com.tsoft.jai.http.HttpUtils;
+import com.tsoft.jai.provider.Provider;
+import com.tsoft.jai.provider.openai.api.v1.Model;
+import com.tsoft.jai.provider.openai.api.v1.Models;
 import com.tsoft.jai.std.Result;
 import com.tsoft.jai.user.UserInput;
 import com.tsoft.jai.utils.SerdeJson;
@@ -90,24 +93,8 @@ public class ConfigService {
             //    },
             //    ...
             // }
-            public Result<ConfigContext> setModels(String json) {
-                class JsonModel {
-                    String id;
-                }
-
-                class JsonModels {
-                    List<JsonModel> data;
-                }
-
-                Result<JsonModels> res = SerdeJson.fromStr(json, JsonModels.class);
-                if (isErr(res)) {
-                    return Err(res);
-                }
-
-                allModels.addAll(res.unwrap().data.stream()
-                    .map(e -> e.id)
-                    .toList());
-
+            public Result<ConfigContext> setModels(List<String> models) {
+                allModels.addAll(models);
                 return Ok(this);
             }
 
@@ -143,7 +130,8 @@ public class ConfigService {
 
         ConfigContext ctx = new ConfigContext();
 
-        return readLine("No config file, create a new one? (Y/n)")
+        return Ok()
+            .then(_ -> readLine("No config file, create a new one? (Y/n)"))
             .then(UserInput::getMessage)
             .then(msg -> (isBlank(msg) || "Y".equalsIgnoreCase(msg)) ? Ok() : Err("Operation aborted."))
             .then(_ -> select("API Provider (required):", ctx.providers))
@@ -158,13 +146,7 @@ public class ConfigService {
             .then(_ -> readLine("API Key (optional):"))
             .then(UserInput::getMessage)
             .then(ctx::setApiKey)
-            .then(_ -> buildHttpRequestContext())
-            .then(rqCtx -> rqCtx.setMethod(HttpMethod.GET))
-            .then(rqCtx -> rqCtx.setUrl(ctx.apiBase + "/models"))
-            .then(rqCtx -> rqCtx.setHeader("accept", "application/json"))
-            .then(HttpUtils::buildHttpRequest)
-            .then(HttpUtils::sendHttpRequest)
-            .then(rsCtx -> rsCtx.getHttpCode() == 200 ? Ok(rsCtx.getBody()) : Err("Request for models failed."))
+            .then(_ -> Provider.getModels(ctx.providerName, ctx.apiBase))
             .then(ctx::setModels)
             .then(_ -> multiSelect("LLMs to include (required):", ctx.allModels))
             .then(UserInput::getList)
