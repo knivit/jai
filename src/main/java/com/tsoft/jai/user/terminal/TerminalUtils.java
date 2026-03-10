@@ -50,7 +50,7 @@ public final class TerminalUtils {
             .message(prompt);
 
         for (String value : values) {
-            listBuilder.add(value, value);
+            listBuilder.newItem(value);
         }
 
         PromptBuilder builder = listBuilder.addPrompt();

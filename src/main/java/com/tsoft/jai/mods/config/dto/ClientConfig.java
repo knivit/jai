@@ -1,4 +1,4 @@
-package com.tsoft.jai.config.dto;
+package com.tsoft.jai.mods.config.dto;
 
 import lombok.Data;
 import lombok.experimental.Accessors;

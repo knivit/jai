@@ -3,6 +3,7 @@ package com.tsoft.jai.std;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -84,8 +85,35 @@ public class Result<T> {
 
     public <R> Result<R> then(Function<T, Result<R>> fun) {
         return switch (type) {
-            case Ok -> fun.apply(value);
+            case Ok -> {
+                try {
+                    yield fun.apply(value);
+                } catch (Exception ex) {
+                    yield Err(ex);
+                }
+            }
             case Err -> (Result<R>)this;
+        };
+    }
+
+    public Result<?> thenOrElse(Consumer<T> then, Consumer<Error<?>> orElse) {
+        return switch (type) {
+            case Ok -> {
+                try {
+                    then.accept(value);
+                    yield Ok();
+                } catch (Exception ex) {
+                    yield Err(ex);
+                }
+            }
+            case Err -> {
+                try {
+                    orElse.accept(err);
+                    yield Ok();
+                } catch (Exception ex) {
+                    yield Err(ex);
+                }
+            }
         };
     }
 

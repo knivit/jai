@@ -24,6 +24,7 @@
         <native.maven.plugin.version>0.11.3</native.maven.plugin.version>
         <maven-assembly-plugin.vaerion>3.7.1</maven-assembly-plugin.vaerion>
 
+        <jline.version>4.0.0</jline.version>
         <lombok.version>1.18.42</lombok.version>
         <logback-classic.version>1.5.25</logback-classic.version>
         <jackson.version>3.1.0</jackson.version>
@@ -38,13 +39,13 @@
         <dependency>
             <groupId>org.jline</groupId>
             <artifactId>jline</artifactId>
-            <version>4.0.0</version>
+            <version>${jline.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.jline</groupId>
             <artifactId>jline-prompt</artifactId>
-            <version>4.0.0</version>
+            <version>${jline.version}</version>
         </dependency>
 
         <!-- JSON/YAML processing -->

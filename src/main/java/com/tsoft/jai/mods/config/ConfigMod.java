@@ -1,15 +1,10 @@
-package com.tsoft.jai.config;
+package com.tsoft.jai.mods.config;
 
-import com.tsoft.jai.config.dto.ClientConfig;
-import com.tsoft.jai.config.dto.Config;
-import com.tsoft.jai.http.HttpMethod;
-import com.tsoft.jai.http.HttpUtils;
-import com.tsoft.jai.provider.Provider;
-import com.tsoft.jai.provider.openai.api.v1.Model;
-import com.tsoft.jai.provider.openai.api.v1.Models;
+import com.tsoft.jai.mods.config.dto.ClientConfig;
+import com.tsoft.jai.mods.config.dto.Config;
+import com.tsoft.jai.provider.ProviderMod;
 import com.tsoft.jai.std.Result;
 import com.tsoft.jai.user.UserInput;
-import com.tsoft.jai.utils.SerdeJson;
 import com.tsoft.jai.utils.SerdeYaml;
 
 import java.nio.file.Files;
@@ -19,25 +14,27 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import static com.tsoft.jai.http.HttpUtils.*;
 import static com.tsoft.jai.std.Result.*;
 import static com.tsoft.jai.user.terminal.TerminalUtils.*;
 import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
 import static com.tsoft.jai.utils.StringUtils.isBlank;
 
-public class ConfigService {
+public class ConfigMod {
 
     public static Result<Config> loadOrCreate() {
-        return configFile()
+        return Ok()
+            .then(_ -> configFile())
             .then(path -> Files.exists(path) ? load(path) : create(path));
     }
 
     private static Result<Config> load(Path file) {
-        return SerdeYaml.fromFile(file, Config.class);
+        return Ok()
+            .then(_ -> SerdeYaml.fromFile(file, Config.class));
     }
 
     private static Result<?> save(Path file, Config cfg) {
-        return SerdeYaml.toFile(file, cfg)
+        return Ok()
+            .then(_ -> SerdeYaml.toFile(file, cfg))
             .then(_ -> println("✓ Saved the config file to '{}'.", file));
     }
 
@@ -81,18 +78,6 @@ public class ConfigService {
                 return Ok(this);
             }
 
-            // HTTP GET http://localhost:11434/v1/models
-            // {
-            //  "object": "list",
-            //  "data": [
-            //    {
-            //      "id": "rnj-1:latest",
-            //      "object": "model",
-            //      "created": 1771694631,
-            //      "owned_by": "library"
-            //    },
-            //    ...
-            // }
             public Result<ConfigContext> setModels(List<String> models) {
                 allModels.addAll(models);
                 return Ok(this);
@@ -146,7 +131,7 @@ public class ConfigService {
             .then(_ -> readLine("API Key (optional):"))
             .then(UserInput::getMessage)
             .then(ctx::setApiKey)
-            .then(_ -> Provider.getModels(ctx.providerName, ctx.apiBase))
+            .then(_ -> ProviderMod.getModels(ctx.provider, ctx.apiBase))
             .then(ctx::setModels)
             .then(_ -> multiSelect("LLMs to include (required):", ctx.allModels))
             .then(UserInput::getList)
