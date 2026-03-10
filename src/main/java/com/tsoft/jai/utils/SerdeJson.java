@@ -10,11 +10,11 @@ import static com.tsoft.jai.std.Result.Ok;
 
 public final class SerdeJson {
 
-    private static final ObjectMapper jsonMapper = new JsonMapper();
+    private static final ObjectMapper MAPPER = new JsonMapper();
 
     public static Result<String> toString(Object obj) {
         try {
-            return Ok(jsonMapper.writeValueAsString(obj));
+            return Ok(MAPPER.writeValueAsString(obj));
         } catch (Exception ex) {
             return Err(ex);
         }
@@ -22,7 +22,7 @@ public final class SerdeJson {
 
     public static <T> Result<T> fromStr(String content, Class<T> clazz) {
         try {
-            return Ok(jsonMapper.readValue(content, clazz));
+            return Ok(MAPPER.readValue(content, clazz));
         } catch (Exception ex) {
             return Err(ex);
         }
@@ -30,7 +30,7 @@ public final class SerdeJson {
 
     public static <T> Result<T> fromStr(String content, TypeReference<T> ref) {
         try {
-            return Ok(jsonMapper.readValue(content, ref));
+            return Ok(MAPPER.readValue(content, ref));
         } catch (Exception ex) {
             return Err(ex);
         }

@@ -33,7 +33,7 @@ public final class TerminalUtils {
 
     public static Result<UserInput> readLine(String prompt) {
         try {
-            String message = lineReader.readLine(prompt);
+            String message = lineReader.readLine(prompt + " ");
             return Ok(UserInput.Message(message));
         } catch (UserInterruptException ex) {
             return Err("Operation was interrupted by the user");

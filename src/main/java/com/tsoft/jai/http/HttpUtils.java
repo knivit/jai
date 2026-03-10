@@ -6,6 +6,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.tsoft.jai.std.Result.Err;
@@ -40,6 +41,21 @@ public final class HttpUtils {
             HttpResponse<String> httpResponse = httpClient.send(rq, HttpResponse.BodyHandlers.ofString());
             HttpResponseContext rs = new HttpResponseContext(httpResponse.statusCode(), httpResponse.body());
             return Ok(rs);
+        } catch (Exception ex) {
+            return Err(ex);
+        }
+    }
+
+    public static Result<?> sendHttpStream(HttpRequest rq, Consumer<String> onLine) {
+        try (HttpClient httpClient = httpClientBuilder
+                .connectTimeout(Duration.ofSeconds(5))
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .version(HttpClient.Version.HTTP_1_1)
+                .build()) {
+            httpClient.send(rq, HttpResponse.BodyHandlers.ofLines())
+                .body()
+                .forEach(onLine);
+            return Ok();
         } catch (Exception ex) {
             return Err(ex);
         }

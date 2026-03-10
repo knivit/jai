@@ -7,16 +7,19 @@ import com.tsoft.jai.mods.session.struct.Session;
 import com.tsoft.jai.std.Result;
 import com.tsoft.jai.std.ValueRef;
 import com.tsoft.jai.user.UserInput;
+import com.tsoft.jai.user.terminal.TerminalUtils;
 
 import static com.tsoft.jai.std.Result.Ok;
 import static com.tsoft.jai.std.Result.isErr;
 import static com.tsoft.jai.user.terminal.TerminalUtils.readLine;
+import static com.tsoft.jai.utils.ObjectUtils.nvl;
 
 public final class ReplMod {
 
     public static Result<?> start(Cli cli, Config cfg, Session ses) {
         Result<?> res = Ok();
         ValueRef<Boolean> exit = new ValueRef<>(false);
+
         while (!exit.get() && !isErr(res)) {
             res = Ok()
                 .then(_ -> readLine("> "))
@@ -24,7 +27,13 @@ public final class ReplMod {
                 .then(msg -> (Result<?>)switch (msg.trim().toLowerCase()) {
                     case "" -> Ok();
                     case ".exit", ".quit" -> exit.set(true);
-                    default -> ProviderMod.chat(ses, msg);
+                    default -> {
+                        if (Boolean.FALSE.equals(nvl(ses.getStream(), cfg.getStream()))) {
+                            yield ProviderMod.chat(cfg, ses, msg);
+                        } else {
+                            yield ProviderMod.chatStream(cfg, ses, msg, TerminalUtils::print);
+                        }
+                    }
                 });
         }
 

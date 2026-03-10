@@ -2,10 +2,12 @@ package com.tsoft.jai.mods.provider.openai;
 
 import com.tsoft.jai.http.HttpMethod;
 import com.tsoft.jai.http.HttpUtils;
+import com.tsoft.jai.mods.config.struct.Config;
 import com.tsoft.jai.mods.session.struct.Session;
 import com.tsoft.jai.mods.provider.openai.api.v1.chat.rq.ChatMessageRq;
 import com.tsoft.jai.mods.provider.openai.api.v1.chat.rq.ChatRq;
 import com.tsoft.jai.mods.provider.openai.api.v1.chat.rs.ChatRs;
+import com.tsoft.jai.mods.provider.openai.api.v1.chat.rs.StreamChunkRs;
 import com.tsoft.jai.mods.provider.openai.api.v1.model.rs.ModelRs;
 import com.tsoft.jai.mods.provider.openai.api.v1.model.rs.ModelsRs;
 import com.tsoft.jai.std.Result;
@@ -15,10 +17,12 @@ import com.tsoft.jai.utils.SerdeJson;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static com.tsoft.jai.http.HttpUtils.buildHttpRequestContext;
 import static com.tsoft.jai.std.Result.*;
 import static com.tsoft.jai.utils.CollectionsUtils.isEmpty;
+import static com.tsoft.jai.utils.ObjectUtils.nvl;
 
 public final class OpenAiMod {
 
@@ -66,7 +70,7 @@ public final class OpenAiMod {
     //      "index": 0,
     //      "message": {
     //        "role": "assistant",
-    //        "content": "Hello there! How’s your day going so far? 😊 \n\nIs there anything I can help you with today, or were you just saying hello?",
+    //        "content": "Hello there! How's your day going so far? 😊 \n\nIs there anything I can help you with today, or were you just saying hello?",
     //        "tool_calls": []
     //      },
     //      "logprobs": null,
@@ -81,11 +85,11 @@ public final class OpenAiMod {
     //  "stats": {},
     //  "system_fingerprint": "google/gemma-3-4b"
     // }
-    public static Result<Session> chat(Session ses, String msg) {
+    public static Result<Session> chat(Config cfg, Session ses, String msg) {
         ValueRef<String> body = new ValueRef<>("");
 
         return Ok()
-            .then(_ -> toChat(ses, msg))
+            .then(_ -> toChat(cfg, ses, msg))
             .then(chat -> chat.setStream(false))
             .then(SerdeJson::toString)
             .then(body::set)
@@ -99,6 +103,67 @@ public final class OpenAiMod {
             .then(HttpUtils::sendHttpRequest)
             .then(ctx -> ctx.getHttpCode() == 200 ? Ok(ctx.getBody()) : Err("Request for chat failed."))
             .then(json -> updateSession(ses, json));
+    }
+
+    // HTTP POST http://localhost:11434/v1/chat/completions (streaming)
+    // {
+    //   "model": "model-identifier",
+    //   "messages": [...],
+    //   "stream": true
+    // }
+    // Response (SSE stream):
+    // data: {"id":"chatcmpl-123","choices":[{"delta":{"content":"Hello"},"index":0}]}
+    // data: {"id":"chatcmpl-123","choices":[{"delta":{"content":" there"},"index":0}]}
+    // data: [DONE]
+    public static Result<Session> chatStream(Config cfg, Session ses, String msg, Consumer<String> onChunk) {
+        ValueRef<String> body = new ValueRef<>("");
+        ValueRef<StringBuilder> buf = new ValueRef<>(new StringBuilder());
+
+        return Ok()
+            .then(_ -> toChat(cfg, ses, msg))
+            .then(chat -> chat.setStream(true))
+            .then(SerdeJson::toString)
+            .then(body::set)
+            .then(_ -> buildHttpRequestContext())
+            .then(ctx -> ctx.setMethod(HttpMethod.POST))
+            .then(ctx -> ctx.setUrl(ses.getApiBase() + "/v1/chat/completions"))
+            .then(ctx -> ctx.setHeader("accept", "application/json"))
+            .then(ctx -> ctx.setHeader("content-type", "application/json"))
+            .then(ctx -> ctx.setBody(body.get()))
+            .then(HttpUtils::buildHttpRequest)
+            .then(rq -> HttpUtils.sendHttpStream(rq, line -> processStreamLine(line, buf, onChunk)))
+            .then(_ -> ses.addMessage("assistant", buf.get().toString()));
+    }
+
+    private static void processStreamLine(String line, ValueRef<StringBuilder> buf, Consumer<String> onChunk) {
+        line = line.trim();
+        if (line.isEmpty() || line.startsWith(":")) {
+            return;
+        }
+
+        if ("data: [DONE]".equals(line)) {
+            return;
+        }
+
+        if (!line.startsWith("data: ")) {
+            return;
+        }
+
+        String json = line.substring(6);
+
+        Ok()
+            .then(_ -> SerdeJson.fromStr(json, StreamChunkRs.class))
+            .then(chunk -> Ok(chunk.getChoices()))
+            .then(choices -> {
+                if (!isEmpty(choices)) {
+                    String content = choices.getFirst().getDelta().getContent();
+                    if (content != null) {
+                        buf.get().append(content);
+                        onChunk.accept(content);
+                    }
+                }
+                return Ok();
+            });
     }
 
     private static Result<Session> updateSession(Session ses, String json) {
@@ -116,14 +181,14 @@ public final class OpenAiMod {
                 .toList()));
     }
 
-    private static Result<ChatRq> toChat(Session ses, String msg) {
+    private static Result<ChatRq> toChat(Config cfg, Session ses, String msg) {
         ChatRq chat = new ChatRq();
 
         return Ok()
             .then(_ -> isEmpty(ses.getModel()) ? Err("model can't be empty") : chat.setModel(ses.getModel()))
             .then(_ -> ses.addMessage("user", msg))
             .then(_ -> chat.setMessages(toChatMessages(ses)))
-            .then(_ -> chat.setTemperature(ses.getTemperature()));
+            .then(_ -> chat.setTemperature(nvl(ses.getTemperature(), cfg.getTemperature())));
     }
 
     private static List<ChatMessageRq> toChatMessages(Session ses) {

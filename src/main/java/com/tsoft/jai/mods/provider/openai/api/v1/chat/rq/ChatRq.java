@@ -1,5 +1,6 @@
 package com.tsoft.jai.mods.provider.openai.api.v1.chat.rq;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.tsoft.jai.std.Result;
 import lombok.Getter;
 
@@ -8,6 +9,7 @@ import java.util.List;
 import static com.tsoft.jai.std.Result.Ok;
 
 @Getter
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ChatRq {
 
     private String model;

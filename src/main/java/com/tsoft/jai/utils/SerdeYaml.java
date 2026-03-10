@@ -12,11 +12,11 @@ import static com.tsoft.jai.std.Result.Ok;
 
 public final class SerdeYaml {
 
-    private static final ObjectMapper yamlMapper = new YAMLMapper();
+    private static final ObjectMapper MAPPER = new YAMLMapper();
 
     public static Result<String> toString(Object obj) {
         try {
-            return Ok(yamlMapper.writeValueAsString(obj));
+            return Ok(MAPPER.writeValueAsString(obj));
         } catch (Exception ex) {
             return Err(ex);
         }
@@ -24,7 +24,7 @@ public final class SerdeYaml {
 
     public static <T> Result<T> toFile(Path file, Object obj) {
         try {
-            yamlMapper.writeValue(file, obj);
+            MAPPER.writeValue(file, obj);
             return Ok();
         } catch (Exception ex) {
             return Err(ex);
@@ -33,7 +33,7 @@ public final class SerdeYaml {
 
     public static <T> Result<T> fromFile(Path file, Class<T> clazz) {
         try {
-            return Ok(yamlMapper.readValue(file, clazz));
+            return Ok(MAPPER.readValue(file, clazz));
         } catch (Exception ex) {
             return Err(ex);
         }
@@ -41,7 +41,7 @@ public final class SerdeYaml {
 
     public static <T> Result<T> fromStr(String content, Class<T> clazz) {
         try {
-            return Ok(yamlMapper.readValue(content, clazz));
+            return Ok(MAPPER.readValue(content, clazz));
         } catch (Exception ex) {
             return Err(ex);
         }
@@ -49,7 +49,7 @@ public final class SerdeYaml {
 
     public static <T> Result<T> fromStr(String content, TypeReference<T> ref) {
         try {
-            return Ok(yamlMapper.readValue(content, ref));
+            return Ok(MAPPER.readValue(content, ref));
         } catch (Exception ex) {
             return Err(ex);
         }

@@ -14,8 +14,8 @@ public class Session {
     private String apiBase;
     private String model;
     private List<Message> messages;
+    private Boolean stream;
     private Float temperature;
-    private ChatStatistics stats;
 
     public Result<Session> setApiBase(String apiBase) {
         this.apiBase = apiBase;
@@ -24,6 +24,16 @@ public class Session {
 
     public Result<Session> setModel(String model) {
         this.model = model;
+        return Ok(this);
+    }
+
+    public Result<Session> setStream(Boolean stream) {
+        this.stream = stream;
+        return Ok(this);
+    }
+
+    public Result<Session> setTemperature(Float temperature) {
+        this.temperature = temperature;
         return Ok(this);
     }
 
